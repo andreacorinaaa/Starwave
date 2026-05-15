@@ -19,7 +19,7 @@ USER
     - Login
     - Melihat Daftar Baju
     - Melihat Kategori Baju
-   -MEMBER (sudah login)
+  - MEMBER (sudah login)
     - Melihat Daftar Baju
     - Melihat Kategori Baju
     - Membuat Pesanan
