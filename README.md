@@ -14,7 +14,25 @@ http://localhost/
 
 # Menu Utama
 USER
-  - Sign Up / Registrasi
-  - Login
-      - Melihat Daftar Baju
-      - Melihat Kategori Baju
+  - GUEST (belum login)
+    - Sign Up / Registrasi
+    - Login
+    - Melihat Daftar Baju
+    - Melihat Kategori Baju
+   -MEMBER (sudah login)
+    - Melihat Daftar Baju
+    - Melihat Kategori Baju
+    - Membuat Pesanan
+    - Melihat Riwayat Pesanan
+    - Mengedit Pesanan
+    - Membatalkan Pesanan
+    - Logout
+  
+ADMIN
+- Menambah Produk
+- Melihat Semua Produk
+- Mengedit Produk
+- Menghapus Produk
+- Melihat Semua Pesanan
+- Mengubah Status Pesanan
+- Logout
