@@ -49,19 +49,19 @@ STARWAVE
 │   ├── New Arrivals
 │   └── Trend Collection
 │
-├── Man/Woman/accessories
+├── Man / Woman / Accessories
 │   ├── Harga Product
 │   └── Product
-│       ├── Deskripsi barang
+│       ├── Deskripsi Barang
 │       ├── Ukuran
 │       ├── Jumlah Barang
-|       ├── Total Harga
+│       ├── Total Harga
 │       └── Order
 │           ├── Pembayaran
 │           ├── Total
 │           ├── Bank
-|           └── Detail Pesanan
-|
+│           └── Detail Pesanan
+│
 ├── Order
 │   └── Riwayat Pesanan
 │       ├── Nama Produk
@@ -69,16 +69,20 @@ STARWAVE
 │       ├── Penerima
 │       ├── Tanggal Beli
 │       ├── Status
-│       └── Aksi (sudah bayar, belum bayar, sedang dikirim, dll dan untuk        |           Membatalkan pesanan)
+│       └── Aksi
+│           ├── Sudah Bayar
+│           ├── Belum Bayar
+│           ├── Sedang Dikirim
+│           └── Membatalkan Pesanan
 │
-└──User
-   ├── Banner
-   ├── Email
-   ├── Nama
-   ├── Nomor Telepon
-   ├── Alamat
-   ├── Tanggal Lahir
-   └── Log Out 
+└── User
+    ├── Banner
+    ├── Email
+    ├── Nama
+    ├── Nomor Telepon
+    ├── Alamat
+    ├── Tanggal Lahir
+    └── Log Out 
 
 # Team members and Responsibilities
 
@@ -88,5 +92,5 @@ STARWAVE
 | 2 | Andrea Corina Rahmadi | Frontend Side | Mengembangkan antarmuka website menggunakan HTML, CSS, dan JavaScript, membuat tampilan yang responsif, serta meningkatkan interaktivitas dan desain website. |
 
 # NIM Members Groups
- -Andrea Corina Rahmadi: F1D02410104
- -Indira Ramadhani Sabrina: F1D02410057
+  - Andrea Corina Rahmadi: F1D02410104
+  - Indira Ramadhani Sabrina: F1D02410057
