@@ -43,6 +43,9 @@ ADMIN
 
 # Sitemap
 
+## Sitemap
+
+```
 STARWAVE
 ├── Home
 │   ├── Banner
@@ -82,7 +85,8 @@ STARWAVE
     ├── Nomor Telepon
     ├── Alamat
     ├── Tanggal Lahir
-    └── Log Out 
+    └── Log Out
+``` 
 
 
 # Team members and Responsibilities
