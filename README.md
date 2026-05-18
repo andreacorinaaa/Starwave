@@ -7,11 +7,11 @@ Starwave adalah platform fashion modern yang menyediakan berbagai pilihan outfit
 Selain itu StarWave menyediakan berbagai fitur yang memudahkan pengguna dalam berbelanja fashion kekinian secara online. Pengguna dapat membuat akun dan login untuk mengakses aplikasi, mencari produk melalui fitur pencarian dan kategori, serta melihat detail produk seperti foto, harga, ukuran, dan deskripsi pakaian. Selain itu, tersedia fitur keranjang belanja. StarWave juga dilengkapi dengan proses checkout yang praktis, pemilihan metode pemesanan berupa delivery dan pick up order dan riwayat pesanan.
 
 # Technologi Stack
-  -Frontend: HTML, css, JavaScript
-  -Backend: PHP
-  -Database: MySQL
-  -Local server: XAMPP
-  -Version control: Git/Github
+  - Frontend: HTML, css, JavaScript
+  - Backend: PHP
+  - Database: MySQL
+  - Local server: XAMPP
+  - Version control: Git/Github
   
 # Alamat Website
 http://localhost/
@@ -42,8 +42,6 @@ ADMIN
 - Logout
 
 # Sitemap
-
-## Sitemap
 
 ```
 STARWAVE
