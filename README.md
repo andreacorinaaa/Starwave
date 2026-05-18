@@ -7,8 +7,12 @@ Starwave adalah platform fashion modern yang menyediakan berbagai pilihan outfit
 Selain itu StarWave menyediakan berbagai fitur yang memudahkan pengguna dalam berbelanja fashion kekinian secara online. Pengguna dapat membuat akun dan login untuk mengakses aplikasi, mencari produk melalui fitur pencarian dan kategori, serta melihat detail produk seperti foto, harga, ukuran, dan deskripsi pakaian. Selain itu, tersedia fitur keranjang belanja. StarWave juga dilengkapi dengan proses checkout yang praktis, pemilihan metode pemesanan berupa delivery dan pick up order dan riwayat pesanan.
 
 # Technologi Stack
-HTML CSS JavaScript PHP MySQL Apache
-
+  -Frontend: HTML, css, JavaScript
+  -Backend: PHP
+  -Database: MySQL
+  -Local server: XAMPP
+  -Version control: Git/Github
+  
 # Alamat Website
 http://localhost/
 
@@ -37,15 +41,52 @@ ADMIN
 - Mengubah Status Pesanan
 - Logout
 
-#Sitemap
+# Sitemap
 
-#Team members and Responsibilities
+STARWAVE
+├── Home
+│   ├── Banner
+│   ├── New Arrivals
+│   └── Trend Collection
+│
+├── Man/Woman/accessories
+│   ├── Harga Product
+│   └── Product
+│       ├── Deskripsi barang
+│       ├── Ukuran
+│       ├── Jumlah Barang
+|       ├── Total Harga
+│       └── Order
+│           ├── Pembayaran
+│           ├── Total
+│           ├── Bank
+|           └── Detail Pesanan
+|
+├── Order
+│   └── Riwayat Pesanan
+│       ├── Nama Produk
+│       ├── Jumlah
+│       ├── Penerima
+│       ├── Tanggal Beli
+│       ├── Status
+│       └── Aksi (sudah bayar, belum bayar, sedang dikirim, dll dan untuk        |           Membatalkan pesanan)
+│
+└──User
+   ├── Banner
+   ├── Email
+   ├── Nama
+   ├── Nomor Telepon
+   ├── Alamat
+   ├── Tanggal Lahir
+   └── Log Out 
 
-| Nama | NIM | Jobdesk |
-|------|------|----------|
-| Andrea | 22001 | UI Design |
-| Indira | 22002 | Backend |
+# Team members and Responsibilities
 
-#NIM Members Groups
+| No | Member Name | Role | Responsibilities |
+|----|--------------|------|-------------------|
+| 1 | Indira Ramdhani Sabrina | Backend / Database Side | Mengembangkan fitur menggunakan PHP, mengelola struktur database, menangani proses pengolahan data, dan mengintegrasikan fungsi backend ke dalam sistem. |
+| 2 | Andrea Corina Rahmadi | Frontend Side | Mengembangkan antarmuka website menggunakan HTML, CSS, dan JavaScript, membuat tampilan yang responsif, serta meningkatkan interaktivitas dan desain website. |
+
+# NIM Members Groups
  -Andrea Corina Rahmadi: F1D02410104
  -Indira Ramadhani Sabrina: F1D02410057
