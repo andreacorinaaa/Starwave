@@ -28,8 +28,8 @@ USER
     - Melihat Kategori Baju
     - Membuat Pesanan
     - Melihat Riwayat Pesanan
-    - Mengedit Pesanan
     - Membatalkan Pesanan
+    - Mengedit My account
     - Logout
   
 ADMIN
