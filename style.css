@@ -1,0 +1,298 @@
+/* Global styles, navbar, banner, produk, footer,
+   dan halaman khusus (man, woman, accessories dan search)
+*/
+
+/* ── RESET ── */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial;
+}
+
+/* ── BODY ── */
+body {
+    background: #d8e9f0;
+}
+
+/* ── NAVBAR ── */
+nav {
+    display: flex;
+    align-items: center;
+    padding: 20px 60px;
+    background: white;
+}
+
+nav h1 {
+    margin-right: 80px;
+}
+
+nav ul {
+    display: flex;
+    list-style: none;
+    margin: 0 auto;
+    gap: 30px;
+}
+
+nav ul li a {
+    text-decoration: none;
+    color: #333;
+    font-size: 18px;
+}
+
+nav ul li a.active{
+    color: #b8dded;
+    border-bottom: 2px solid rgb(12, 12, 12);
+    padding-bottom: 3px;
+}
+
+/* ── BANNER ── */
+.banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 420px;
+    padding: 0 80px;
+    background: #ffffff;
+    overflow: hidden;
+}
+
+.banner-text {
+    width: 50%;
+}
+
+.banner-img {
+    width: 50%;
+    height: 100%;
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-end;
+}
+
+.banner-img img {
+    height: 100%;
+    width: auto;
+    object-fit: cover;
+}
+
+.banner a {
+    display: inline-block;
+    margin-top: 20px;
+    padding: 12px 25px;
+    background: #1C4759;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+}
+
+/* ── NEW ARRIVAL ── */
+.arrival {
+    padding: 50px;
+    text-align: center;
+    background-color: #d8e9f0;
+}
+
+.arrival-box {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.arrival img {
+    width: 200px;
+}
+
+/* ── TREND COLLECTION ── */
+.trend {
+    padding: 50px;
+    text-align: center;
+    background: #ffffff;
+}
+
+/* ── PRODUCTS ── */
+.products {
+    padding: 50px;
+    text-align: center;
+    background: #d8e9f0;
+}
+
+.product-box {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-top: 30px;
+}
+
+.product {
+    background: white;
+    padding: 20px;
+    width: 200px;
+}
+
+.product img {
+    width: 150px;
+}
+
+/* ── FOOTER ── */
+footer {
+    background: #eee;
+    padding: 40px;
+}
+
+.footer-box {
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 20px;
+}
+
+footer a {
+    color: #333;
+    text-decoration: none;
+}
+
+footer a:hover {
+    text-decoration: underline;
+}
+
+.copy {
+    text-align: center;
+}
+
+/* ── CONTAINER & TABLE (halaman order/riwayat) ── */
+.container {
+    max-width: 1000px;
+    margin: auto;
+    padding: 40px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+th, td {
+    border: 1px solid #ddd;
+    padding: 12px;
+}
+
+th {
+    background: #1C4759;
+    color: white;
+}
+
+/* ── FORM & BUTTON (global) ── */
+form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 400px;
+}
+
+input {
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+button {
+    padding: 10px;
+    background: #1C4759;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #163743;
+}
+
+/* ── HALAMAN MAN, WOMAN, ACCESSORIES ── */
+.page-man .product-box,
+.page-woman .product-box,
+.page-accessories .product-box {
+    display: grid !important;
+    grid-template-columns: repeat(3, 350px);
+    justify-content: center;
+    gap: 30px;
+    margin-top: 30px;
+}
+
+.page-man .product,
+.page-woman .product,
+.page-accessories .product {
+    width: 100% !important;
+    background: white;
+    padding: 15px;
+    border-radius: 10px;
+    text-align: center;
+    overflow: visible;
+    position: relative;
+    transition: 0.3s;
+}
+
+.page-man .product img,
+.page-woman .product img,
+.page-accessories .product img {
+    width: 100%;
+    height: 350px;
+    object-fit: cover;
+    transition: transform 0.5s ease, filter 0.5s ease;
+    position: relative;
+    z-index: 1;
+}
+
+.page-man .product:hover img,
+.page-woman .product:hover img,
+.page-accessories .product:hover img {
+    transform: scale(1.2);
+    z-index: 10;
+    filter: brightness(90%);
+}
+
+.page-man .product:hover,
+.page-woman .product:hover,
+.page-accessories .product:hover {
+    transform: translateY(-10px);
+}
+
+/* ── HALAMAN SEARCH ── */
+.page-search .product-box {
+    display: grid !important;
+    grid-template-columns: repeat(3, 350px);
+    justify-content: center;
+    gap: 30px;
+    margin-top: 30px;
+}
+
+.page-search .product {
+    width: 100% !important;
+    background: white;
+    padding: 15px;
+    border-radius: 10px;
+    text-align: center;
+    overflow: visible;
+    position: relative;
+    transition: 0.3s;
+}
+
+.page-search .product img {
+    width: 100%;
+    height: 350px;
+    object-fit: cover;
+    transition: transform 0.5s ease, filter 0.5s ease;
+    position: relative;
+    z-index: 1;
+}
+
+.page-search .product:hover img {
+    transform: scale(1.2);
+    z-index: 10;
+    filter: brightness(90%);
+}
+
+.page-search .product:hover {
+    transform: translateY(-10px);
+}
