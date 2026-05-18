@@ -6,7 +6,7 @@ Starwave adalah platform fashion modern yang menyediakan berbagai pilihan outfit
 
 Selain itu StarWave menyediakan berbagai fitur yang memudahkan pengguna dalam berbelanja fashion kekinian secara online. Pengguna dapat membuat akun dan login untuk mengakses aplikasi, mencari produk melalui fitur pencarian dan kategori, serta melihat detail produk seperti foto, harga, ukuran, dan deskripsi pakaian. Selain itu, tersedia fitur keranjang belanja. StarWave juga dilengkapi dengan proses checkout yang praktis, pemilihan metode pemesanan berupa delivery dan pick up order dan riwayat pesanan.
 
-# Teknologi
+# Technologi Stack
 HTML CSS JavaScript PHP MySQL Apache
 
 # Alamat Website
@@ -36,3 +36,16 @@ ADMIN
 - Melihat Semua Pesanan
 - Mengubah Status Pesanan
 - Logout
+
+#Sitemap
+
+#Team members and Responsibilities
+
+| Nama | NIM | Jobdesk |
+|------|------|----------|
+| Andrea | 22001 | UI Design |
+| Indira | 22002 | Backend |
+
+#NIM Members Groups
+ -Andrea Corina Rahmadi: F1D02410104
+ -Indira Ramadhani Sabrina: F1D02410057
