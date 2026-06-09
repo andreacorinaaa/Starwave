@@ -34,6 +34,18 @@ $query = mysqli_query($conn, "SELECT * FROM produk WHERE kategori='woman'");
     </nav>
 </header>
 
+<section class="banner">
+    <div class="banner-text">
+        <p>STARWAVE</p>
+        <h2>Choose Everything You Like</h2>
+        <p>Various kinds of interesting clothes</p>
+    </div>
+
+    <div class="banner-img">
+        <img src="asset/posterWanita.jpg">
+    </div>
+</section>
+
 <!-- PRODUCTS -->
 <section class="products">
 

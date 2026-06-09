@@ -6,7 +6,6 @@
 body {
     margin: 0;
     padding: 0;
-    background-color: #0f0f1a;
 }
 
 /* ── PAGE LAYOUT ── */
@@ -18,11 +17,13 @@ body {
     box-sizing: border-box;
     display: flex;
     justify-content: center;
-    align-items: flex-start;
-    background-color: #0f0f1a;
-    background-image:
-        radial-gradient(circle at 20% 20%, rgba(0, 0, 0, 0.03) 0%, transparent 50%),
-        radial-gradient(circle at 80% 80%, rgba(0, 0, 0, 0.03) 0%, transparent 50%);
+    align-items: center; /* ganti dari flex-start ke center */
+    min-height: 100vh;
+    background-image: url('newJeans6.jpg');
+    background-size: cover;
+    background-position: center 35%;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
 }
 
 /* ── CARD CONTAINER ── */

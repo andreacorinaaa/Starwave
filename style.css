@@ -12,7 +12,7 @@
 
 /* ── BODY ── */
 body {
-    background: #0f0f1a;
+    background: #ffffff;
 }
 
 /* ── NAVBAR ── */
@@ -20,7 +20,8 @@ nav {
     display: flex;
     align-items: center;
     padding: 20px 60px;
-    background: white;
+    background: rgb(255, 255, 255);
+    border-bottom: 2px solid #ddd; 
 }
 
 nav h1 {
@@ -48,31 +49,32 @@ nav ul li a.active{
 
 /* ── BANNER ── */
 .banner {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+    position: relative;
     height: 420px;
-    padding: 0 80px;
-    background: #ffffff;
+    background: #FFFFFF;
     overflow: hidden;
-}
-
-.banner-text {
-    width: 50%;
+    padding: 0;  /* hapus padding */
 }
 
 .banner-img {
-    width: 50%;
+    width: 100%;
     height: 100%;
-    display: flex;
-    align-items: flex-end;
-    justify-content: flex-end;
 }
 
 .banner-img img {
+    width: 100%;
     height: 100%;
-    width: auto;
     object-fit: cover;
+}
+
+.banner-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    color: white;
+    z-index: 1;
 }
 
 .banner a {
@@ -89,7 +91,7 @@ nav ul li a.active{
 .arrival {
     padding: 50px;
     text-align: center;
-    background-color: #0f0f1a;
+    background-color: #ffffff;
 }
 
 .arrival-box {
@@ -107,14 +109,14 @@ nav ul li a.active{
 .trend {
     padding: 50px;
     text-align: center;
-    background: #ffffff;
+    background: #FFFFFF;
 }
 
 /* ── PRODUCTS ── */
 .products {
     padding: 50px;
     text-align: center;
-    background: #0f0f1a;
+    background: #ffffff;
 }
 
 .product-box {
@@ -137,13 +139,16 @@ nav ul li a.active{
 /* ── FOOTER ── */
 footer {
     background: #eee;
-    padding: 40px;
+    padding: 20px;
+    position: relative;
+    margin-top: -30px;  /* sesuaikan angkanya */
 }
+
 
 .footer-box {
     display: flex;
     justify-content: space-around;
-    margin-bottom: 20px;
+    margin-bottom: 10px;
 }
 
 footer a {
@@ -214,7 +219,7 @@ button:hover {
 .page-woman .product-box,
 .page-accessories .product-box {
     display: grid !important;
-    grid-template-columns: repeat(3, 350px);
+    grid-template-columns: repeat(4, 280px);
     justify-content: center;
     gap: 30px;
     margin-top: 30px;
@@ -226,7 +231,7 @@ button:hover {
     width: 100% !important;
     background: white;
     padding: 15px;
-    border-radius: 10px;
+    border-radius: 0px;
     text-align: center;
     overflow: visible;
     position: relative;
@@ -261,7 +266,7 @@ button:hover {
 /* ── HALAMAN SEARCH ── */
 .page-search .product-box {
     display: grid !important;
-    grid-template-columns: repeat(3, 350px);
+    grid-template-columns: repeat(4, 280px);
     justify-content: center;
     gap: 30px;
     margin-top: 30px;
