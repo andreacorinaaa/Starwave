@@ -135,6 +135,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             <form method="POST" id="orderForm">
 
                 <!-- Ukuran -->
+                <?php if (strtolower($item['kategori']) !== 'accessories'): ?>
                 <div>
                     <div class="size-buttons" style="margin-top:10px;">
                         <button type="button" class="size-btn" data-size="S" onclick="selectSize(this)">S</button>
@@ -145,6 +146,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     </div>
                     <input type="hidden" name="ukuran" id="ukuranInput" value="M">
                 </div>
+                <?php else: ?>
+                    <input type="hidden" name="ukuran" id="ukuranInput" value="-">
+                <?php endif; ?>
 
                 <!-- Total harga -->
                 <div class="total-row">

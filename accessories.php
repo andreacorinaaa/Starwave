@@ -55,7 +55,7 @@ $query = mysqli_query($conn, "SELECT * FROM produk WHERE kategori='accessories'"
     <h2>ACCESSORIES COLLECTION</h2>
 
     <div class="product-box">
-                   <!-- mengambil satu baris data dari query -->
+                <!-- mengambil satu baris data dari query -->
         <?php while($row = mysqli_fetch_assoc($query)) { ?> <!-- looping dari database -->
 
             <div class="product">
