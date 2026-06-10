@@ -1,6 +1,6 @@
 <?php
-include('config/koneksi.php');
-                      // variabel koneksi database 
+session_start();
+include('config/koneksi.php'); // variabel koneksi database 
 $query = mysqli_query($conn, "SELECT * FROM produk WHERE kategori='accessories'"); // jalanin perintah sql ke database 
 ?>
 
@@ -15,22 +15,25 @@ $query = mysqli_query($conn, "SELECT * FROM produk WHERE kategori='accessories'"
 <body class="page-accessories">
 
 <!-- NAVBAR -->
+<!-- NAVBAR -->
 <header>
     <nav>
         <h1>STARWAVE</h1>
-
         <ul>
             <li><a href="index.php">Home</a></li>
             <li><a href="man.php">Man</a></li>
             <li><a href="woman.php">Woman</a></li>
             <li><a href="accessories.php" class="active">Accessories</a></li>
             <li><a href="order.php">Order</a></li>
-            <li><a href="masuk/login.php">User</a></li>
         </ul>
-
         <form action="search.php" method="GET" style="display:inline;">
             <input type="text" name="q" placeholder="Search produk..." style="padding:5px;">
         </form>
+        <?php if (isset($_SESSION['user'])): ?>
+            <a href="profile.php" style="margin-left:15px; text-decoration:none; color:#333;">Profile</a>
+        <?php else: ?>
+            <a href="masuk/login.php" style="margin-left:15px; text-decoration:none; color:#333;">Login</a>
+        <?php endif; ?>
     </nav>
 </header>
 

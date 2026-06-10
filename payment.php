@@ -34,22 +34,25 @@ $total = $order['total_harga'];
 <body>
 
 <!-- NAVBAR -->
+<!-- NAVBAR -->
 <header>
     <nav>
         <h1>STARWAVE</h1>
-
         <ul>
             <li><a href="index.php">Home</a></li>
-            <li><a href="man.php" class="active">Man</a></li>
-            <li><a href="woman.php">Woman</a></li>
+            <li><a href="man.php">Man</a></li>
+            <li><a href="woman.php" class="active">Woman</a></li>
             <li><a href="accessories.php">Accessories</a></li>
             <li><a href="order.php">Order</a></li>
-            <li><a href="masuk/login.php">User</a></li>
         </ul>
-
         <form action="search.php" method="GET" style="display:inline;">
             <input type="text" name="q" placeholder="Search produk..." style="padding:5px;">
         </form>
+        <?php if (isset($_SESSION['user'])): ?>
+            <a href="profile.php" style="margin-left:15px; text-decoration:none; color:#333;">Profile</a>
+        <?php else: ?>
+            <a href="masuk/login.php" style="margin-left:15px; text-decoration:none; color:#333;">Login</a>
+        <?php endif; ?>
     </nav>
 </header>
 

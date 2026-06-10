@@ -53,7 +53,8 @@ if (isset($_POST['register'])) {
             <li><a href="../woman.php">Woman</a></li>
             <li><a href="../accessories.php">Accessories</a></li>
             <li><a href="../order.php">Order</a></li>
-            <li><a href="login.php">User</a></li>
+            <li><a href="login.php">Profile</a></li>
+            <li><a href="login.php" class="active">LOG IN</a></li>
         </ul>
 
         <form action="search.php" method="GET" style="display:inline;">
