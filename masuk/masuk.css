@@ -13,27 +13,31 @@ body {
 .register-page {
     width: 100%;
     min-height: 100vh;
-    padding: 20px 40px 60px;
     box-sizing: border-box;
     display: flex;
     justify-content: center;
-    align-items: center; /* ganti dari flex-start ke center */
-    min-height: 100vh;
-    background-image: url('newJeans6.jpg');
+    align-items: center;
+    padding-top: 80px;
+    padding-bottom: 40px;
+    background-image: url('twice login.jpg');
     background-size: cover;
-    background-position: center 35%;
+    background-position: center top;
     background-repeat: no-repeat;
-    background-attachment: fixed;
+    /* HAPUS background-attachment: fixed — ini penyebab blur di Chrome/Edge */
 }
 
 /* ── CARD CONTAINER ── */
 .login-container,
 .register-container {
+    color:#ffffff;
     width: 100%;
-    background: #ffffff;
+    background: rgba(255, 255, 255, 0.15); /* ← transparan */
+    backdrop-filter: blur(12px);            /* ← efek kaca/frosted glass */
+    -webkit-backdrop-filter: blur(12px);    /* ← untuk Safari */
+    border: 1px solid rgba(255, 255, 255, 0.3);
     padding: 44px 48px;
     border-radius: 20px;
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
     animation: cardFadeIn 0.4s ease forwards;
 }
 
@@ -68,7 +72,7 @@ body {
 .login-container p,
 .register-container p {
     text-align: center;
-    color: #888888;
+    color: #111111;
     margin-bottom: 28px;
     font-size: 14px;
     line-height: 1.5;
@@ -315,4 +319,10 @@ select {
     background: #fafafa;
     font-size: 14px;
     box-sizing: border-box;
+}
+
+/* Tambah di paling bawah masuk.css */
+body:has(.login-page),
+body:has(.register-page) {
+    padding-top: 0; /* ← hapus padding-top dari style.css */
 }

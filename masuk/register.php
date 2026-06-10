@@ -42,27 +42,6 @@ if (isset($_POST['register'])) {
     <link rel="stylesheet" href="../style.css">
     <link rel="stylesheet" href="../order.css">
 </head>
-
-<header>
-    <nav>
-        <h1>STARWAVE</h1>
-
-        <ul>
-            <li><a href="../index.php">Home</a></li>
-            <li><a href="../man.php">Man</a></li>
-            <li><a href="../woman.php">Woman</a></li>
-            <li><a href="../accessories.php">Accessories</a></li>
-            <li><a href="../order.php">Order</a></li>
-            <li><a href="login.php">Profile</a></li>
-            <li><a href="login.php" class="active">LOG IN</a></li>
-        </ul>
-
-        <form action="search.php" method="GET" style="display:inline;">
-            <input type="text" name="q" placeholder="Search produk..." style="padding:5px;">
-        </form>
-    </nav>
-</header>
-
 <body>
 
     <div class="register-page">
@@ -113,6 +92,22 @@ if (isset($_POST['register'])) {
 
         </div>
     </footer>
-
 </body>
+<header>
+    <nav>
+    <h1>STARWAVE</h1>
+    <ul>
+        <li><a href="../index.php">Home</a></li>
+        <li><a href="../man.php">Man</a></li>
+        <li><a href="../woman.php">Woman</a></li>
+        <li><a href="../accessories.php">Accessories</a></li>
+        <li><a href="../order.php">Order</a></li>
+    </ul>
+    <!-- Search & Login dipisah dari ul, biar tetap di kanan -->
+    <form action="search.php" method="GET" style="display:inline;">
+        <input type="text" name="q" placeholder="Search produk..." style="padding:5px;">
+    </form>
+    <a href="login.php" style="margin-left:15px; text-decoration:none; color:#333;" class="active">Login</a>
+</nav>
+</header>
 </html>
