@@ -8,9 +8,13 @@ if (!isset($_GET['id'])) {
 
 $id_order = (int)$_GET['id'];
 
-$order = mysqli_fetch_assoc(mysqli_query($conn,
-    "SELECT * FROM orders WHERE id='$id_order'"
-));
+$order = mysqli_fetch_assoc(mysqli_query($conn,"
+SELECT o.*, p.gambar
+FROM orders o
+LEFT JOIN produk p
+ON o.nama_produk LIKE CONCAT(p.nama_produk,'%')
+WHERE o.id='$id_order'
+"));
 
 if (!$order) {
     die("Pesanan tidak ditemukan");
@@ -34,7 +38,6 @@ $total = $order['total_harga'];
 <body>
 
 <!-- NAVBAR -->
-<!-- NAVBAR -->
 <header>
     <nav>
         <h1>STARWAVE</h1>
@@ -56,68 +59,116 @@ $total = $order['total_harga'];
     </nav>
 </header>
 
-<div class="payment-container">
-    <div class="payment-card">
+<div class="confirm-container">
 
-        <!-- HEADER -->
-        <div class="payment-header">
-            <h2>Pembayaran Transfer</h2>
-            <p>Selesaikan pembayaran pesanan kamu</p>
+    <div class="confirm-header">
+        <h2>Order Confirmation</h2>
+        <p>Thank you for your order!</p>
+    </div>
+
+    <!-- STEP -->
+    <div class="steps">
+
+        <div class="step active">
+            <span>1</span>
+            <p>Shipping</p>
         </div>
 
-        <!-- BOX WRAPPER -->
-        <div class="payment-top">
-
-            <!-- TOTAL -->
-            <div class="total-box">
-                <span>Total Pembayaran</span>
-                <h1>Rp <?= number_format($total, 0, ',', '.'); ?></h1>
-            </div>
-
-            <!-- BANK -->
-            <div class="bank-box">
-                <div class="bank-title">Bank BCA</div>
-                <div class="rekening">123-456-7890</div>
-                <p>a.n STARWAVE</p>
-            </div>
-
+        <div class="step active">
+            <span>2</span>
+            <p>Payment</p>
         </div>
 
-        <!-- NOTE -->
-        <div class="payment-note">
-            Transfer sesuai total pembayaran lalu simpan bukti transfer.
+        <div class="step active">
+            <span>3</span>
+            <p>Summary</p>
         </div>
 
-        <!-- DETAIL -->
-        <div class="detail-order">
-
-            <h3>Detail Pesanan</h3>
-
-            <div class="detail-item">
-                <span>Produk</span>
-                <strong><?= $order['nama_produk']; ?></strong>
-            </div>
-
-            <div class="detail-item">
-                <span>Quantity</span>
-                <strong><?= $order['qty']; ?></strong>
-            </div>
-
-            <div class="detail-item">
-                <span>Harga</span>
-                <strong>Rp <?= number_format($harga, 0, ',', '.'); ?></strong>
-            </div>
-
-            <div class="detail-item">
-                <span>Status</span>
-                <span class="status-badge status-pending">Menunggu Pembayaran</span>
-            </div>
-
+        <div class="step current">
+            <span>4</span>
+            <p>Confirmation</p>
         </div>
-
-        <a href="order.php" class="btn-payment">Kembali ke Order</a>
 
     </div>
+
+    <!-- INFO ORDER -->
+    <div class="order-info">
+
+        <div>
+            <small>Delivery Date</small>
+            <strong><?= date('d M Y'); ?></strong>
+        </div>
+
+        <div>
+            <small>Order ID</small>
+            <strong>#<?= $order['id']; ?></strong>
+        </div>
+
+        <div>
+            <small>Payment Method</small>
+            <strong>BCA Transfer</strong>
+        </div>
+
+        <div>
+            <small>Status</small>
+            <strong>Pending</strong>
+        </div>
+
+    </div>
+
+    <!-- HEADER TABLE -->
+    <div class="table-head">
+        <span>Product</span>
+        <span>Shipping</span>
+        <span>Quantity</span>
+        <span>Total</span>
+    </div>
+
+<!-- ITEM -->
+    <div class="product-row">
+
+        <div class="product-info">
+            <img src="<?= $order['gambar']; ?>" alt="<?= $order['nama_produk']; ?>">
+            <div>
+                <h4><?= $order['nama_produk']; ?></h4>
+                <span>Rp <?= number_format($order['harga'],0,',','.'); ?></span>
+            </div>
+        </div>
+
+        <div class="shipping">Free</div>
+
+        <div class="qty-box">
+            <?= $order['qty']; ?>
+        </div>
+
+        <div class="price">
+            Rp <?= number_format($order['total_harga'],0,',','.'); ?>
+        </div>
+
+    </div>  <!-- ✅ tutup product-row di sini -->
+
+    <!-- SUMMARY -->
+    <div class="summary">
+        <div class="sum-box">
+            <p>Discount</p>
+            <strong>Rp 0</strong>
+        </div>
+        <div class="sum-box">
+            <p>Delivery</p>
+            <strong>Free</strong>
+        </div>
+        <div class="sum-box">
+            <p>Total</p>
+            <strong>Rp <?= number_format($order['total_harga'],0,',','.'); ?></strong>
+        </div>
+    </div>
+
+    <!-- BUTTON -->
+    <div class="button-group">
+        <a href="index.php" class="btn-back">Back to Shop</a>
+        <a href="order.php" class="btn-place">Place Order</a>
+    </div>
+
 </div>
 
 <!-- FOOTER -->
