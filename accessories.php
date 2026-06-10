@@ -37,7 +37,7 @@ $query = mysqli_query($conn, "SELECT * FROM produk WHERE kategori='accessories'"
     </nav>
 </header>
 
-<section class="banner">
+<section class="banner banner-category">
     <div class="banner-text">
         <p>STARWAVE</p>
         <h2>Choose Everything You Like</h2>

@@ -38,7 +38,7 @@ $new_arrival = mysqli_query($conn, "SELECT * FROM produk ORDER BY created_at DES
 </header>
 
 <!-- BANNER -->
-<section class="banner">
+<section class="banner banner-index">
     <div class="banner-text">
         <p>STARWAVE</p>
         <h2>Choose Everything You Like</h2>
@@ -46,7 +46,7 @@ $new_arrival = mysqli_query($conn, "SELECT * FROM produk ORDER BY created_at DES
     </div>
 
     <div class="banner-img">
-        <img src="asset/posterutama.png">
+        <img src="asset/posterutama (1).png">
     </div>
 </section>
 
