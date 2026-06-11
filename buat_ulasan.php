@@ -52,11 +52,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif ($cek_ulasan) {
         $pesan = "error|Kamu sudah memberikan ulasan untuk pesanan ini.";
     } else {
-        // BARU
-mysqli_query($conn,
-    "INSERT INTO ulasan (id_order, id_user, bintang, komentar, created_at)
-     VALUES ('$id_order', '$user_id', '$bintang', '$komentar', NOW())"
-);
+        // Ambil nama_produk dari order (format: "Nama Produk - Size M")
+        $nama_produk_order = $order['nama_produk'];
+
+        // Cari id_produk dari tabel produk berdasarkan nama_produk
+        $cari_produk = mysqli_fetch_assoc(mysqli_query($conn,
+            "SELECT id FROM produk 
+             WHERE '" . mysqli_real_escape_string($conn, $nama_produk_order) . "' LIKE CONCAT(nama_produk, '%')
+             LIMIT 1"
+        ));
+
+        $id_produk_order = $cari_produk ? (int)$cari_produk['id'] : 0;
+
+        mysqli_query($conn,
+            "INSERT INTO ulasan (id_order, id_user, id_produk, nama_produk, bintang, komentar, created_at)
+             VALUES ('$id_order', '$user_id', '$id_produk_order', '" . mysqli_real_escape_string($conn, $nama_produk_order) . "', '$bintang', '$komentar', NOW())"
+        );
+
         $pesan = "success|Terima kasih! Ulasan kamu berhasil disimpan.";
         $cek_ulasan = mysqli_fetch_assoc(mysqli_query($conn,
             "SELECT * FROM ulasan WHERE id_order='$id_order'"

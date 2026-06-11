@@ -173,97 +173,84 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 </section>
 
 <!-- ULASAN -->
+<!-- ULASAN -->
 <section class="tabs-section">
-    <div>
- 
-        <!-- Overview -->
-        <div class="review-overview">
-            <div class="rating-big">
-                <div class="num">4.8</div>
-                <div class="out">dari 5</div>
-                <div class="stars-big">★★★★★</div>
-                <div class="total-reviews">(107 Ulasan)</div>
-            </div>
-            <div class="rating-bars">
-                <div class="bar-row">
-                    <span class="bar-label">5</span>
-                    <div class="bar-track"><div class="bar-fill" style="width:78%"></div></div>
-                    <span class="bar-count">83</span>
-                </div>
-                <div class="bar-row">
-                    <span class="bar-label">4</span>
-                    <div class="bar-track"><div class="bar-fill" style="width:14%"></div></div>
-                    <span class="bar-count">15</span>
-                </div>
-                <div class="bar-row">
-                    <span class="bar-label">3</span>
-                    <div class="bar-track"><div class="bar-fill" style="width:5%"></div></div>
-                    <span class="bar-count">5</span>
-                </div>
-                <div class="bar-row">
-                    <span class="bar-label">2</span>
-                    <div class="bar-track"><div class="bar-fill" style="width:2%"></div></div>
-                    <span class="bar-count">2</span>
-                </div>
-                <div class="bar-row">
-                    <span class="bar-label">1</span>
-                    <div class="bar-track"><div class="bar-fill" style="width:2%"></div></div>
-                    <span class="bar-count">2</span>
-                </div>
-            </div>
-        </div>
-        <!-- Review Card 1 -->
-        <div class="review-card">
-            <div class="review-card-header">
-                <div class="reviewer">
-                    <div class="reviewer-avatar">K</div>
-                    <div>
-                        <div class="reviewer-name">Kristin Watson</div>
-                        <div class="reviewer-badge">✔ Terverifikasi</div>
-                    </div>
-                </div>
-                <div class="review-date">1 bulan lalu</div>
-            </div>
-            <div class="review-stars">★★★★★ <span style="font-size:13px;color:#555;font-weight:700;">5.0</span></div>
-            <div class="review-title" style="margin-top:8px;">Sangat Puas dengan Pembelian Ini!</div>
-            <div class="review-body">Saya baru saja membeli produk ini dan hasilnya luar biasa! Dari bahan hingga jahitan, semuanya terasa premium. Potongannya pas dan sangat nyaman dipakai. Persis seperti yang saya cari. Sangat merekomendasikan!</div>
-        </div>
+<div>
 
-        <!-- Review Card 2 -->
-        <div class="review-card">
-            <div class="review-card-header">
-                <div class="reviewer">
-                    <div class="reviewer-avatar">B</div>
-                    <div>
-                        <div class="reviewer-name">Bessie Cooper</div>
-                        <div class="reviewer-badge">✔ Terverifikasi</div>
-                    </div>
-                </div>
-                <div class="review-date">2 bulan lalu</div>
-            </div>
-            <div class="review-stars">★★★★★ <span style="font-size:13px;color:#555;font-weight:700;">5.0</span></div>
-            <div class="review-title" style="margin-top:8px;">Produk Bagus, Saya Suka!</div>
-            <div class="review-body">Baru-baru ini saya membeli produk ini dan tidak bisa lebih senang lagi! Bahannya terasa nyaman di kulit dan terlihat sangat stylish. Kualitasnya jauh melampaui ekspektasi saya. Pasti akan beli lagi!</div>
-        </div>
+<?php
+// Ambil ulasan berdasarkan id_produk
+$ulasanQuery = mysqli_query($conn,
+    "SELECT u.*, us.nama_panggilan FROM ulasan u
+     LEFT JOIN users us ON u.id_user = us.id_user
+     WHERE u.id_produk = '$id'
+     ORDER BY u.created_at DESC"
+);
+$allUlasan   = mysqli_fetch_all($ulasanQuery, MYSQLI_ASSOC);
+$totalUlasan = count($allUlasan);
 
-        <!-- Review Card 3 -->
-        <div class="review-card">
-            <div class="review-card-header">
-                <div class="reviewer">
-                    <div class="reviewer-avatar">R</div>
-                    <div>
-                        <div class="reviewer-name">Raden Pratama</div>
-                        <div class="reviewer-badge">✔ Terverifikasi</div>
-                    </div>
-                </div>
-                <div class="review-date">3 bulan lalu</div>
-            </div>
-            <div class="review-stars">★★★★<span style="color:#ddd">★</span> <span style="font-size:13px;color:#555;font-weight:700;">4.0</span></div>
-            <div class="review-title" style="margin-top:8px;">Kualitas Oke, Pengiriman Cepat</div>
-            <div class="review-body">Produknya sesuai deskripsi. Ukuran agak sedikit besar dari ekspektasi, tapi secara keseluruhan puas dengan kualitasnya. Pengiriman super cepat, aman, dan packagingnya rapi. Terima kasih STARWAVE!</div>
-        </div>
+$avgRating = 0;
+$dist = [5=>0, 4=>0, 3=>0, 2=>0, 1=>0];
+if ($totalUlasan > 0) {
+    foreach ($allUlasan as $u) $dist[(int)$u['bintang']]++;
+    $avgRating = round(array_sum(array_column($allUlasan, 'bintang')) / $totalUlasan, 1);
+}
+?>
 
+<!-- Overview Rating -->
+<div class="review-overview">
+    <div class="rating-big">
+        <div class="num"><?= $totalUlasan > 0 ? $avgRating : '-' ?></div>
+        <div class="out">dari 5</div>
+        <div class="stars-big">★★★★★</div>
+        <div class="total-reviews">(<?= $totalUlasan ?> Ulasan)</div>
     </div>
+    <div class="rating-bars">
+        <?php for ($s = 5; $s >= 1; $s--):
+            $pct = $totalUlasan > 0 ? round($dist[$s] / $totalUlasan * 100) : 0;
+        ?>
+        <div class="bar-row">
+            <span class="bar-label"><?= $s ?></span>
+            <div class="bar-track"><div class="bar-fill" style="width:<?= $pct ?>%"></div></div>
+            <span class="bar-count"><?= $dist[$s] ?></span>
+        </div>
+        <?php endfor; ?>
+    </div>
+</div>
+
+<!-- Daftar Ulasan -->
+<?php if ($totalUlasan === 0): ?>
+    <p style="text-align:center;color:#888;padding:30px 0;">Belum ada ulasan untuk produk ini.</p>
+<?php else: ?>
+    <?php foreach ($allUlasan as $u):
+        $nama    = htmlspecialchars($u['nama_panggilan'] ?? 'User');
+        $initial = strtoupper(substr($nama, 0, 1));
+        $bintang = (int)$u['bintang'];
+        $tgl     = date('d M Y', strtotime($u['created_at']));
+    ?>
+    <div class="review-card">
+        <div class="review-card-header">
+            <div class="reviewer">
+                <div class="reviewer-avatar"><?= $initial ?></div>
+                <div>
+                    <div class="reviewer-name"><?= $nama ?></div>
+                    <div class="reviewer-badge">✔ Terverifikasi</div>
+                </div>
+            </div>
+            <div class="review-date"><?= $tgl ?></div>
+        </div>
+        <div class="review-stars">
+            <?= str_repeat('★', $bintang) ?>
+            <?= str_repeat('<span style="color:#ddd">★</span>', 5 - $bintang) ?>
+            <span style="font-size:13px;color:#555;font-weight:700;"><?= number_format($bintang, 1) ?></span>
+        </div>
+        <div class="review-body" style="margin-top:8px;">
+            <?= htmlspecialchars($u['komentar']) ?>
+        </div>
+    </div>
+    <?php endforeach; ?>
+<?php endif; ?>
+
+</div>
 </section>
 
 <!-- FOOTER -->
