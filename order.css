@@ -17,6 +17,33 @@ main.container {
     flex: 1;
 }
 
+/* ── Tambahkan di bagian bawah order.css ── */
+
+.btn-ulasan {
+    display: inline-block;
+    padding: 5px 12px;
+    background: #c0773a;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    text-decoration: none;
+    transition: background 0.2s;
+}
+
+.btn-ulasan:hover {
+    background: #a85f28;
+}
+
+.btn-ulasan-done {
+    display: inline-block;
+    padding: 5px 12px;
+    background: #f0ece6;
+    color: #c0773a;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: default;
+}
+
 /* ── ALERT ── */
 .alert {
     padding: 12px 18px;

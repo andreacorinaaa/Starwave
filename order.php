@@ -50,7 +50,11 @@ if (isset($_GET['hapus'])) {
 }
 
 $riwayat = mysqli_query($conn,
-    "SELECT * FROM orders WHERE id_user='$user_id' ORDER BY created_at DESC"
+    "SELECT o.*,
+            (SELECT id FROM ulasan WHERE id_order = o.id LIMIT 1) AS sudah_ulasan
+     FROM orders o
+     WHERE o.id_user='$user_id'
+     ORDER BY o.created_at DESC"
 );
 
 $pesan_type = $pesan_text = "";
@@ -69,7 +73,6 @@ if ($pesan) {
 
 <body style="background: #d8e9f0;">
 
-<!-- NAVBAR -->
 <!-- NAVBAR -->
 <header>
     <nav>
@@ -136,8 +139,18 @@ if ($pesan) {
                         <?php if ($row['status'] == 'pending_payment'): ?>
                             <a href="payment.php?id=<?= $row['id'] ?>" class="btn-edit">Belum Bayar</a>
                             <a href="#" class="btn-batal" onclick="showModal('Yakin batalkan pesanan ini?', 'order.php?batal=<?= $row['id'] ?>'); return false;">Batal</a>
-                        <?php elseif ($row['status'] == 'selesai' || $row['status'] == 'batal'): ?>
+
+                        <?php elseif ($row['status'] == 'selesai'): ?>
+                            <?php if ($row['sudah_ulasan']): ?>
+                                <span class="btn-ulasan-done">✓ Diulas</span>
+                            <?php else: ?>
+                                <a href="buat_ulasan.php?id=<?= $row['id'] ?>" class="btn-ulasan">Beri Ulasan</a>
+                            <?php endif; ?>
                             <a href="#" class="btn-hapus" onclick="showModal('Hapus riwayat ini? Tidak bisa dikembalikan!', 'order.php?hapus=<?= $row['id'] ?>'); return false;">Hapus</a>
+
+                        <?php elseif ($row['status'] == 'batal'): ?>
+                            <a href="#" class="btn-hapus" onclick="showModal('Hapus riwayat ini? Tidak bisa dikembalikan!', 'order.php?hapus=<?= $row['id'] ?>'); return false;">Hapus</a>
+
                         <?php else: ?>
                             <span class="no-aksi">—</span>
                         <?php endif; ?>

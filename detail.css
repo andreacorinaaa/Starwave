@@ -328,3 +328,123 @@ body {
     .review-overview { grid-template-columns: 1fr; }
     .footer-box { grid-template-columns: 1fr; }
 }
+
+/* ══════════════════════════════════════
+   Ulasan Page — buat_ulasan.php
+   ══════════════════════════════════════ */
+
+.ulasan-section {
+    max-width: 760px;
+    margin: 40px auto;
+    padding: 0 24px;
+}
+
+.order-info-card {
+    background: #fff;
+    box-shadow: 0 1px 8px rgba(0,0,0,0.06);
+    padding: 24px 28px;
+    margin-bottom: 28px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px 40px;
+}
+.order-info-row { display: flex; flex-direction: column; gap: 4px; }
+.order-info-label { font-size: 11px; color: #c0773a; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+.order-info-value { font-size: 14px; color: #2b1a0e; font-weight: 600; }
+
+.ulasan-form {
+    background: #fff;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.07);
+    padding: 32px;
+    margin-bottom: 24px;
+}
+.form-group { margin-bottom: 24px; }
+.form-label {
+    display: block;
+    font-size: 13px;
+    font-weight: 700;
+    color: #2b1a0e;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 10px;
+}
+
+.bintang-pilih { display: flex; gap: 6px; margin-bottom: 8px; }
+.bintang-btn {
+    font-size: 38px;
+    color: #ddd;
+    cursor: pointer;
+    transition: color 0.15s, transform 0.1s;
+    line-height: 1;
+    user-select: none;
+}
+.bintang-btn.aktif,
+.bintang-btn.hover { color: #f0b96b; }
+.bintang-btn:hover { transform: scale(1.1); }
+.bintang-label-teks { font-size: 13px; color: #aaa; margin: 0; min-height: 20px; }
+
+.form-textarea {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1.5px solid #ddd;
+    background: #fff;
+    font-size: 14px;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    color: #2b1a0e;
+    resize: vertical;
+    transition: border-color 0.2s;
+    outline: none;
+}
+.form-textarea:focus { border-color: #c0773a; }
+.form-textarea::placeholder { color: #bbb; }
+
+.form-actions {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    justify-content: flex-end;
+    margin-top: 8px;
+}
+.btn-kembali {
+    padding: 12px 24px;
+    border: 1.5px solid #ddd;
+    background: #fff;
+    color: #888;
+    font-size: 14px;
+    font-weight: 700;
+    text-decoration: none;
+    letter-spacing: 0.5px;
+    transition: border-color 0.2s, color 0.2s;
+}
+.btn-kembali:hover { border-color: #c0773a; color: #c0773a; }
+.btn-kirim {
+    padding: 13px 32px;
+    border: none;
+    background: #2b1a0e;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 0.5px;
+    transition: background 0.2s;
+}
+.btn-kirim:hover { background: #3d2510; }
+.btn-kirim:active { transform: scale(0.98); }
+
+.ulasan-sudah-ada {
+    background: #fff;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.05);
+    padding: 28px;
+    margin-bottom: 24px;
+}
+.ulasan-sudah-judul { font-size: 11px; font-weight: 700; color: #c0773a; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 16px; }
+.bintang-display { display: flex; align-items: center; gap: 3px; margin-bottom: 14px; }
+.bintang-icon { font-size: 26px; color: #ddd; line-height: 1; }
+.bintang-icon.aktif { color: #f0b96b; }
+.bintang-angka { font-size: 14px; font-weight: 700; color: #2b1a0e; margin-left: 10px; }
+.ulasan-komentar-text { font-size: 14px; color: #666; line-height: 1.7; margin: 0 0 10px; font-style: italic; }
+.ulasan-tanggal { font-size: 12px; color: #bbb; margin: 0; }
+
+.alert { padding: 13px 18px; margin-bottom: 22px; font-size: 14px; font-weight: 600; }
+.alert.success { background: #f0f7ec; color: #3a7d44; border-left: 4px solid #3a9e5f; }
+.alert.error { background: #fdf0f0; color: #b94a4a; border-left: 4px solid #e05555; }
