@@ -75,16 +75,21 @@ $all_users = mysqli_query($conn, "
                     <?php if (mysqli_num_rows($all_users) == 0): ?>
                         <tr class="empty-row"><td colspan="7">Belum ada pengguna terdaftar</td></tr>
                     <?php else: while ($u = mysqli_fetch_assoc($all_users)): ?>
+                        <?php $nama = $u['nama_panggilan'] ?? ''; ?>
                         <tr>
                             <td class="order-id">#<?= $u['id_user'] ?></td>
                             <td>
                                 <div class="user-cell">
-                                    <div class="user-avatar"><?= mb_substr($u['nama'], 0, 1) ?></div>
+                                    <div class="user-avatar">
+                                        <?= $nama !== '' ? mb_strtoupper(mb_substr($nama, 0, 1)) : '?' ?>
+                                    </div>
                                     <div>
-                                        <div style="font-weight:600;"><?= htmlspecialchars($u['nama']) ?></div>
-                                        <?php if (!empty($u['nama_panggilan'])): ?>
-                                        <div style="font-size:11px;color:var(--muted);"><?= htmlspecialchars($u['nama_panggilan']) ?></div>
-                                        <?php endif; ?>
+                                        <div style="font-weight:600;">
+                                            <?= $nama !== '' ? htmlspecialchars($nama) : '<span style="color:var(--muted);font-style:italic;">—</span>' ?>
+                                        </div>
+                                        <div style="font-size:11px;color:var(--muted);">
+                                            <?= htmlspecialchars($u['email']) ?>
+                                        </div>
                                     </div>
                                 </div>
                             </td>
