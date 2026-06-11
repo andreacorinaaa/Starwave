@@ -102,6 +102,7 @@ if (isset($_POST['register'])) {
         <li><a href="../woman.php">Woman</a></li>
         <li><a href="../accessories.php">Accessories</a></li>
         <li><a href="../order.php">Order</a></li>
+        <li><a href="../keranjang.php">Keranjang</a></li>
     </ul>
     <!-- Search & Login dipisah dari ul, biar tetap di kanan -->
     <form action="search.php" method="GET" style="display:inline;">

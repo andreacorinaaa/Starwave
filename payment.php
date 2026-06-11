@@ -47,6 +47,7 @@ $total = $order['total_harga'];
             <li><a href="woman.php" class="active">Woman</a></li>
             <li><a href="accessories.php">Accessories</a></li>
             <li><a href="order.php">Order</a></li>
+            <li><a href="keranjang.php">Keranjang</a></li>
         </ul>
         <form action="search.php" method="GET" style="display:inline;">
             <input type="text" name="q" placeholder="Search produk..." style="padding:5px;">

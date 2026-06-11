@@ -448,3 +448,99 @@ body {
 .alert { padding: 13px 18px; margin-bottom: 22px; font-size: 14px; font-weight: 600; }
 .alert.success { background: #f0f7ec; color: #3a7d44; border-left: 4px solid #3a9e5f; }
 .alert.error { background: #fdf0f0; color: #b94a4a; border-left: 4px solid #e05555; }
+
+/* ── KERANJANG ── */
+.keranjang-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 24px;
+}
+.keranjang-table thead tr {
+    background: #c8a96e;
+    color: #fff;
+}
+.keranjang-table thead th {
+    padding: 14px 16px;
+    text-align: left;
+    font-size: 14px;
+    font-weight: 600;
+}
+.keranjang-row td {
+    padding: 16px;
+    border-bottom: 1px solid #f0e8dc;
+    vertical-align: middle;
+}
+.keranjang-row:hover {
+    background: #fdf8f2;
+}
+.keranjang-produk {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+.keranjang-img {
+    width: 72px;
+    height: 72px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid #eee;
+}
+.keranjang-nama {
+    font-weight: 600;
+    font-size: 14px;
+    color: #2b1a0e;
+}
+.keranjang-ukuran {
+    font-size: 12px;
+    color: #888;
+    margin-top: 4px;
+}
+.keranjang-harga {
+    font-size: 14px;
+    color: #555;
+    white-space: nowrap;
+}
+.keranjang-subtotal {
+    font-size: 15px;
+    font-weight: 700;
+    color: #2b1a0e;
+    white-space: nowrap;
+}
+.btn-hapus {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #f5e6e6;
+    color: #c0392b;
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 700;
+    transition: background .2s;
+}
+.btn-hapus:hover { background: #f1c0c0; }
+
+.keranjang-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 0 0;
+    border-top: 2px solid #f0e8dc;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+.keranjang-total-box {
+    text-align: right;
+}
+.keranjang-total-label {
+    font-size: 13px;
+    color: #888;
+    margin-bottom: 4px;
+}
+.keranjang-total-harga {
+    font-size: 24px;
+    font-weight: 800;
+    color: #2b1a0e;
+}

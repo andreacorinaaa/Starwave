@@ -27,24 +27,46 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $user = mysqli_fetch_assoc(mysqli_query($conn, "SELECT * FROM users WHERE email='$user_email'"));
     $id_user = $user['id_user'];
 
-    $qty            = (int)$_POST['qty'];
-    $ukuran         = $_POST['ukuran'];
-    $harga          = $item['harga'];
-    $total_harga    = $harga * $qty;
+    $qty         = (int)$_POST['qty'];
+    $ukuran      = $_POST['ukuran'];
+    $harga       = $item['harga'];
+    $total_harga = $harga * $qty;
     $nama_produk_order = $item['nama_produk'] . " - Size " . $ukuran;
+    $aksi        = $_POST['aksi'] ?? 'beli';
 
-    $insert = mysqli_query($conn,
-        "INSERT INTO orders (id_user, nama_produk, qty, harga, total_harga, nama_penerima, email, tanggal_order, status)
-         VALUES ('$id_user', '$nama_produk_order', '$qty', '$harga', '$total_harga', '".$user['nama_panggilan']."', '$user_email', NOW(), 'pending_payment')"
-    );
+    if ($aksi === 'keranjang') {
+        // Cek apakah produk+ukuran sudah ada di keranjang
+        $cek = mysqli_fetch_assoc(mysqli_query($conn,
+            "SELECT * FROM keranjang WHERE id_user='$id_user' AND id_produk='$id' AND ukuran='$ukuran'"
+        ));
 
-    if (!$insert) {
-        die("Gagal insert: " . mysqli_error($conn));
+        if ($cek) {
+            // Tambah qty saja
+            mysqli_query($conn,
+                "UPDATE keranjang SET qty = qty + '$qty' WHERE id='$cek[id]'"
+            );
+        } else {
+            $gambar = mysqli_real_escape_string($conn, $item['gambar']);
+            $nama_esc = mysqli_real_escape_string($conn, $item['nama_produk']);
+            mysqli_query($conn,
+                "INSERT INTO keranjang (id_user, id_produk, nama_produk, harga, qty, ukuran, gambar)
+                 VALUES ('$id_user', '$id', '$nama_esc', '$harga', '$qty', '$ukuran', '$gambar')"
+            );
+        }
+        header("Location: keranjang.php");
+        exit;
+
+    } else {
+        // Langsung beli → ke payment
+        $insert = mysqli_query($conn,
+            "INSERT INTO orders (id_user, nama_produk, qty, harga, total_harga, nama_penerima, email, tanggal_order, status)
+             VALUES ('$id_user', '$nama_produk_order', '$qty', '$harga', '$total_harga', '".$user['nama_panggilan']."', '$user_email', NOW(), 'pending_payment')"
+        );
+        if (!$insert) die("Gagal insert: " . mysqli_error($conn));
+        $id_order = mysqli_insert_id($conn);
+        header("Location: payment.php?id=" . $id_order);
+        exit;
     }
-
-    $id_order = mysqli_insert_id($conn);
-    header("Location: payment.php?id=" . $id_order);
-    exit;
 }
 ?>
 <!DOCTYPE html>
@@ -68,6 +90,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             <li><a href="woman.php">Woman</a></li>
             <li><a href="accessories.php">Accessories</a></li>
             <li><a href="order.php">Order</a></li>
+            <li><a href="keranjang.php">Keranjang</a></li>
         </ul>
         <form action="search.php" method="GET" style="display:inline;">
             <input type="text" name="q" placeholder="Search produk..." style="padding:5px;">
@@ -158,14 +181,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
                 <!-- Qty + tombol -->
                 <div class="order-row">
-                    <div class="qty-control">
-                        <button type="button" class="qty-btn" onclick="changeQty(-1)">−</button>
-                        <input class="qty-input" type="number" name="qty" id="qty" min="1" value="1" readonly>
-                        <button type="button" class="qty-btn" onclick="changeQty(1)">+</button>
-                    </div>
-                    <button type="submit" class="btn-cart">Keranjang</button>
-                    <button type="submit" class="btn-buy">Beli</button>
-                </div>
+    <div class="qty-control">
+        <button type="button" class="qty-btn" onclick="changeQty(-1)">−</button>
+        <input class="qty-input" type="number" name="qty" id="qty" min="1" value="1" readonly>
+        <button type="button" class="qty-btn" onclick="changeQty(1)">+</button>
+    </div>
+    <button type="submit" name="aksi" value="keranjang" class="btn-cart">Keranjang</button>
+    <button type="submit" name="aksi" value="beli" class="btn-buy">Beli</button>
+</div>
 
             </form>
         </div>
