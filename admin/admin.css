@@ -555,3 +555,19 @@ td {
     .stats-grid { grid-template-columns: 1fr 1fr; }
     .content { padding: 20px; }
 }
+
+.btn-tambah {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 16px;
+        background: var(--accent, #e5c97e);
+        color: #111;
+        border-radius: 8px;
+        font-family: 'DM Sans', sans-serif;
+        font-size: 12px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: opacity .15s;
+    }
+    .btn-tambah:hover { opacity: .85; }

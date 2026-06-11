@@ -53,9 +53,14 @@ $produk_list    = mysqli_query($conn, "SELECT * FROM produk ORDER BY created_at 
     <div class="content">
         <div class="section">
             <div class="section-header">
-                <div class="section-title">SEMUA PRODUK</div>
-                <div class="section-badge"><?= $total_produk ?> produk</div>
-            </div>
+    <div class="section-title">SEMUA PRODUK</div>
+    <div style="display:flex;align-items:center;gap:12px;">
+        <div class="section-badge"><?= $total_produk ?> produk</div>
+        <a href="tambah_produk.php" class="btn-tambah">
+            <span style="font-size:16px;line-height:1;">+</span> Tambah Produk
+        </a>
+    </div>
+</div>
             <?php if (mysqli_num_rows($produk_list) == 0): ?>
                 <div style="text-align:center;padding:60px;color:var(--muted);">Belum ada produk di database.</div>
             <?php else: ?>
