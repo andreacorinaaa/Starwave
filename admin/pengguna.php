@@ -39,6 +39,7 @@ $all_users = mysqli_query($conn, "
         </a>
         <a class="nav-item" href="produk.php"><span class="icon">👕</span> Produk</a>
         <a class="nav-item active" href="pengguna.php"><span class="icon">👥</span> Pengguna</a>
+        <a class="nav-item" href="ulasan.php"><span class="icon">⭐</span> Ulasan</a>
         <div class="nav-section">Lainnya</div>
         <a class="nav-item" href="../index.php" target="_blank"><span class="icon">🌐</span> Lihat Toko</a>
     </nav>
