@@ -71,7 +71,7 @@ if ($pesan) {
     <link rel="stylesheet" href="order.css">
 </head>
 
-<body style="background: #d8e9f0;">
+<body>
 
 <!-- NAVBAR -->
 <header>
@@ -96,7 +96,7 @@ if ($pesan) {
     </nav>
 </header>
 
-<main class="container">
+<main class="ord-container">
 
     <?php if ($pesan_text): ?>
         <div class="alert <?= $pesan_type ?>">
@@ -105,13 +105,13 @@ if ($pesan) {
         </div>
     <?php endif; ?>
 
-    <h2 class="section-title">Riwayat Pesanan</h2>
+    <h2 class="ord-section-title">Riwayat Pesanan</h2>
 
     <?php if (mysqli_num_rows($riwayat) == 0): ?>
-        <p class="no-order">Belum ada pesanan.</p>
+        <p class="ord-no-order">Belum ada pesanan.</p>
 
     <?php else: ?>
-        <table>
+        <table class = "ord-table">
             <tr>
                 <th>#</th>
                 <th>Produk</th>
@@ -136,24 +136,24 @@ if ($pesan) {
                             <span class="status-badge status-<?= $row['status'] ?>"><?= ucfirst($row['status']) ?></span>
                         <?php endif; ?>
                     </td>
-                    <td class="td-aksi">
+                    <td class="ord-td-aksi">
                         <?php if ($row['status'] == 'pending_payment'): ?>
-                            <a href="payment.php?id=<?= $row['id'] ?>" class="btn-edit">Belum Bayar</a>
-                            <a href="#" class="btn-batal" onclick="showModal('Yakin batalkan pesanan ini?', 'order.php?batal=<?= $row['id'] ?>'); return false;">Batal</a>
+                            <a href="payment.php?id=<?= $row['id'] ?>" class="ord-btn-edit">Belum Bayar</a>
+                            <a href="#" class="ord-btn-batal" onclick="showModal('Yakin batalkan pesanan ini?', 'order.php?batal=<?= $row['id'] ?>'); return false;">Batal</a>
 
                         <?php elseif ($row['status'] == 'selesai'): ?>
                             <?php if ($row['sudah_ulasan']): ?>
-                                <span class="btn-ulasan-done">✓ Diulas</span>
+                                <span class="ord-btn-ulasan-done">✓ Diulas</span>
                             <?php else: ?>
-                                <a href="buat_ulasan.php?id=<?= $row['id'] ?>" class="btn-ulasan">Beri Ulasan</a>
+                                <a href="buat_ulasan.php?id=<?= $row['id'] ?>" class="ord-btn-ulasan">Beri Ulasan</a>
                             <?php endif; ?>
-                            <a href="#" class="btn-hapus" onclick="showModal('Hapus riwayat ini? Tidak bisa dikembalikan!', 'order.php?hapus=<?= $row['id'] ?>'); return false;">Hapus</a>
+                            <a href="#" class="ord-btn-hapus" onclick="showModal('Hapus riwayat ini? Tidak bisa dikembalikan!', 'order.php?hapus=<?= $row['id'] ?>'); return false;">Hapus</a>
 
                         <?php elseif ($row['status'] == 'batal'): ?>
                             <a href="#" class="btn-hapus" onclick="showModal('Hapus riwayat ini? Tidak bisa dikembalikan!', 'order.php?hapus=<?= $row['id'] ?>'); return false;">Hapus</a>
 
                         <?php else: ?>
-                            <span class="no-aksi">—</span>
+                            <span class="ord-no-aksi">—</span>
                         <?php endif; ?>
                     </td>
                 </tr>
@@ -190,25 +190,25 @@ if ($pesan) {
 </footer>
 
 <!-- MODAL -->
-<div id="modal">
-    <div id="modal-inner">
+<div id="ord-modal">
+    <div id="ord-modal-inner">
         <h3>STARWAVE</h3>
-        <p id="modal-msg"></p>
-        <div id="modal-buttons">
-            <a id="modal-confirm" href="#">Ya</a>
-            <button id="modal-btn-tidak" onclick="closeModal()">Tidak</button>
+        <p id="ord-modal-msg"></p>
+        <div id="ord-modal-buttons">
+            <a id="ord-modal-confirm" href="#">Ya</a>
+            <button id="ord-modal-btn-tidak" onclick="closeModal()">Tidak</button>
         </div>
     </div>
 </div>
 
 <script>
 function showModal(msg, url) {
-    document.getElementById('modal-msg').innerText = msg;
-    document.getElementById('modal-confirm').href = url;
-    document.getElementById('modal').style.display = 'flex';
+    document.getElementById('ord-modal-msg').innerText = msg;
+    document.getElementById('ord-modal-confirm').href = url;
+    document.getElementById('ord-modal').style.display = 'flex';
 }
 function closeModal() {
-    document.getElementById('modal').style.display = 'none';
+    document.getElementById('ord-modal').style.display = 'none';
 }
 </script>
 

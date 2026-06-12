@@ -52,10 +52,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif ($cek_ulasan) {
         $pesan = "error|Kamu sudah memberikan ulasan untuk pesanan ini.";
     } else {
-        // Ambil nama_produk dari order (format: "Nama Produk - Size M")
         $nama_produk_order = $order['nama_produk'];
 
-        // Cari id_produk dari tabel produk berdasarkan nama_produk
         $cari_produk = mysqli_fetch_assoc(mysqli_query($conn,
             "SELECT id FROM produk 
              WHERE '" . mysqli_real_escape_string($conn, $nama_produk_order) . "' LIKE CONCAT(nama_produk, '%')
@@ -85,9 +83,11 @@ if ($pesan) {
 <!DOCTYPE html>
 <html lang="id">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ulasan Produk — STARWAVE</title>
     <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="detail.css">
+    <link rel="stylesheet" href="order.css">
 </head>
 
 <body>
@@ -102,6 +102,7 @@ if ($pesan) {
             <li><a href="woman.php">Woman</a></li>
             <li><a href="accessories.php">Accessories</a></li>
             <li><a href="order.php" class="active">Order</a></li>
+            <li><a href="keranjang.php">Keranjang</a></li>
         </ul>
         <form action="search.php" method="GET" style="display:inline;">
             <input type="text" name="q" placeholder="Search produk..." style="padding:5px;">
@@ -126,7 +127,7 @@ if ($pesan) {
     </div>
 </div>
 
-<div class="ulasan-section">
+<div class="uls-section">
 
     <?php if ($pesan_text): ?>
         <div class="alert <?= $pesan_type ?>">
@@ -136,74 +137,74 @@ if ($pesan) {
     <?php endif; ?>
 
     <!-- Info Pesanan -->
-    <div class="order-info-card">
-        <div class="order-info-row">
-            <span class="order-info-label">Produk</span>
-            <span class="order-info-value"><?= htmlspecialchars($order['nama_produk']) ?></span>
+    <div class="uls-order-info-card">
+        <div class="uls-order-info-row">
+            <span class="uls-order-info-label">Produk</span>
+            <span class="uls-order-info-value"><?= htmlspecialchars($order['nama_produk']) ?></span>
         </div>
-        <div class="order-info-row">
-            <span class="order-info-label">Qty</span>
-            <span class="order-info-value"><?= $order['qty'] ?> pcs</span>
+        <div class="uls-order-info-row">
+            <span class="uls-order-info-label">Qty</span>
+            <span class="uls-order-info-value"><?= $order['qty'] ?> pcs</span>
         </div>
-        <div class="order-info-row">
-            <span class="order-info-label">Tanggal Order</span>
-            <span class="order-info-value"><?= $order['tanggal_order'] ?></span>
+        <div class="uls-order-info-row">
+            <span class="uls-order-info-label">Tanggal Order</span>
+            <span class="uls-order-info-value"><?= $order['tanggal_order'] ?></span>
         </div>
-        <div class="order-info-row">
-            <span class="order-info-label">Status</span>
-            <span class="order-info-value" style="color:#3a9e5f;">✓ Selesai</span>
+        <div class="uls-order-info-row">
+            <span class="uls-order-info-label">Status</span>
+            <span class="uls-order-info-value" style="color:#3a9e5f;">✓ Selesai</span>
         </div>
     </div>
 
     <?php if ($cek_ulasan): ?>
 
         <!-- Ulasan sudah ada -->
-        <div class="ulasan-sudah-ada">
-            <p class="ulasan-sudah-judul">Ulasan Kamu</p>
-            <div class="bintang-display">
+        <div class="uls-sudah-ada">
+            <p class="uls-sudah-judul">Ulasan Kamu</p>
+            <div class="uls-bintang-display">
                 <?php for ($i = 1; $i <= 5; $i++): ?>
-                    <span class="bintang-icon <?= $i <= $cek_ulasan['bintang'] ? 'aktif' : '' ?>">★</span>
+                    <span class="uls-bintang-icon <?= $i <= $cek_ulasan['bintang'] ? 'aktif' : '' ?>">★</span>
                 <?php endfor; ?>
-                <span class="bintang-angka"><?= $cek_ulasan['bintang'] ?>/5</span>
+                <span class="uls-bintang-angka"><?= $cek_ulasan['bintang'] ?>/5</span>
             </div>
-            <p class="ulasan-komentar-text">"<?= htmlspecialchars($cek_ulasan['komentar']) ?>"</p>
-            <p class="ulasan-tanggal">Diulas pada <?= date('d M Y', strtotime($cek_ulasan['created_at'])) ?></p>
+            <p class="uls-komentar-text">"<?= htmlspecialchars($cek_ulasan['komentar']) ?>"</p>
+            <p class="uls-tanggal">Diulas pada <?= date('d M Y', strtotime($cek_ulasan['created_at'])) ?></p>
         </div>
 
-        <div class="form-actions">
-            <a href="order.php" class="btn-kembali">← Kembali ke Pesanan</a>
+        <div class="uls-form-actions">
+            <a href="order.php" class="uls-btn-kembali">← Kembali ke Pesanan</a>
         </div>
 
     <?php else: ?>
 
         <!-- Form Ulasan -->
-        <form method="POST" action="buat_ulasan.php?id=<?= $id_order ?>">
+        <form method="POST" action="buat_ulasan.php?id=<?= $id_order ?>" class="uls-form" style="width:100%;box-sizing:border-box;">
 
-            <div class="form-group">
-                <label class="form-label">Beri Bintang</label>
-                <div class="bintang-pilih" id="bintang-container">
+            <div class="uls-form-group">
+                <label class="uls-form-label">Beri Bintang</label>
+                <div class="uls-bintang-pilih" id="bintang-container">
                     <?php for ($i = 1; $i <= 5; $i++): ?>
-                        <span class="bintang-btn" data-nilai="<?= $i ?>">★</span>
+                        <span class="uls-bintang-btn" data-nilai="<?= $i ?>">★</span>
                     <?php endfor; ?>
                 </div>
                 <input type="hidden" name="bintang" id="input-bintang" value="0">
-                <p class="bintang-label-teks" id="bintang-label">Pilih bintang di atas</p>
+                <p class="uls-bintang-label-teks" id="bintang-label">Pilih bintang di atas</p>
             </div>
 
-            <div class="form-group">
-                <label class="form-label" for="komentar">Komentar</label>
+            <div class="uls-form-group">
+                <label class="uls-form-label" for="komentar">Komentar</label>
                 <textarea
                     name="komentar"
                     id="komentar"
-                    class="form-textarea"
+                    class="uls-form-textarea"
                     placeholder="Ceritakan pengalamanmu dengan produk ini..."
                     rows="5"
                 ></textarea>
             </div>
 
-            <div class="form-actions">
-                <a href="order.php" class="btn-kembali">← Kembali</a>
-                <button type="submit" class="btn-kirim">Kirim Ulasan</button>
+            <div class="uls-form-actions">
+                <a href="order.php" class="uls-btn-kembali">← Kembali</a>
+                <button type="submit" class="uls-btn-kirim">Kirim Ulasan</button>
             </div>
 
         </form>
@@ -234,7 +235,7 @@ if ($pesan) {
 </footer>
 
 <script>
-const bintangBtns = document.querySelectorAll('.bintang-btn');
+const bintangBtns = document.querySelectorAll('.uls-bintang-btn');
 const inputBintang = document.getElementById('input-bintang');
 const bintangLabel = document.getElementById('bintang-label');
 

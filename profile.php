@@ -45,9 +45,8 @@ if (isset($_POST['update_profile'])) {
     <meta charset="UTF-8">
     <title>My Account — STARWAVE</title>
     <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="masuk/masuk.css">
 </head>
-<!-- NAVBAR -->
+
 <header>
     <nav>
         <h1>STARWAVE</h1>
@@ -69,57 +68,54 @@ if (isset($_POST['update_profile'])) {
         <?php endif; ?>
     </nav>
 </header>
+
 <body>
-<div class="login-page">
-    <div class="login-container account-layout">
-        <div class="account-left">
-            <h2>My Account</h2>
+<div class="profile-page">
+    <div class="profile-card">
+        <h2>My Account</h2>
 
-            <?php if ($success): ?>
-                <div class="auth-alert success"><?= htmlspecialchars($success) ?></div>
-            <?php endif; ?>
+        <?php if ($success): ?>
+            <div class="auth-alert success"><?= htmlspecialchars($success) ?></div>
+        <?php endif; ?>
 
-            <form action="" method="POST">
-                <div class="form-group">
-                    <label>Email</label>
-                    <input type="email" value="<?= htmlspecialchars($user['email']) ?>" disabled>
-                </div>
-                <div class="form-group">
-                    <label>Nama Panggilan</label>
-                    <input type="text" name="nama_panggilan" value="<?= htmlspecialchars($user['nama_panggilan'] ?? '') ?>">
-                </div>
-                <div class="form-group">
-                    <label>Nomor Telepon</label>
-                    <input type="text" name="no_telepon" value="<?= htmlspecialchars($user['no_telepon'] ?? '') ?>">
-                </div>
-                <div class="form-group">
-                    <label>Alamat</label>
-                    <textarea name="alamat"><?= htmlspecialchars($user['alamat'] ?? '') ?></textarea>
-                </div>
-                <div class="form-group">
-                    <label>Tanggal Lahir</label>
-                    <input type="date" name="tanggal_lahir" value="<?= htmlspecialchars($user['tanggal_lahir'] ?? '') ?>">
-                </div>
-                <div class="form-group">
-                    <label>Jenis Kelamin</label>
-                    <select name="jenis_kelamin">
-                        <option value="">Pilih</option>
-                        <option value="Laki-laki" <?= ($user['jenis_kelamin'] ?? '') === 'Laki-laki' ? 'selected' : '' ?>>Laki-laki</option>
-                        <option value="Perempuan" <?= ($user['jenis_kelamin'] ?? '') === 'Perempuan' ? 'selected' : '' ?>>Perempuan</option>
-                    </select>
-                </div>
-                <button type="submit" name="update_profile">Simpan Perubahan</button>
-            </form>
-
-            <div class="logout">
-                <a href="masuk/logout.php">LOGOUT</a>
+        <form action="" method="POST">
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" value="<?= htmlspecialchars($user['email']) ?>" disabled>
             </div>
-        </div>
-        <div class="account-right">
-            <img src="asset/model login.jpg" alt="Fashion Model">
+            <div class="form-group">
+                <label>Nama Panggilan</label>
+                <input type="text" name="nama_panggilan" value="<?= htmlspecialchars($user['nama_panggilan'] ?? '') ?>">
+            </div>
+            <div class="form-group">
+                <label>Nomor Telepon</label>
+                <input type="text" name="no_telepon" value="<?= htmlspecialchars($user['no_telepon'] ?? '') ?>">
+            </div>
+            <div class="form-group">
+                <label>Alamat</label>
+                <textarea name="alamat"><?= htmlspecialchars($user['alamat'] ?? '') ?></textarea>
+            </div>
+            <div class="form-group">
+                <label>Tanggal Lahir</label>
+                <input type="date" name="tanggal_lahir" value="<?= htmlspecialchars($user['tanggal_lahir'] ?? '') ?>">
+            </div>
+            <div class="form-group">
+                <label>Jenis Kelamin</label>
+                <select name="jenis_kelamin">
+                    <option value="">Pilih</option>
+                    <option value="Laki-laki" <?= ($user['jenis_kelamin'] ?? '') === 'Laki-laki' ? 'selected' : '' ?>>Laki-laki</option>
+                    <option value="Perempuan" <?= ($user['jenis_kelamin'] ?? '') === 'Perempuan' ? 'selected' : '' ?>>Perempuan</option>
+                </select>
+            </div>
+            <button type="submit" name="update_profile">Simpan Perubahan</button>
+        </form>
+
+        <div class="logout">
+            <a href="masuk/logout.php">LOGOUT</a>
         </div>
     </div>
 </div>
+
 <footer>
     <div class="footer-box">
         <div><h3>Store</h3><p>Man</p><p>Woman</p><p>Accessories</p></div>

@@ -26,11 +26,9 @@ $stmt2 = mysqli_prepare($conn, "
     SELECT o.*, p.gambar
     FROM orders o
     LEFT JOIN produk p ON o.nama_produk LIKE CONCAT(p.nama_produk,'%')
-    WHERE o.id_user = ?
-      AND ABS(TIMESTAMPDIFF(SECOND, o.tanggal_order, ?)) <= 5
-    ORDER BY o.id ASC
+    WHERE o.id = ?
 ");
-mysqli_stmt_bind_param($stmt2, 'is', $id_user, $tanggal_order);
+mysqli_stmt_bind_param($stmt2, 'i', $id_order);
 mysqli_stmt_execute($stmt2);
 $orders = mysqli_fetch_all(mysqli_stmt_get_result($stmt2), MYSQLI_ASSOC);
 
@@ -111,127 +109,6 @@ $qris_string = generateQrisString(QRIS_NMID, QRIS_MERCHANT_NAME, QRIS_CITY, (int
     <link rel="stylesheet" href="order.css">
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
-    <style>
-        .qris-section {
-            margin: 28px 0 0;
-            border-top: 1px solid #e8e8e4;
-            padding-top: 24px;
-        }
-        .qris-section h3 {
-            font-size: 15px;
-            font-weight: 600;
-            color: #1a1a1a;
-            margin-bottom: 18px;
-        }
-        .qris-layout {
-            display: flex;
-            gap: 32px;
-            align-items: flex-start;
-            flex-wrap: wrap;
-        }
-        .qr-frame {
-            background: #fff;
-            border: 1.5px solid #e0e0dc;
-            border-radius: 14px;
-            padding: 18px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 12px;
-            min-width: 220px;
-        }
-        .qr-top {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            width: 100%;
-        }
-        .qris-badge {
-            background: #e31837;
-            color: #fff;
-            font-size: 12px;
-            font-weight: 700;
-            padding: 3px 9px;
-            border-radius: 5px;
-            letter-spacing: .05em;
-        }
-        .qr-merchant { font-size: 13px; font-weight: 500; color: #1a1a1a; }
-        #qr-canvas { border-radius: 6px; display: block; }
-        .qr-nominal {
-            background: #f5f5f0;
-            border-radius: 20px;
-            padding: 5px 16px;
-            font-size: 13px;
-            color: #666;
-        }
-        .qr-nominal strong { color: #1a1a1a; }
-        .qr-status {
-            display: flex;
-            align-items: center;
-            gap: 7px;
-            font-size: 13px;
-            padding: 7px 14px;
-            border-radius: 8px;
-            width: 100%;
-            justify-content: center;
-        }
-        .qr-status.pending { background: #fef9ec; color: #92680a; }
-        .qr-status.paid    { background: #eafaf3; color: #166534; }
-        .qr-status.expired { background: #fef2f2; color: #991b1b; }
-        .status-dot { width: 8px; height: 8px; border-radius: 50%; }
-        .status-dot.pending { background: #f59e0b; animation: blink 1.4s infinite; }
-        .status-dot.paid    { background: #22c55e; }
-        .status-dot.expired { background: #ef4444; }
-        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
-        .qr-timer { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #999; }
-        .qr-timer strong { color: #555; }
-        .qris-steps { flex: 1; min-width: 200px; }
-        .qris-steps h4 {
-            font-size: 13px;
-            font-weight: 600;
-            color: #666;
-            text-transform: uppercase;
-            letter-spacing: .06em;
-            margin-bottom: 14px;
-        }
-        .qstep { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 12px; }
-        .qstep-num {
-            min-width: 22px; height: 22px;
-            border-radius: 50%;
-            background: #f5f5f0;
-            font-size: 11px;
-            font-weight: 600;
-            color: #666;
-            display: flex; align-items: center; justify-content: center;
-        }
-        .qstep-text { font-size: 13px; color: #666; line-height: 1.5; padding-top: 2px; }
-        .supported-apps { margin-top: 18px; }
-        .supported-apps p { font-size: 12px; color: #aaa; margin-bottom: 8px; }
-        .app-pills { display: flex; flex-wrap: wrap; gap: 6px; }
-        .app-pill {
-            background: #f5f5f0;
-            border: 1px solid #e8e8e4;
-            border-radius: 20px;
-            font-size: 12px;
-            color: #555;
-            padding: 3px 10px;
-        }
-        .paid-overlay {
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            gap: 10px;
-            padding: 16px 0;
-            text-align: center;
-        }
-        .paid-icon {
-            width: 52px; height: 52px;
-            border-radius: 50%;
-            background: #eafaf3;
-            font-size: 26px;
-            display: flex; align-items: center; justify-content: center;
-        }
-    </style>
 </head>
 
 <body>
@@ -259,23 +136,23 @@ $qris_string = generateQrisString(QRIS_NMID, QRIS_MERCHANT_NAME, QRIS_CITY, (int
     </nav>
 </header>
 
-<div class="confirm-container">
+<div class="ord-confirm-container">
 
-    <div class="confirm-header">
+    <div class="ord-confirm-header">
         <h2>Order Confirmation</h2>
         <p>Thank you for your order!</p>
     </div>
 
     <!-- STEP -->
-    <div class="steps">
-        <div class="step active"><span>1</span><p>Shipping</p></div>
-        <div class="step active"><span>2</span><p>Payment</p></div>
-        <div class="step active"><span>3</span><p>Summary</p></div>
-        <div class="step current"><span>4</span><p>Confirmation</p></div>
+    <div class="ord-steps">
+        <div class="ord-step active"><span>1</span><p>Shipping</p></div>
+        <div class="ord-step active"><span>2</span><p>Payment</p></div>
+        <div class="ord-step active"><span>3</span><p>Summary</p></div>
+        <div class="ord-step current"><span>4</span><p>Confirmation</p></div>
     </div>
 
     <!-- INFO ORDER -->
-    <div class="order-info">
+    <div class="ord-order-info">
         <div>
             <small>Delivery Date</small>
             <strong><?= date('d M Y'); ?></strong>
@@ -295,7 +172,7 @@ $qris_string = generateQrisString(QRIS_NMID, QRIS_MERCHANT_NAME, QRIS_CITY, (int
     </div>
 
     <!-- HEADER TABLE -->
-    <div class="table-head">
+    <div class="ord-table-head">
         <span>Product</span>
         <span>Shipping</span>
         <span>Quantity</span>
@@ -304,8 +181,8 @@ $qris_string = generateQrisString(QRIS_NMID, QRIS_MERCHANT_NAME, QRIS_CITY, (int
 
     <!-- SEMUA ITEM -->
     <?php foreach ($orders as $order): ?>
-    <div class="product-row">
-        <div class="product-info">
+    <div class="ord-product-row">
+        <div class="ord-product-info">
             <?php if (!empty($order['gambar'])): ?>
                 <img src="<?= htmlspecialchars($order['gambar']); ?>" alt="<?= htmlspecialchars($order['nama_produk']); ?>">
             <?php endif; ?>
@@ -314,17 +191,17 @@ $qris_string = generateQrisString(QRIS_NMID, QRIS_MERCHANT_NAME, QRIS_CITY, (int
                 <span>Rp <?= number_format($order['harga'], 0, ',', '.'); ?></span>
             </div>
         </div>
-        <div class="shipping">Free</div>
-        <div class="qty-box"><?= $order['qty']; ?></div>
-        <div class="price">Rp <?= number_format($order['total_harga'], 0, ',', '.'); ?></div>
+        <div class="ord-shipping">Free</div>
+        <div class="ord-qty-box"><?= $order['qty']; ?></div>
+        <div class="ord-price">Rp <?= number_format($order['total_harga'], 0, ',', '.'); ?></div>
     </div>
     <?php endforeach; ?>
 
     <!-- SUMMARY -->
-    <div class="summary">
-        <div class="sum-box"><p>Discount</p><strong>Rp 0</strong></div>
-        <div class="sum-box"><p>Delivery</p><strong>Free</strong></div>
-        <div class="sum-box">
+    <div class="ord-summary">
+        <div class="ord-sum-box"><p>Discount</p><strong>Rp 0</strong></div>
+        <div class="ord-sum-box"><p>Delivery</p><strong>Free</strong></div>
+        <div class="ord-sum-box">
             <p>Total</p>
             <strong>Rp <?= number_format($total, 0, ',', '.'); ?></strong>
         </div>
@@ -405,9 +282,9 @@ $qris_string = generateQrisString(QRIS_NMID, QRIS_MERCHANT_NAME, QRIS_CITY, (int
     </div>
 
     <!-- BUTTON -->
-    <div class="button-group">
-        <a href="index.php" class="btn-back">Back to Shop</a>
-        <a href="order.php" class="btn-place">Place Order</a>
+    <div class="ord-button-group">
+        <a href="index.php" class="ord-btn-back">Back to Shop</a>
+        <a href="order.php" class="ord-btn-place">Place Order</a>
     </div>
 
 </div>

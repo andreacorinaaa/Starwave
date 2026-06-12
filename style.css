@@ -319,3 +319,135 @@ button:hover {
 .page-search .product:hover {
     transform: translateY(-10px);
 }
+
+/* ── PROFILE PAGE ── */
+.profile-page {
+    min-height: 100vh;
+    background: #f7f7f7;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 50px 24px;
+}
+
+.profile-card {
+    background: #fff;
+    width: 100%;
+    max-width: 560px;
+    padding: 48px 48px 40px;
+    box-shadow: 0 2px 24px rgba(0,0,0,0.08);
+}
+
+.profile-card h2 {
+    font-size: 26px;
+    font-weight: 800;
+    color: #1C4759;
+    margin-bottom: 28px;
+    padding-bottom: 16px;
+    border-bottom: 2px solid #eee;
+    letter-spacing: 0.5px;
+}
+
+.profile-card .auth-alert.success {
+    background: #eaf6ec;
+    color: #2e7d32;
+    border-left: 4px solid #43a047;
+    padding: 12px 16px;
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 20px;
+}
+
+.profile-card .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 18px;
+}
+
+.profile-card .form-group label {
+    font-size: 12px;
+    font-weight: 700;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.profile-card .form-group input,
+.profile-card .form-group textarea,
+.profile-card .form-group select {
+    padding: 11px 14px;
+    border: 1.5px solid #ddd;
+    border-radius: 0;
+    font-size: 14px;
+    color: #222;
+    background: #fff;
+    font-family: Arial, sans-serif;
+    transition: border-color 0.2s;
+    outline: none;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.profile-card .form-group input:focus,
+.profile-card .form-group textarea:focus,
+.profile-card .form-group select:focus {
+    border-color: #1C4759;
+}
+
+.profile-card .form-group input:disabled {
+    background: #f5f5f5;
+    color: #aaa;
+    cursor: not-allowed;
+}
+
+.profile-card .form-group textarea {
+    resize: vertical;
+    min-height: 90px;
+}
+
+.profile-card form {
+    max-width: 100%;
+    gap: 0;
+}
+
+.profile-card button[type="submit"] {
+    width: 100%;
+    padding: 14px;
+    background: #1C4759;
+    color: #fff;
+    border: none;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.2s;
+    border-radius: 0;
+    margin-top: 8px;
+}
+
+.profile-card button[type="submit"]:hover {
+    background: #163743;
+}
+
+.profile-card .logout {
+    text-align: center;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+}
+
+.profile-card .logout a {
+    font-size: 13px;
+    font-weight: 700;
+    color: #888;
+    text-decoration: none;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    transition: color 0.2s;
+}
+
+.profile-card .logout a:hover {
+    color: #c0392b;
+}

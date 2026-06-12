@@ -10,7 +10,6 @@ if (!isset($_SESSION['user'])) {
 
 $user_email = $_SESSION['user'];
 
-// Ambil data user — jika tidak ditemukan, paksa logout
 $result = mysqli_query($conn, "SELECT * FROM users WHERE email='" . mysqli_real_escape_string($conn, $user_email) . "'");
 $user   = mysqli_fetch_assoc($result);
 
@@ -22,7 +21,6 @@ if (!$user) {
 
 $id_user = (int)$user['id_user'];
 
-// Hapus item
 if (isset($_GET['hapus'])) {
     $hapus_id = (int)$_GET['hapus'];
     mysqli_query($conn, "DELETE FROM keranjang WHERE id='$hapus_id' AND id_user='$id_user'");
@@ -30,7 +28,6 @@ if (isset($_GET['hapus'])) {
     exit;
 }
 
-// Update qty
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_qty'])) {
     if (!empty($_POST['qty']) && is_array($_POST['qty'])) {
         foreach ($_POST['qty'] as $kid => $qval) {
@@ -43,9 +40,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_qty'])) {
     exit;
 }
 
-// Beli semua item keranjang sekaligus
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['beli_semua'])) {
-    // Update qty dulu sebelum checkout
     if (!empty($_POST['qty']) && is_array($_POST['qty'])) {
         foreach ($_POST['qty'] as $kid => $qval) {
             $kid  = (int)$kid;
@@ -54,7 +49,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['beli_semua'])) {
         }
     }
 
-    // Ambil semua item keranjang terbaru
     $all_items = mysqli_fetch_all(
         mysqli_query($conn, "SELECT * FROM keranjang WHERE id_user='$id_user'"),
         MYSQLI_ASSOC
@@ -91,18 +85,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['beli_semua'])) {
     exit;
 }
 
-// Beli satu item dari keranjang
 if (isset($_GET['beli'])) {
     $kid  = (int)$_GET['beli'];
     $kresult = mysqli_query($conn, "SELECT * FROM keranjang WHERE id='$kid' AND id_user='$id_user'");
     $kitem   = mysqli_fetch_assoc($kresult);
 
     if ($kitem) {
-        $nama_order  = $kitem['nama_produk'] . " - Size " . $kitem['ukuran'];
-        $total_harga = (float)$kitem['harga'] * (int)$kitem['qty'];
-        $nama_produk = mysqli_real_escape_string($conn, $nama_order);
+        $nama_order    = $kitem['nama_produk'] . " - Size " . $kitem['ukuran'];
+        $total_harga   = (float)$kitem['harga'] * (int)$kitem['qty'];
+        $nama_produk   = mysqli_real_escape_string($conn, $nama_order);
         $nama_penerima = mysqli_real_escape_string($conn, $user['nama_panggilan'] ?? '');
-        $email_user  = mysqli_real_escape_string($conn, $user_email);
+        $email_user    = mysqli_real_escape_string($conn, $user_email);
 
         $insert = mysqli_query($conn,
             "INSERT INTO orders (id_user, nama_produk, qty, harga, total_harga, nama_penerima, email, tanggal_order, status)
@@ -120,7 +113,6 @@ if (isset($_GET['beli'])) {
     exit;
 }
 
-// Ambil semua item keranjang
 $items_result = mysqli_query($conn, "SELECT * FROM keranjang WHERE id_user='$id_user' ORDER BY created_at DESC");
 $items = $items_result ? mysqli_fetch_all($items_result, MYSQLI_ASSOC) : [];
 
@@ -134,7 +126,7 @@ foreach ($items as $it) $total_semua += $it['harga'] * $it['qty'];
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Keranjang – STARWAVE</title>
     <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="detail.css">
+    <link rel="stylesheet" href="order.css">
 </head>
 <body>
 
@@ -171,91 +163,79 @@ foreach ($items as $it) $total_semua += $it['harga'] * $it['qty'];
 </div>
 
 <!-- KERANJANG -->
-<section class="detail-section" style="padding: 40px 60px;">
+<section class="ord-detail-section">
 
 <?php if (empty($items)): ?>
     <div style="text-align:center; padding:80px 0; color:#888;">
         <div style="font-size:60px; margin-bottom:16px;">🛒</div>
         <h2 style="margin-bottom:8px;">Keranjang kamu kosong</h2>
         <p style="margin-bottom:24px;">Yuk mulai belanja!</p>
-        <a href="index.php" class="btn-buy" style="text-decoration:none; padding:12px 32px;">Mulai Belanja</a>
+        <a href="index.php" class="ord-btn-buy" style="text-decoration:none; padding:12px 32px;">Mulai Belanja</a>
     </div>
 
 <?php else: ?>
 
     <form method="POST" action="keranjang.php">
-    <!-- Tabel Keranjang -->
-    <table class="keranjang-table">
-        <thead>
-            <tr>
-                <th style="width:50px;"></th>
-                <th>Produk</th>
-                <th>Harga Satuan</th>
-                <th>Qty</th>
-                <th>Subtotal</th>
-            </tr>
-        </thead>
-        <tbody>
-        <?php foreach ($items as $it):
-            $subtotal = $it['harga'] * $it['qty'];
-        ?>
-            <tr class="keranjang-row">
-                <!-- Hapus -->
-                <td>
-                    <a href="keranjang.php?hapus=<?= $it['id'] ?>" class="btn-hapus" title="Hapus">✕</a>
-                </td>
+        <div style="display:flex; flex-direction:column; align-items:center;">
+            <table class="ord-keranjang-table">
+                <thead>
+                    <tr>
+                        <th style="width:50px;"></th>
+                        <th>Produk</th>
+                        <th>Harga Satuan</th>
+                        <th>Qty</th>
+                        <th>Subtotal</th>
+                    </tr>
+                </thead>
+                <tbody>
+                <?php foreach ($items as $it):
+                    $subtotal = $it['harga'] * $it['qty'];
+                ?>
+                    <tr class="ord-keranjang-row">
+                        <td>
+                            <a href="keranjang.php?hapus=<?= $it['id'] ?>" class="ord-btn-hapus-item" title="Hapus">✕</a>
+                        </td>
+                        <td>
+                            <div class="ord-keranjang-produk">
+                                <img src="<?= htmlspecialchars($it['gambar']) ?>" alt="<?= htmlspecialchars($it['nama_produk']) ?>" class="ord-keranjang-img">
+                                <div>
+                                    <div class="ord-keranjang-nama"><?= htmlspecialchars($it['nama_produk']) ?></div>
+                                    <?php if (!empty($it['ukuran']) && $it['ukuran'] !== '-'): ?>
+                                        <div class="ord-keranjang-ukuran">Size: <?= htmlspecialchars($it['ukuran']) ?></div>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="ord-keranjang-harga">
+                            Rp <?= number_format($it['harga'], 0, ',', '.') ?>
+                        </td>
+                        <td>
+                            <div class="ord-qty-control" style="justify-content:center;">
+                                <button type="button" class="ord-qty-btn" onclick="ubahQty(this, -1)">−</button>
+                                <input class="ord-qty-input" type="number" name="qty[<?= $it['id'] ?>]" value="<?= $it['qty'] ?>" min="1" style="width:50px;" readonly>
+                                <button type="button" class="ord-qty-btn" onclick="ubahQty(this, 1)">+</button>
+                            </div>
+                        </td>
+                        <td class="ord-keranjang-subtotal" data-harga="<?= $it['harga'] ?>">
+                            Rp <?= number_format($subtotal, 0, ',', '.') ?>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+                </tbody>
+            </table>
 
-                <!-- Gambar + Nama -->
-                <td>
-                    <div class="keranjang-produk">
-                        <img src="<?= htmlspecialchars($it['gambar']) ?>" alt="<?= htmlspecialchars($it['nama_produk']) ?>" class="keranjang-img">
-                        <div>
-                            <div class="keranjang-nama"><?= htmlspecialchars($it['nama_produk']) ?></div>
-                            <?php if (!empty($it['ukuran']) && $it['ukuran'] !== '-'): ?>
-                                <div class="keranjang-ukuran">Size: <?= htmlspecialchars($it['ukuran']) ?></div>
-                            <?php endif; ?>
-                        </div>
+            <div class="ord-keranjang-footer">
+                <div class="ord-keranjang-total-box">
+                    <div class="ord-keranjang-total-label">Total Semua</div>
+                    <div class="ord-keranjang-total-harga" id="grandTotal">
+                        Rp <?= number_format($total_semua, 0, ',', '.') ?>
                     </div>
-                </td>
-
-                <!-- Harga -->
-                <td class="keranjang-harga">
-                    Rp <?= number_format($it['harga'], 0, ',', '.') ?>
-                </td>
-
-                <!-- Qty -->
-                <td>
-                    <div class="qty-control" style="justify-content:center;">
-                        <button type="button" class="qty-btn" onclick="ubahQty(this, -1)">−</button>
-                        <input class="qty-input" type="number" name="qty[<?= $it['id'] ?>]" value="<?= $it['qty'] ?>" min="1" style="width:50px;" readonly>
-                        <button type="button" class="qty-btn" onclick="ubahQty(this, 1)">+</button>
-                    </div>
-                </td>
-
-                <!-- Subtotal -->
-                <td class="keranjang-subtotal" data-harga="<?= $it['harga'] ?>">
-                    Rp <?= number_format($subtotal, 0, ',', '.') ?>
-                </td>
-
-
-            </tr>
-        <?php endforeach; ?>
-        </tbody>
-    </table>
-
-    <!-- Tombol Update & Total -->
-    <div class="keranjang-footer">
-        <div class="keranjang-total-box">
-            <div class="keranjang-total-label">Total Semua</div>
-            <div class="keranjang-total-harga" id="grandTotal">
-                Rp <?= number_format($total_semua, 0, ',', '.') ?>
+                </div>
+                <button type="submit" name="beli_semua" value="1" class="ord-btn-cart">
+                    Checkout
+                </button>
             </div>
         </div>
-        <button type="submit" name="beli_semua" value="1" class="btn-cart" style="padding:14px 40px; font-size:15px;">
-            Checkout
-        </button>
-    </div>
-
     </form>
 
 <?php endif; ?>
@@ -267,7 +247,9 @@ foreach ($items as $it) $total_semua += $it['harga'] * $it['qty'];
     <div class="footer-box">
         <div>
             <h3>Store</h3>
-            <p>Man</p><p>Woman</p><p>Accessories</p>
+            <p>Man</p>
+            <p>Woman</p>
+            <p>Accessories</p>
         </div>
         <div>
             <h3>Business</h3>
@@ -285,19 +267,17 @@ foreach ($items as $it) $total_semua += $it['harga'] * $it['qty'];
 function ubahQty(btn, delta) {
     const row   = btn.closest('tr');
     const input = row.querySelector('input[type=number]');
-    const sub   = row.querySelector('.keranjang-subtotal');
+    const sub   = row.querySelector('.ord-keranjang-subtotal');
     const harga = parseInt(sub.dataset.harga);
 
     let val = parseInt(input.value) + delta;
     if (val < 1) val = 1;
     input.value = val;
 
-    // Update subtotal baris
     sub.innerText = 'Rp ' + (harga * val).toLocaleString('id-ID');
 
-    // Update grand total
     let total = 0;
-    document.querySelectorAll('.keranjang-subtotal').forEach(s => {
+    document.querySelectorAll('.ord-keranjang-subtotal').forEach(s => {
         const num = parseInt(s.innerText.replace(/[^0-9]/g, ''));
         total += num;
     });
