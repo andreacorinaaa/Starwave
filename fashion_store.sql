@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jun 11, 2026 at 01:07 PM
+-- Generation Time: Jun 11, 2026 at 07:01 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -20,6 +20,31 @@ SET time_zone = "+00:00";
 --
 -- Database: `fashion_store`
 --
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `keranjang`
+--
+
+CREATE TABLE `keranjang` (
+  `id` int(11) NOT NULL,
+  `id_user` int(11) NOT NULL,
+  `id_produk` int(11) NOT NULL,
+  `nama_produk` varchar(255) NOT NULL,
+  `harga` int(11) NOT NULL,
+  `qty` int(11) NOT NULL DEFAULT 1,
+  `ukuran` varchar(10) NOT NULL DEFAULT '-',
+  `gambar` varchar(255) DEFAULT NULL,
+  `created_at` datetime DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `keranjang`
+--
+
+INSERT INTO `keranjang` (`id`, `id_user`, `id_produk`, `nama_produk`, `harga`, `qty`, `ukuran`, `gambar`, `created_at`) VALUES
+(1, 1, 31, 'Trilogy Ring', 200000, 1, '-', 'asset/trilogyR.jpg', '2026-06-11 21:44:40');
 
 -- --------------------------------------------------------
 
@@ -46,19 +71,8 @@ CREATE TABLE `orders` (
 --
 
 INSERT INTO `orders` (`id`, `id_user`, `nama_produk`, `qty`, `nama_penerima`, `email`, `tanggal_order`, `status`, `created_at`, `harga`, `total_harga`) VALUES
-(14, 1, 'Bustier Top - Size S', 1, 'andrea indira', 'rara@gmail.com', '2026-05-15', 'pending_payment', '2026-05-15 13:23:27', 260000, 260000),
-(18, 1, 'Wayfarer Puffer - Size S', 1, 'andrea indira', 'rara@gmail.com', '2026-05-16', 'pending_payment', '2026-05-16 02:43:48', 350000, 350000),
-(21, 1, 'Bustier Top - Size S', 1, 'andrea indira', 'rara@gmail.com', '2026-05-17', 'pending_payment', '2026-05-17 14:06:14', 260000, 260000),
-(22, 1, 'Bustier Top - Size S', 1, 'andrea indira', 'rara@gmail.com', '2026-05-17', 'pending_payment', '2026-05-17 14:20:55', 260000, 260000),
-(23, 1, 'Highwaist Straight Jeans - Size S', 1, 'andrea indira', 'rara@gmail.com', '2026-05-17', 'pending_payment', '2026-05-17 14:31:30', 320000, 320000),
-(24, 1, 'Bomber Jacket - Size XL', 1, 'andrea indira', 'rara@gmail.com', '2026-05-18', 'pending_payment', '2026-05-18 01:55:36', 600000, 600000),
-(27, 4, 'Wayfarer Puffer - Size S', 1, '', 'rarageulis405@gmail.com', '2026-06-01', 'batal', '2026-05-31 16:23:46', 350000, 350000),
-(28, 1, 'Wayfarer Puffer - Size S', 1, 'andrea indira', 'rara@gmail.com', '2026-06-01', 'diproses', '2026-05-31 16:32:26', 350000, 350000),
-(29, 1, 'Bomber Jacket - Size S', 1, 'andrea indira', 'rara@gmail.com', '2026-06-07', 'pending_payment', '2026-06-07 14:29:57', 600000, 600000),
-(30, 1, 'Chopard Alpine Eagle - Size M', 1, 'andrea indira', 'rara@gmail.com', '2026-06-10', 'pending_payment', '2026-06-10 10:21:23', 270000, 270000),
-(31, 1, 'Denim Jacket - Size M', 1, 'andrea indira', 'rara@gmail.com', '2026-06-10', 'pending_payment', '2026-06-10 11:25:28', 500000, 500000),
-(32, 1, 'Montblanc Iced Sea Automatic Date - Size M', 2, 'andrea indira', 'rara@gmail.com', '2026-06-10', 'pending_payment', '2026-06-10 15:23:18', 250000, 500000),
-(33, 1, 'Wayfarer Puffer - Size M', 1, 'andrea indira', 'rara@gmail.com', '2026-06-10', 'pending_payment', '2026-06-10 15:54:09', 350000, 350000);
+(29, 1, 'Bomber Jacket - Size S', 1, 'andrea indira', 'rara@gmail.com', '2026-06-07', 'selesai', '2026-06-07 14:29:57', 600000, 600000),
+(33, 1, 'Wayfarer Puffer - Size M', 1, 'andrea indira', 'rara@gmail.com', '2026-06-10', 'selesai', '2026-06-10 15:54:09', 350000, 350000);
 
 -- --------------------------------------------------------
 
@@ -127,11 +141,21 @@ INSERT INTO `produk` (`id`, `nama_produk`, `harga`, `gambar`, `deskripsi`, `kate
 CREATE TABLE `ulasan` (
   `id` int(11) NOT NULL,
   `id_user` int(11) NOT NULL,
+  `nama_produk` varchar(255) NOT NULL,
+  `id_order` int(11) NOT NULL,
   `id_produk` int(11) NOT NULL,
   `bintang` tinyint(1) NOT NULL DEFAULT 5,
   `komentar` text DEFAULT NULL,
   `created_at` datetime NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `ulasan`
+--
+
+INSERT INTO `ulasan` (`id`, `id_user`, `nama_produk`, `id_order`, `id_produk`, `bintang`, `komentar`, `created_at`) VALUES
+(1, 1, '', 33, 0, 4, 'bagus banget bahannya dan modelnya hehe', '2026-06-11 19:50:42'),
+(2, 1, 'Bomber Jacket - Size S', 29, 11, 4, 'jacket nya nyaman dan gabikin gerah', '2026-06-11 21:20:45');
 
 -- --------------------------------------------------------
 
@@ -163,6 +187,12 @@ INSERT INTO `users` (`id_user`, `email`, `password`, `tanggal_lahir`, `nama_pang
 --
 
 --
+-- Indexes for table `keranjang`
+--
+ALTER TABLE `keranjang`
+  ADD PRIMARY KEY (`id`);
+
+--
 -- Indexes for table `orders`
 --
 ALTER TABLE `orders`
@@ -180,7 +210,6 @@ ALTER TABLE `produk`
 --
 ALTER TABLE `ulasan`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_produk` (`id_produk`),
   ADD KEY `idx_user` (`id_user`);
 
 --
@@ -192,6 +221,12 @@ ALTER TABLE `users`
 --
 -- AUTO_INCREMENT for dumped tables
 --
+
+--
+-- AUTO_INCREMENT for table `keranjang`
+--
+ALTER TABLE `keranjang`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `orders`
@@ -209,7 +244,7 @@ ALTER TABLE `produk`
 -- AUTO_INCREMENT for table `ulasan`
 --
 ALTER TABLE `ulasan`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `users`
@@ -231,7 +266,6 @@ ALTER TABLE `orders`
 -- Constraints for table `ulasan`
 --
 ALTER TABLE `ulasan`
-  ADD CONSTRAINT `fk_ulasan_produk` FOREIGN KEY (`id_produk`) REFERENCES `produk` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `fk_ulasan_user` FOREIGN KEY (`id_user`) REFERENCES `users` (`id_user`) ON DELETE CASCADE;
 COMMIT;
 

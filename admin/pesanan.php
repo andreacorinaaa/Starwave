@@ -5,6 +5,8 @@ $pending_orders = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as n F
 $total_orders   = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as n FROM orders"))['n'] ?? 0;
 
 $pesan = "";
+
+// ── Update status order (existing) ───────────────────────────
 if (isset($_POST['update_status'])) {
     $id_order   = (int)$_POST['id_order'];
     $new_status = mysqli_real_escape_string($conn, $_POST['status']);
@@ -12,6 +14,21 @@ if (isset($_POST['update_status'])) {
     $pesan = "Status pesanan #$id_order berhasil diperbarui.";
 }
 
+// ── Konfirmasi pembayaran QRIS ────────────────────────────────
+if (isset($_POST['konfirmasi_bayar'])) {
+    $id_order = (int)$_POST['id_order'];
+
+    // Update status_bayar jadi paid + ubah status order jadi diproses
+    $stmt = mysqli_prepare($conn, "UPDATE orders SET status_bayar='paid', status='diproses' WHERE id=?");
+    mysqli_stmt_bind_param($stmt, 'i', $id_order);
+    mysqli_stmt_execute($stmt);
+
+    if (mysqli_stmt_affected_rows($stmt) > 0) {
+        $pesan = "Pembayaran QRIS order #$id_order berhasil dikonfirmasi. Status diubah ke Diproses.";
+    }
+}
+
+// ── Hapus order (existing) ────────────────────────────────────
 if (isset($_GET['hapus_order'])) {
     $id = (int)$_GET['hapus_order'];
     mysqli_query($conn, "DELETE FROM orders WHERE id='$id'");
@@ -56,6 +73,77 @@ function statusLabel($s) {
     <title>Pesanan — STARWAVE Admin</title>
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="admin.css">
+    <style>
+        /* ── Badge pembayaran ── */
+        .badge-bayar {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+        .badge-bayar.paid    { background: #eafaf3; color: #166534; }
+        .badge-bayar.pending { background: #fef9ec; color: #92680a; }
+
+        /* ── Tombol konfirmasi ── */
+        .btn-konfirmasi {
+            padding: 5px 10px;
+            background: #1a1a1a;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background .15s;
+        }
+        .btn-konfirmasi:hover { background: #333; }
+
+        /* ── Modal ── */
+        .modal-backdrop {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,.5);
+            z-index: 999;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-backdrop.open { display: flex; }
+
+        .modal-box {
+            background: #fff;
+            border-radius: 14px;
+            padding: 2rem;
+            width: 100%;
+            max-width: 360px;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(0,0,0,.12);
+        }
+        .modal-box h3 { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
+        .modal-box p  { font-size: 14px; color: #666; margin-bottom: 1.5rem; line-height: 1.5; }
+
+        .modal-actions { display: flex; gap: 10px; }
+
+        .btn-modal-cancel {
+            flex: 1; padding: 10px;
+            border: 1px solid #e0e0dc;
+            background: #fff;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            color: #666;
+        }
+        .btn-modal-confirm {
+            flex: 1; padding: 10px;
+            background: #1a1a1a; color: #fff;
+            border: none; border-radius: 8px;
+            font-size: 14px; font-weight: 500;
+            cursor: pointer;
+        }
+        .btn-modal-confirm:hover { background: #333; }
+    </style>
 </head>
 <body>
 
@@ -121,16 +209,26 @@ function statusLabel($s) {
                 <table id="orders-table">
                     <thead>
                         <tr>
-                            <th>#ID</th><th>Produk</th><th>Qty</th><th>Pemesan</th>
-                            <th>Penerima</th><th>Tgl Order</th><th>Status</th><th>Ubah Status</th><th>Aksi</th>
+                            <th>#ID</th>
+                            <th>Produk</th>
+                            <th>Qty</th>
+                            <th>Pemesan</th>
+                            <th>Penerima</th>
+                            <th>Tgl Order</th>
+                            <th>Status</th>
+                            <th>Pembayaran</th>  <!-- kolom baru -->
+                            <th>Ubah Status</th>
+                            <th>Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
                     <?php if (mysqli_num_rows($orders) == 0): ?>
-                        <tr class="empty-row"><td colspan="9">Belum ada pesanan</td></tr>
+                        <tr class="empty-row"><td colspan="10">Belum ada pesanan</td></tr>
                     <?php else: while ($o = mysqli_fetch_assoc($orders)): ?>
+                        <?php $is_paid = ($o['status_bayar'] ?? '') === 'paid'; ?>
                         <tr data-status="<?= $o['status'] ?>"
                             data-search="<?= strtolower($o['nama_produk'] . ' ' . ($o['nama'] ?? '') . ' ' . $o['nama_penerima']) ?>">
+
                             <td class="order-id">#<?= $o['id'] ?></td>
                             <td><?= htmlspecialchars($o['nama_produk']) ?></td>
                             <td><?= $o['qty'] ?></td>
@@ -142,7 +240,27 @@ function statusLabel($s) {
                             </td>
                             <td><?= htmlspecialchars($o['nama_penerima']) ?></td>
                             <td style="color:var(--muted);font-size:12px;white-space:nowrap;"><?= $o['tanggal_order'] ?></td>
-                            <td><span class="badge <?= statusClass($o['status']) ?>"><?= statusLabel($o['status']) ?></span></td>
+                            <td>
+                                <span class="badge <?= statusClass($o['status']) ?>">
+                                    <?= statusLabel($o['status']) ?>
+                                </span>
+                            </td>
+
+                            <!-- ── Kolom Pembayaran QRIS ── -->
+                            <td>
+                                <?php if ($is_paid): ?>
+                                    <span class="badge-bayar paid">✓ Lunas</span>
+                                <?php else: ?>
+                                    <div style="display:flex;flex-direction:column;gap:5px;align-items:flex-start;">
+                                        <span class="badge-bayar pending">Belum Bayar</span>
+                                        <button class="btn-konfirmasi"
+                                            onclick="openModal(<?= $o['id'] ?>, '<?= htmlspecialchars($o['nama_produk']) ?>', 'Rp <?= number_format($o['total_harga'], 0, ',', '.') ?>')">
+                                            Konfirmasi Bayar
+                                        </button>
+                                    </div>
+                                <?php endif; ?>
+                            </td>
+
                             <td>
                                 <form method="POST" style="display:flex;gap:6px;align-items:center;">
                                     <input type="hidden" name="id_order" value="<?= $o['id'] ?>">
@@ -171,7 +289,24 @@ function statusLabel($s) {
     </div>
 </div>
 
+<!-- ── Modal Konfirmasi Pembayaran ── -->
+<div class="modal-backdrop" id="modal-konfirmasi">
+    <div class="modal-box">
+        <h3>Konfirmasi Pembayaran</h3>
+        <p id="modal-desc">Tandai order ini sebagai lunas?</p>
+        <form method="POST" id="form-konfirmasi">
+            <input type="hidden" name="id_order" id="modal-order-id">
+            <input type="hidden" name="konfirmasi_bayar" value="1">
+            <div class="modal-actions">
+                <button type="button" class="btn-modal-cancel" onclick="closeModal()">Batal</button>
+                <button type="submit" class="btn-modal-confirm">Ya, Konfirmasi</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
+// ── Filter & search (existing, tidak berubah) ──
 let currentStatus = 'semua';
 function filterStatus(status, btn) {
     currentStatus = status;
@@ -192,6 +327,26 @@ function applyFilter() {
         row.style.display = (statusMatch && searchMatch) ? '' : 'none';
     });
 }
+
+// ── Modal konfirmasi pembayaran ──
+function openModal(orderId, namaProduk, total) {
+    document.getElementById('modal-order-id').value = orderId;
+    document.getElementById('modal-desc').innerHTML =
+        `Konfirmasi pembayaran QRIS untuk:<br>
+         <strong>#${orderId} — ${namaProduk}</strong><br>
+         Total: <strong>${total}</strong><br><br>
+         Status order akan otomatis berubah ke <strong>Diproses</strong>.`;
+    document.getElementById('modal-konfirmasi').classList.add('open');
+}
+
+function closeModal() {
+    document.getElementById('modal-konfirmasi').classList.remove('open');
+}
+
+// Tutup modal kalau klik backdrop
+document.getElementById('modal-konfirmasi').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+});
 </script>
 </body>
 </html>

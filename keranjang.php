@@ -9,8 +9,18 @@ if (!isset($_SESSION['user'])) {
 }
 
 $user_email = $_SESSION['user'];
-$user = mysqli_fetch_assoc(mysqli_query($conn, "SELECT * FROM users WHERE email='$user_email'"));
-$id_user = $user['id_user'];
+
+// Ambil data user — jika tidak ditemukan, paksa logout
+$result = mysqli_query($conn, "SELECT * FROM users WHERE email='" . mysqli_real_escape_string($conn, $user_email) . "'");
+$user   = mysqli_fetch_assoc($result);
+
+if (!$user) {
+    session_destroy();
+    header("Location: masuk/login.php");
+    exit;
+}
+
+$id_user = (int)$user['id_user'];
 
 // Hapus item
 if (isset($_GET['hapus'])) {
@@ -22,11 +32,61 @@ if (isset($_GET['hapus'])) {
 
 // Update qty
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_qty'])) {
-    foreach ($_POST['qty'] as $kid => $qval) {
-        $kid  = (int)$kid;
-        $qval = max(1, (int)$qval);
-        mysqli_query($conn, "UPDATE keranjang SET qty='$qval' WHERE id='$kid' AND id_user='$id_user'");
+    if (!empty($_POST['qty']) && is_array($_POST['qty'])) {
+        foreach ($_POST['qty'] as $kid => $qval) {
+            $kid  = (int)$kid;
+            $qval = max(1, (int)$qval);
+            mysqli_query($conn, "UPDATE keranjang SET qty='$qval' WHERE id='$kid' AND id_user='$id_user'");
+        }
     }
+    header("Location: keranjang.php");
+    exit;
+}
+
+// Beli semua item keranjang sekaligus
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['beli_semua'])) {
+    // Update qty dulu sebelum checkout
+    if (!empty($_POST['qty']) && is_array($_POST['qty'])) {
+        foreach ($_POST['qty'] as $kid => $qval) {
+            $kid  = (int)$kid;
+            $qval = max(1, (int)$qval);
+            mysqli_query($conn, "UPDATE keranjang SET qty='$qval' WHERE id='$kid' AND id_user='$id_user'");
+        }
+    }
+
+    // Ambil semua item keranjang terbaru
+    $all_items = mysqli_fetch_all(
+        mysqli_query($conn, "SELECT * FROM keranjang WHERE id_user='$id_user'"),
+        MYSQLI_ASSOC
+    );
+
+    if (!empty($all_items)) {
+        $last_order_id = null;
+
+        foreach ($all_items as $kitem) {
+            $nama_order    = $kitem['nama_produk'] . " - Size " . $kitem['ukuran'];
+            $total_harga   = (float)$kitem['harga'] * (int)$kitem['qty'];
+            $nama_produk   = mysqli_real_escape_string($conn, $nama_order);
+            $nama_penerima = mysqli_real_escape_string($conn, $user['nama_panggilan'] ?? '');
+            $email_user    = mysqli_real_escape_string($conn, $user_email);
+
+            $insert = mysqli_query($conn,
+                "INSERT INTO orders (id_user, nama_produk, qty, harga, total_harga, nama_penerima, email, tanggal_order, status)
+                 VALUES ('$id_user', '$nama_produk', '{$kitem['qty']}', '{$kitem['harga']}', '$total_harga', '$nama_penerima', '$email_user', NOW(), 'pending_payment')"
+            );
+
+            if ($insert) {
+                $last_order_id = mysqli_insert_id($conn);
+                mysqli_query($conn, "DELETE FROM keranjang WHERE id='{$kitem['id']}' AND id_user='$id_user'");
+            }
+        }
+
+        if ($last_order_id) {
+            header("Location: payment.php?id=" . $last_order_id);
+            exit;
+        }
+    }
+
     header("Location: keranjang.php");
     exit;
 }
@@ -34,16 +94,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_qty'])) {
 // Beli satu item dari keranjang
 if (isset($_GET['beli'])) {
     $kid  = (int)$_GET['beli'];
-    $kitem = mysqli_fetch_assoc(mysqli_query($conn,
-        "SELECT * FROM keranjang WHERE id='$kid' AND id_user='$id_user'"
-    ));
+    $kresult = mysqli_query($conn, "SELECT * FROM keranjang WHERE id='$kid' AND id_user='$id_user'");
+    $kitem   = mysqli_fetch_assoc($kresult);
+
     if ($kitem) {
         $nama_order  = $kitem['nama_produk'] . " - Size " . $kitem['ukuran'];
-        $total_harga = $kitem['harga'] * $kitem['qty'];
+        $total_harga = (float)$kitem['harga'] * (int)$kitem['qty'];
+        $nama_produk = mysqli_real_escape_string($conn, $nama_order);
+        $nama_penerima = mysqli_real_escape_string($conn, $user['nama_panggilan'] ?? '');
+        $email_user  = mysqli_real_escape_string($conn, $user_email);
+
         $insert = mysqli_query($conn,
             "INSERT INTO orders (id_user, nama_produk, qty, harga, total_harga, nama_penerima, email, tanggal_order, status)
-             VALUES ('$id_user', '" . mysqli_real_escape_string($conn, $nama_order) . "', '{$kitem['qty']}', '{$kitem['harga']}', '$total_harga', '{$user['nama_panggilan']}', '$user_email', NOW(), 'pending_payment')"
+             VALUES ('$id_user', '$nama_produk', '{$kitem['qty']}', '{$kitem['harga']}', '$total_harga', '$nama_penerima', '$email_user', NOW(), 'pending_payment')"
         );
+
         if ($insert) {
             $id_order = mysqli_insert_id($conn);
             mysqli_query($conn, "DELETE FROM keranjang WHERE id='$kid' AND id_user='$id_user'");
@@ -56,10 +121,8 @@ if (isset($_GET['beli'])) {
 }
 
 // Ambil semua item keranjang
-$items = mysqli_fetch_all(
-    mysqli_query($conn, "SELECT * FROM keranjang WHERE id_user='$id_user' ORDER BY created_at DESC"),
-    MYSQLI_ASSOC
-);
+$items_result = mysqli_query($conn, "SELECT * FROM keranjang WHERE id_user='$id_user' ORDER BY created_at DESC");
+$items = $items_result ? mysqli_fetch_all($items_result, MYSQLI_ASSOC) : [];
 
 $total_semua = 0;
 foreach ($items as $it) $total_semua += $it['harga'] * $it['qty'];
@@ -130,7 +193,6 @@ foreach ($items as $it) $total_semua += $it['harga'] * $it['qty'];
                 <th>Harga Satuan</th>
                 <th>Qty</th>
                 <th>Subtotal</th>
-                <th style="width:120px;"></th>
             </tr>
         </thead>
         <tbody>
@@ -149,7 +211,7 @@ foreach ($items as $it) $total_semua += $it['harga'] * $it['qty'];
                         <img src="<?= htmlspecialchars($it['gambar']) ?>" alt="<?= htmlspecialchars($it['nama_produk']) ?>" class="keranjang-img">
                         <div>
                             <div class="keranjang-nama"><?= htmlspecialchars($it['nama_produk']) ?></div>
-                            <?php if ($it['ukuran'] !== '-'): ?>
+                            <?php if (!empty($it['ukuran']) && $it['ukuran'] !== '-'): ?>
                                 <div class="keranjang-ukuran">Size: <?= htmlspecialchars($it['ukuran']) ?></div>
                             <?php endif; ?>
                         </div>
@@ -175,12 +237,7 @@ foreach ($items as $it) $total_semua += $it['harga'] * $it['qty'];
                     Rp <?= number_format($subtotal, 0, ',', '.') ?>
                 </td>
 
-                <!-- Tombol Beli -->
-                <td>
-                    <a href="keranjang.php?beli=<?= $it['id'] ?>" class="btn-buy" style="text-decoration:none; padding:10px 20px; font-size:13px;">
-                        Beli
-                    </a>
-                </td>
+
             </tr>
         <?php endforeach; ?>
         </tbody>
@@ -188,14 +245,15 @@ foreach ($items as $it) $total_semua += $it['harga'] * $it['qty'];
 
     <!-- Tombol Update & Total -->
     <div class="keranjang-footer">
-        <button type="submit" name="update_qty" value="1" class="btn-cart">Update Keranjang</button>
-
         <div class="keranjang-total-box">
             <div class="keranjang-total-label">Total Semua</div>
             <div class="keranjang-total-harga" id="grandTotal">
                 Rp <?= number_format($total_semua, 0, ',', '.') ?>
             </div>
         </div>
+        <button type="submit" name="beli_semua" value="1" class="btn-cart" style="padding:14px 40px; font-size:15px;">
+            Checkout
+        </button>
     </div>
 
     </form>
