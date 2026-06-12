@@ -59,7 +59,6 @@ $query = mysqli_query($conn, "SELECT * FROM produk WHERE kategori='woman'");
         <?php while($row = mysqli_fetch_assoc($query)) { ?>
 
             <div class="product">
-
                 <a href="detail.php?id=<?php echo $row['id']; ?>">
                     <img src="<?php echo $row['gambar']; ?>">
                 </a>

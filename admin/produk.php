@@ -1,7 +1,7 @@
 <?php
 require 'auth_check.php';
 
-// ── Handle POST (hapus & update harga) ──────────────────────
+// ── Handle POST ──────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     header('Content-Type: application/json');
     $action = $_POST['action'] ?? '';
@@ -39,6 +39,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             echo json_encode(['success'=>false,'message'=>'Gagal memperbarui harga.']);
         }
+        $stmt->close(); exit;
+
+    } elseif ($action === 'toggle_stok') {
+        $id      = (int)($_POST['id'] ?? 0);
+        $ukuran  = strtolower($_POST['ukuran'] ?? '');
+        $nilai   = (int)($_POST['nilai'] ?? 1);
+        $allowed = ['s','m','l','xl','xxl'];
+        if (!in_array($ukuran, $allowed)) { echo json_encode(['success'=>false]); exit; }
+        $col  = "stok_$ukuran";
+        $stmt = $conn->prepare("UPDATE produk SET $col=? WHERE id=?");
+        $stmt->bind_param("ii", $nilai, $id);
+        $stmt->execute();
+        echo json_encode(['success'=>true]);
         $stmt->close(); exit;
 
     } else {
@@ -139,6 +152,19 @@ $produk_list    = mysqli_query($conn, "SELECT * FROM produk ORDER BY created_at 
                             Rp <?= number_format($p['harga'],0,',','.') ?>
                         </div>
                         <?php endif; ?>
+                        <?php if (strtolower($p['kategori']) !== 'accessories'): ?>
+                        <div class="stok-sizes" style="display:flex;gap:4px;margin-top:8px;flex-wrap:wrap;">
+                            <?php foreach(['S','M','L','XL','XXL'] as $sz):
+                                $col  = 'stok_' . strtolower($sz);
+                                $aktif = $p[$col] ?? 1;
+                            ?>
+                            <button class="btn-stok <?= $aktif ? 'ada' : 'habis' ?>"
+                                onclick="toggleStok(<?= $p['id'] ?>, '<?= $sz ?>', this)">
+                                <?= $sz ?>
+                            </button>
+                            <?php endforeach; ?>
+                        </div>
+                        <?php endif; ?>
                     </div>
                 </div>
                 <?php endwhile; ?>
@@ -195,7 +221,6 @@ document.addEventListener('keydown', e => {
     if (e.key === 'Escape') { closeModal('modal-edit'); closeModal('confirm-hapus'); }
 });
 
-// Edit Harga
 function openEditHarga(id, nama, harga) {
     editId = id;
     document.getElementById('edit-nama').textContent = nama;
@@ -231,7 +256,6 @@ async function simpanHarga() {
     finally { btn.disabled = false; btn.textContent = 'Simpan'; }
 }
 
-// Hapus
 function openHapus(id, nama) {
     hapusId = id;
     document.getElementById('hapus-nama').textContent = nama;
@@ -263,7 +287,6 @@ async function eksekusiHapus() {
     finally { btn.disabled = false; btn.textContent = 'Ya, Hapus'; }
 }
 
-// Toast
 let toastTimer;
 function showToast(msg, type = 'success') {
     const t = document.getElementById('toast');
@@ -271,6 +294,23 @@ function showToast(msg, type = 'success') {
     t.className   = `toast ${type} show`;
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+async function toggleStok(id, ukuran, btn) {
+    const isAda = btn.classList.contains('ada');
+    const nilai = isAda ? 0 : 1;
+    const fd = new FormData();
+    fd.append('action', 'toggle_stok');
+    fd.append('id', id);
+    fd.append('ukuran', ukuran);
+    fd.append('nilai', nilai);
+    const res  = await fetch('produk.php', { method:'POST', body:fd });
+    const data = await res.json();
+    if (data.success) {
+        btn.classList.toggle('ada', !isAda);
+        btn.classList.toggle('habis', isAda);
+        showToast((nilai ? '✓ Stok '+ukuran+' diaktifkan' : '✗ Stok '+ukuran+' dinonaktifkan'), nilai ? 'success' : 'error');
+    }
 }
 </script>
 </body>

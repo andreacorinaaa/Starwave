@@ -16,6 +16,16 @@ if (!$item) {
     die("Produk tidak ditemukan");
 }
 
+// Kategori
+$kategori = strtolower($item['kategori'] ?? '');
+$kategori_link = match($kategori) {
+    'man'         => 'man.php',
+    'woman'       => 'woman.php',
+    'accessories' => 'accessories.php',
+    default       => 'index.php'
+};
+$kategori_label = ucfirst($kategori);
+
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     if (!isset($_SESSION['user'])) {
         $_SESSION['redirect_after_login'] = "detail.php?id=" . $id;
@@ -63,6 +73,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         exit;
     }
 }
+
+// Cek semua stok habis (hanya untuk kategori non-accessories)
+$semua_habis = (strtolower($item['kategori']) !== 'accessories') &&
+    empty($item['stok_s']) && empty($item['stok_m']) && empty($item['stok_l']) &&
+    empty($item['stok_xl']) && empty($item['stok_xxl']);
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -81,9 +96,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         <h1>STARWAVE</h1>
         <ul>
             <li><a href="index.php">Home</a></li>
-            <li><a href="man.php">Man</a></li>
-            <li><a href="woman.php">Woman</a></li>
-            <li><a href="accessories.php">Accessories</a></li>
+            <li><a href="man.php" <?= $kategori === 'man' ? 'class="active"' : '' ?>>Man</a></li>
+            <li><a href="woman.php" <?= $kategori === 'woman' ? 'class="active"' : '' ?>>Woman</a></li>
+            <li><a href="accessories.php" <?= $kategori === 'accessories' ? 'class="active"' : '' ?>>Accessories</a></li>
             <li><a href="order.php">Order</a></li>
             <li><a href="keranjang.php">Keranjang</a></li>
         </ul>
@@ -103,8 +118,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <h1>Detail Produk</h1>
     <div class="breadcrumb">
         <a href="index.php">Home</a><span>/</span>
-        <a href="woman.php">Shop</a><span>/</span>
-        <a href="woman.php"><?= htmlspecialchars($item['kategori'] ?? 'Produk') ?></a><span>/</span>
+        <a href="<?= $kategori_link ?>">Shop</a><span>/</span>
+        <a href="<?= $kategori_link ?>"><?= htmlspecialchars($kategori_label) ?></a><span>/</span>
         <span style="color:#2b1a0e"><?= htmlspecialchars($item['nama_produk']) ?></span>
     </div>
 </div>
@@ -149,19 +164,33 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
             <p class="dtl-product-desc"><?= $item['deskripsi'] ?></p>
 
+            <!-- Notif stok habis semua -->
+            <?php if ($semua_habis): ?>
+            <div style="background:#fdecea;border-left:4px solid #e05555;padding:14px 18px;font-size:14px;color:#c0392b;font-weight:600;">
+                ⚠️ Produk ini sedang habis stok. Silakan cek kembali nanti.
+            </div>
+            <?php endif; ?>
+
             <form method="POST" id="dtl-orderForm">
 
                 <!-- Ukuran -->
                 <?php if (strtolower($item['kategori']) !== 'accessories'): ?>
                 <div>
                     <div class="dtl-size-buttons" style="margin-top:10px;">
-                        <button type="button" class="dtl-size-btn" data-size="S"   onclick="selectSize(this)">S</button>
-                        <button type="button" class="dtl-size-btn active" data-size="M" onclick="selectSize(this)">M</button>
-                        <button type="button" class="dtl-size-btn" data-size="L"   onclick="selectSize(this)">L</button>
-                        <button type="button" class="dtl-size-btn" data-size="XL"  onclick="selectSize(this)">XL</button>
-                        <button type="button" class="dtl-size-btn" data-size="XXL" onclick="selectSize(this)">XXL</button>
+                        <?php foreach(['S','M','L','XL','XXL'] as $sz):
+                            $col   = 'stok_' . strtolower($sz);
+                            $habis = empty($item[$col]);
+                        ?>
+                        <button type="button"
+                            class="dtl-size-btn <?= $habis ? 'habis' : '' ?>"
+                            data-size="<?= $sz ?>"
+                            <?= $habis ? 'disabled' : 'onclick="selectSize(this)"' ?>
+                            title="<?= $habis ? 'Stok habis' : '' ?>">
+                            <?= $sz ?>
+                        </button>
+                        <?php endforeach; ?>
                     </div>
-                    <input type="hidden" name="ukuran" id="ukuranInput" value="M">
+                    <input type="hidden" name="ukuran" id="ukuranInput" value="">
                 </div>
                 <?php else: ?>
                     <input type="hidden" name="ukuran" id="ukuranInput" value="-">
@@ -182,98 +211,105 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         <input class="dtl-qty-input" type="number" name="qty" id="qty" min="1" value="1" readonly>
                         <button type="button" class="dtl-qty-btn" onclick="changeQty(1)">+</button>
                     </div>
-                    <button type="submit" name="aksi" value="keranjang" class="dtl-btn-cart">Keranjang</button>
-                    <button type="submit" name="aksi" value="beli"      class="dtl-btn-buy">Beli</button>
+                    <button type="submit" name="aksi" value="keranjang" class="dtl-btn-cart"
+                        <?= $semua_habis ? 'disabled style="opacity:.5;cursor:not-allowed;"' : '' ?>>
+                        Keranjang
+                    </button>
+                    <button type="submit" name="aksi" value="beli" class="dtl-btn-buy"
+                        <?= $semua_habis ? 'disabled style="opacity:.5;cursor:not-allowed;"' : '' ?>>
+                        Beli
+                    </button>
                 </div>
 
             </form>
         </div><!-- end dtl-product-info -->
 
     </div><!-- end dtl-grid -->
-</section>
 
-<!-- ULASAN -->
-<section class="dtl-tabs-section">
-    <?php
-    $ulasanQuery = mysqli_query($conn,
-    "SELECT u.*, us.nama_panggilan
-     FROM ulasan u
-     LEFT JOIN users us ON u.id_user = us.id_user
-     WHERE u.id_produk = '$id'
-     ORDER BY u.created_at DESC"
-    );
-    $allUlasan   = mysqli_fetch_all($ulasanQuery, MYSQLI_ASSOC);
-    $totalUlasan = count($allUlasan);
+    <!-- ULASAN -->
+    <section>
+        <?php
+        $ulasanQuery = mysqli_query($conn,
+        "SELECT u.*, us.nama_panggilan
+         FROM ulasan u
+         LEFT JOIN users us ON u.id_user = us.id_user
+         WHERE u.id_produk = '$id'
+         ORDER BY u.created_at DESC"
+        );
+        $allUlasan   = mysqli_fetch_all($ulasanQuery, MYSQLI_ASSOC);
+        $totalUlasan = count($allUlasan);
 
-    $avgRating = 0;
-    $dist = [5 => 0, 4 => 0, 3 => 0, 2 => 0, 1 => 0];
-    if ($totalUlasan > 0) {
-        foreach ($allUlasan as $u) $dist[(int)$u['bintang']]++;
-        $avgRating = round(array_sum(array_column($allUlasan, 'bintang')) / $totalUlasan, 1);
-    }
-    ?>
-
-<!-- Overview Rating -->
-<div class="dtl-review-overview">
-    <div class="dtl-rating-big">
-        <div class="num"><?= $totalUlasan > 0 ? $avgRating : '-' ?></div>
-        <div class="out">dari 5</div>
-        <div class="stars-big">★★★★★</div>
-        <div class="total-reviews">(<?= $totalUlasan ?> Ulasan)</div>
-    </div>
-    <div class="dtl-rating-bars">
-        <?php for ($s = 5; $s >= 1; $s--):
-            $pct = $totalUlasan > 0 ? round($dist[$s] / $totalUlasan * 100) : 0;
+        $avgRating = 0;
+        $dist = [5 => 0, 4 => 0, 3 => 0, 2 => 0, 1 => 0];
+        if ($totalUlasan > 0) {
+            foreach ($allUlasan as $u) $dist[(int)$u['bintang']]++;
+            $avgRating = round(array_sum(array_column($allUlasan, 'bintang')) / $totalUlasan, 1);
+        }
         ?>
-        <div class="dtl-bar-row">
-            <span class="dtl-bar-label"><?= $s ?></span>
-            <div class="dtl-bar-track">
-                <div class="dtl-bar-fill" style="width:<?= $pct ?>%"></div>
-            </div>
-            <span class="dtl-bar-count"><?= $dist[$s] ?></span>
-        </div>
-        <?php endfor; ?>
-    </div>
-</div>
 
-<!-- Daftar Ulasan -->
-<?php if ($totalUlasan === 0): ?>
-    <p style="text-align:center; color:#888; padding:30px 0;">
-        Belum ada ulasan untuk produk ini.
-    </p>
-<?php else: ?>
-    <?php foreach ($allUlasan as $u):
-        $nama    = htmlspecialchars($u['nama_panggilan'] ?? 'User');
-        $initial = strtoupper(substr($nama, 0, 1));
-        $bintang = (int)$u['bintang'];
-        $tgl     = date('d M Y', strtotime($u['created_at']));
-    ?>
-    <div class="dtl-review-card">
-        <div class="dtl-review-card-header">
-            <div class="dtl-reviewer">
-                <div class="dtl-reviewer-avatar"><?= $initial ?></div>
-                <div>
-                    <div class="dtl-reviewer-name"><?= $nama ?></div>
-                    <div class="dtl-reviewer-badge">✔ Terverifikasi</div>
+        <!-- Overview Rating -->
+        <div class="dtl-review-overview">
+            <div class="dtl-rating-big">
+                <div class="num"><?= $totalUlasan > 0 ? $avgRating : '-' ?></div>
+                <div class="out">dari 5</div>
+                <div class="stars-big">★★★★★</div>
+                <div class="total-reviews">(<?= $totalUlasan ?> Ulasan)</div>
+            </div>
+            <div class="dtl-rating-bars">
+                <?php for ($s = 5; $s >= 1; $s--):
+                    $pct = $totalUlasan > 0 ? round($dist[$s] / $totalUlasan * 100) : 0;
+                ?>
+                <div class="dtl-bar-row">
+                    <span class="dtl-bar-label"><?= $s ?></span>
+                    <div class="dtl-bar-track">
+                        <div class="dtl-bar-fill" style="width:<?= $pct ?>%"></div>
+                    </div>
+                    <span class="dtl-bar-count"><?= $dist[$s] ?></span>
+                </div>
+                <?php endfor; ?>
+            </div>
+        </div>
+
+        <!-- Daftar Ulasan -->
+        <?php if ($totalUlasan === 0): ?>
+            <p style="text-align:center; color:#888; padding:30px 0;">
+                Belum ada ulasan untuk produk ini.
+            </p>
+        <?php else: ?>
+            <?php foreach ($allUlasan as $u):
+                $nama    = htmlspecialchars($u['nama_panggilan'] ?? 'User');
+                $initial = strtoupper(substr($nama, 0, 1));
+                $bintang = (int)$u['bintang'];
+                $tgl     = date('d M Y', strtotime($u['created_at']));
+            ?>
+            <div class="dtl-review-card">
+                <div class="dtl-review-card-header">
+                    <div class="dtl-reviewer">
+                        <div class="dtl-reviewer-avatar"><?= $initial ?></div>
+                        <div>
+                            <div class="dtl-reviewer-name"><?= $nama ?></div>
+                            <div class="dtl-reviewer-badge">✔ Terverifikasi</div>
+                        </div>
+                    </div>
+                    <div class="dtl-review-date"><?= $tgl ?></div>
+                </div>
+                <div class="dtl-review-stars">
+                    <?= str_repeat('★', $bintang) ?>
+                    <?= str_repeat('<span style="color:#ddd">★</span>', 5 - $bintang) ?>
+                    <span style="font-size:13px; color:#555; font-weight:700;">
+                        <?= number_format($bintang, 1) ?>
+                    </span>
+                </div>
+                <div class="dtl-review-body" style="margin-top:8px;">
+                    <?= htmlspecialchars($u['komentar']) ?>
                 </div>
             </div>
-            <div class="dtl-review-date"><?= $tgl ?></div>
-        </div>
-        <div class="dtl-review-stars">
-            <?= str_repeat('★', $bintang) ?>
-            <?= str_repeat('<span style="color:#ddd">★</span>', 5 - $bintang) ?>
-            <span style="font-size:13px; color:#555; font-weight:700;">
-                <?= number_format($bintang, 1) ?>
-            </span>
-        </div>
-        <div class="dtl-review-body" style="margin-top:8px;">
-            <?= htmlspecialchars($u['komentar']) ?>
-        </div>
-    </div>
-    <?php endforeach; ?>
-<?php endif; ?>
+            <?php endforeach; ?>
+        <?php endif; ?>
 
-</section>
+    </section>
+
+</section><!-- end dtl-section -->
 
 <!-- FOOTER -->
 <footer>
@@ -317,6 +353,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         el.classList.add('active');
         document.getElementById('ukuranInput').value = el.getAttribute('data-size');
     }
+
+    // Auto-select ukuran pertama yang tersedia
+    document.addEventListener('DOMContentLoaded', () => {
+        const firstAvail = document.querySelector('.dtl-size-btn:not(.habis):not([disabled])');
+        if (firstAvail) {
+            firstAvail.classList.add('active');
+            document.getElementById('ukuranInput').value = firstAvail.dataset.size;
+        }
+    });
 </script>
 
 </body>

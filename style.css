@@ -13,7 +13,7 @@
 /* ── BODY ── */
 body {
     background: #ffffff;
-    padding-top: 65px; /* sesuaikan tinggi navbar */
+    padding-top: 65px;
 }
 
 
@@ -80,7 +80,7 @@ nav ul li a.active{
 /* ── BANNER MAN, WOMAN, ACCESSORIES (dicrop) ── */
 .banner-category .banner-img img {
     width: 100%;
-    height: 400px;        /* sesuaikan tingginya */
+    height: 400px;
     object-fit: cover;
 }
 
@@ -154,12 +154,20 @@ nav ul li a.active{
     width: 150px;
 }
 
+.page-man .product a,
+.page-woman .product a,
+.page-accessories .product a {
+    text-decoration: none;
+    color: #333;
+    display: block;
+}
+
 /* ── FOOTER ── */
 footer {
     background: #eee;
     padding: 20px;
     position: relative;
-    margin-top: -30px;  /* sesuaikan angkanya */
+    margin-top: -30px;
 }
 
 
@@ -253,7 +261,8 @@ button:hover {
     text-align: center;
     overflow: visible;
     position: relative;
-    transition: 0.3s;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    z-index: 1;
 }
 
 .page-man .product img,
@@ -262,23 +271,20 @@ button:hover {
     width: 100%;
     height: 350px;
     object-fit: cover;
-    transition: transform 0.5s ease, filter 0.5s ease;
-    position: relative;
-    z-index: 1;
+    transition: filter 0.3s ease;
 }
 
 .page-man .product:hover img,
 .page-woman .product:hover img,
 .page-accessories .product:hover img {
-    transform: scale(1.2);
-    z-index: 10;
     filter: brightness(90%);
 }
 
 .page-man .product:hover,
 .page-woman .product:hover,
 .page-accessories .product:hover {
-    transform: translateY(-10px);
+    transform: translateY(-10px) scale(1.1);
+    z-index: 10;
 }
 
 /* ── HALAMAN SEARCH ── */
@@ -298,26 +304,24 @@ button:hover {
     text-align: center;
     overflow: visible;
     position: relative;
-    transition: 0.3s;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    z-index: 1;
 }
 
 .page-search .product img {
     width: 100%;
     height: 350px;
     object-fit: cover;
-    transition: transform 0.5s ease, filter 0.5s ease;
-    position: relative;
-    z-index: 1;
+    transition: filter 0.3s ease;
 }
 
 .page-search .product:hover img {
-    transform: scale(1.2);
-    z-index: 10;
     filter: brightness(90%);
 }
 
 .page-search .product:hover {
-    transform: translateY(-10px);
+    transform: translateY(-10px) scale(1.05);
+    z-index: 10;
 }
 
 /* ── PROFILE PAGE ── */
