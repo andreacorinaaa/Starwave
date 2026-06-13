@@ -199,6 +199,7 @@ function statusLabel($s) {
             <div class="actions-bar">
                 <input type="text" class="search-input" id="search-orders" placeholder="Cari produk / pemesan..." oninput="filterOrders()">
                 <button class="filter-btn active" onclick="filterStatus('semua', this)">Semua</button>
+                <button class="filter-btn" onclick="filterStatus('belum_bayar', this)">Belum Bayar</button>
                 <button class="filter-btn" onclick="filterStatus('pending', this)">Pending</button>
                 <button class="filter-btn" onclick="filterStatus('diproses', this)">Diproses</button>
                 <button class="filter-btn" onclick="filterStatus('dikirim', this)">Dikirim</button>
@@ -216,7 +217,7 @@ function statusLabel($s) {
                             <th>Penerima</th>
                             <th>Tgl Order</th>
                             <th>Status</th>
-                            <th>Pembayaran</th>  <!-- kolom baru -->
+                            <th>Pembayaran</th>
                             <th>Ubah Status</th>
                             <th>Aksi</th>
                         </tr>
@@ -227,6 +228,7 @@ function statusLabel($s) {
                     <?php else: while ($o = mysqli_fetch_assoc($orders)): ?>
                         <?php $is_paid = ($o['status_bayar'] ?? '') === 'paid'; ?>
                         <tr data-status="<?= $o['status'] ?>"
+                            data-bayar="<?= $is_paid ? 'paid' : 'belum_bayar' ?>"
                             data-search="<?= strtolower($o['nama_produk'] . ' ' . ($o['nama'] ?? '') . ' ' . $o['nama_penerima']) ?>">
 
                             <td class="order-id">#<?= $o['id'] ?></td>
@@ -306,23 +308,35 @@ function statusLabel($s) {
 </div>
 
 <script>
-// ── Filter & search (existing, tidak berubah) ──
 let currentStatus = 'semua';
+
 function filterStatus(status, btn) {
     currentStatus = status;
     document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     applyFilter();
 }
+
 function filterOrders() { applyFilter(); }
+
 function applyFilter() {
     const q = document.getElementById('search-orders').value.toLowerCase();
     document.querySelectorAll('#orders-table tbody tr').forEach(row => {
         const rowStatus = row.getAttribute('data-status') || '';
+        const rowBayar  = row.getAttribute('data-bayar') || '';
         const rowSearch = row.getAttribute('data-search') || '';
-        const statusMatch = currentStatus === 'semua'
-            || rowStatus === currentStatus
-            || (currentStatus === 'pending' && (rowStatus === 'pending' || rowStatus === 'pending_payment'));
+
+        let statusMatch = false;
+        if (currentStatus === 'semua') {
+            statusMatch = true;
+        } else if (currentStatus === 'belum_bayar') {
+            statusMatch = rowBayar === 'belum_bayar';
+        } else if (currentStatus === 'pending') {
+            statusMatch = rowStatus === 'pending' || rowStatus === 'pending_payment';
+        } else {
+            statusMatch = rowStatus === currentStatus;
+        }
+
         const searchMatch = q === '' || rowSearch.includes(q);
         row.style.display = (statusMatch && searchMatch) ? '' : 'none';
     });
@@ -343,7 +357,6 @@ function closeModal() {
     document.getElementById('modal-konfirmasi').classList.remove('open');
 }
 
-// Tutup modal kalau klik backdrop
 document.getElementById('modal-konfirmasi').addEventListener('click', function(e) {
     if (e.target === this) closeModal();
 });

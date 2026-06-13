@@ -12,18 +12,17 @@
 
 /* ── BODY ── */
 body {
-    background: #ffffff;
+    background: #f5fafd;
     padding-top: 65px;
 }
-
 
 /* ── NAVBAR ── */
 nav {
     display: flex;
     align-items: center;
     padding: 20px 60px;
-    background: #fff;
-    border-bottom: 2px solid #ddd;
+    background: #1C4759;
+    border-bottom: 2px solid #163743;
 
     position: fixed;
     top: 0;
@@ -36,6 +35,7 @@ nav {
 
 nav h1 {
     margin-right: 80px;
+    color: #fff;
 }
 
 nav ul {
@@ -47,20 +47,53 @@ nav ul {
 
 nav ul li a {
     text-decoration: none;
-    color: #333;
+    color: #c9dde8;
     font-size: 18px;
+    transition: color 0.2s;
 }
 
-nav ul li a.active{
-    color: #b8dded;
-    border-bottom: 2px solid rgb(12, 12, 12);
+nav ul li a:hover {
+    color: #fff;
+}
+
+nav ul li a.active {
+    color: #fff;
+    border-bottom: 2px solid #2a7fa8;
     padding-bottom: 3px;
+}
+
+nav > a {
+    color: #c9dde8 !important;
+    text-decoration: none;
+    font-size: 18px;
+    transition: color 0.2s;
+}
+
+nav > a:hover {
+    color: #fff !important;
+}
+
+/* search input di navbar */
+nav input[type="text"],
+nav input[type="search"] {
+    padding: 7px 14px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    background: #e8f0f5;
+    color: #1C4759;
+    outline: none;
+}
+
+nav input[type="text"]::placeholder,
+nav input[type="search"]::placeholder {
+    color: #7a9eb0;
 }
 
 /* ── BANNER ── */
 .banner {
     position: relative;
-    background: #FFFFFF;
+    background: #1C4759;
     padding: 0;
     overflow: hidden;
 }
@@ -70,7 +103,7 @@ nav ul li a.active{
     height: 100%;
 }
 
-/* ── BANNER INDEX (tetap seperti sekarang) ── */
+/* ── BANNER INDEX ── */
 .banner-index .banner-img img {
     width: 100%;
     height: auto;
@@ -102,14 +135,29 @@ nav ul li a.active{
     background: #1C4759;
     color: white;
     text-decoration: none;
-    border-radius: 5px;
+    border-radius: 8px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    transition: background 0.2s;
+}
+
+.banner a:hover {
+    background: #163743;
 }
 
 /* ── NEW ARRIVAL ── */
 .arrival {
     padding: 50px;
     text-align: center;
-    background-color: #ffffff;
+    background-color: #e8f0f5;
+}
+
+.arrival h2 {
+    color: #1C4759;
+    font-size: 22px;
+    font-weight: 800;
+    margin-bottom: 4px;
+    letter-spacing: 0.5px;
 }
 
 .arrival-box {
@@ -127,7 +175,14 @@ nav ul li a.active{
 .trend {
     padding: 50px;
     text-align: center;
-    background: #FFFFFF;
+    background: #ffffff;
+}
+
+.trend h2 {
+    color: #1C4759;
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
 }
 
 /* ── PRODUCTS ── */
@@ -135,6 +190,13 @@ nav ul li a.active{
     padding: 50px;
     text-align: center;
     background: #ffffff;
+}
+
+.products h2 {
+    color: #1C4759;
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
 }
 
 .product-box {
@@ -148,46 +210,77 @@ nav ul li a.active{
     background: white;
     padding: 20px;
     width: 200px;
+    border-radius: 8px;
+    transition: box-shadow 0.2s;
+}
+
+.product:hover {
+    box-shadow: 0 4px 16px rgba(28, 71, 89, 0.12);
 }
 
 .product img {
     width: 150px;
 }
 
+.product p {
+    color: #1C4759;
+    font-weight: 700;
+    margin-top: 8px;
+}
+
 .page-man .product a,
 .page-woman .product a,
 .page-accessories .product a {
     text-decoration: none;
-    color: #333;
+    color: #1C4759;
     display: block;
 }
 
 /* ── FOOTER ── */
 footer {
-    background: #eee;
-    padding: 20px;
+    background: #1C4759;
+    padding: 28px 20px;
     position: relative;
     margin-top: -30px;
 }
 
-
 .footer-box {
     display: flex;
     justify-content: space-around;
-    margin-bottom: 10px;
+    margin-bottom: 16px;
+}
+
+footer p,
+footer h4 {
+    color: #c9dde8;
+}
+
+footer h4 {
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    letter-spacing: 0.5px;
 }
 
 footer a {
-    color: #333;
+    color: #c9dde8;
     text-decoration: none;
+    font-size: 13px;
+    transition: color 0.2s;
 }
 
 footer a:hover {
-    text-decoration: underline;
+    color: #fff;
+    text-decoration: none;
 }
 
 .copy {
     text-align: center;
+    color: #7a9eb0;
+    font-size: 12px;
+    border-top: 1px solid #163743;
+    padding-top: 14px;
 }
 
 /* ── CONTAINER & TABLE (halaman order/riwayat) ── */
@@ -223,8 +316,8 @@ form {
 
 input {
     padding: 8px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
+    border: 1px solid #b8d4e0;
+    border-radius: 6px;
 }
 
 button {
@@ -232,8 +325,9 @@ button {
     background: #1C4759;
     color: white;
     border: none;
-    border-radius: 4px;
+    border-radius: 6px;
     cursor: pointer;
+    transition: background 0.2s;
 }
 
 button:hover {
@@ -257,12 +351,13 @@ button:hover {
     width: 100% !important;
     background: white;
     padding: 15px;
-    border-radius: 0px;
+    border-radius: 8px;
     text-align: center;
     overflow: visible;
     position: relative;
     transition: transform 0.3s ease, box-shadow 0.3s ease;
     z-index: 1;
+    border: 1px solid #e8f0f5;
 }
 
 .page-man .product img,
@@ -272,6 +367,7 @@ button:hover {
     height: 350px;
     object-fit: cover;
     transition: filter 0.3s ease;
+    border-radius: 4px;
 }
 
 .page-man .product:hover img,
@@ -284,7 +380,15 @@ button:hover {
 .page-woman .product:hover,
 .page-accessories .product:hover {
     transform: translateY(-10px) scale(1.1);
+    box-shadow: 0 8px 24px rgba(28, 71, 89, 0.15);
     z-index: 10;
+}
+
+/* section heading halaman man/woman/accessories */
+.page-man .products,
+.page-woman .products,
+.page-accessories .products {
+    background: #f5fafd;
 }
 
 /* ── HALAMAN SEARCH ── */
@@ -327,7 +431,7 @@ button:hover {
 /* ── PROFILE PAGE ── */
 .profile-page {
     min-height: 100vh;
-    background: #f7f7f7;
+    background: linear-gradient(135deg, #e8f0f5 0%, #c9dde8 100%);
     display: flex;
     align-items: flex-start;
     justify-content: center;
@@ -337,25 +441,28 @@ button:hover {
 .profile-card {
     background: #fff;
     width: 100%;
-    max-width: 560px;
+    max-width: 860px;
     padding: 48px 48px 40px;
-    box-shadow: 0 2px 24px rgba(0,0,0,0.08);
+    border-radius: 16px;
+    border-top: 5px solid #1C4759;
+    box-shadow: 0 8px 32px rgba(28, 71, 89, 0.12);
 }
 
 .profile-card h2 {
     font-size: 26px;
     font-weight: 800;
     color: #1C4759;
-    margin-bottom: 28px;
+    margin-bottom: 6px;
     padding-bottom: 16px;
-    border-bottom: 2px solid #eee;
+    border-bottom: 3px solid #2a7fa8;
     letter-spacing: 0.5px;
 }
 
 .profile-card .auth-alert.success {
-    background: #eaf6ec;
-    color: #2e7d32;
-    border-left: 4px solid #43a047;
+    background: #ecfdf5;
+    color: #065f46;
+    border-left: 4px solid #10b981;
+    border-radius: 0 6px 6px 0;
     padding: 12px 16px;
     font-size: 14px;
     font-weight: 600;
@@ -372,22 +479,22 @@ button:hover {
 .profile-card .form-group label {
     font-size: 12px;
     font-weight: 700;
-    color: #888;
+    color: #1C4759;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 1px;
 }
 
 .profile-card .form-group input,
 .profile-card .form-group textarea,
 .profile-card .form-group select {
     padding: 11px 14px;
-    border: 1.5px solid #ddd;
-    border-radius: 0;
+    border: 1.5px solid #b8d4e0;
+    border-radius: 8px;
     font-size: 14px;
     color: #222;
-    background: #fff;
+    background: #f5fafd;
     font-family: Arial, sans-serif;
-    transition: border-color 0.2s;
+    transition: border-color 0.2s, box-shadow 0.2s;
     outline: none;
     width: 100%;
     box-sizing: border-box;
@@ -397,12 +504,15 @@ button:hover {
 .profile-card .form-group textarea:focus,
 .profile-card .form-group select:focus {
     border-color: #1C4759;
+    box-shadow: 0 0 0 3px rgba(28, 71, 89, 0.12);
+    background: #fff;
 }
 
 .profile-card .form-group input:disabled {
     background: #f5f5f5;
     color: #aaa;
     cursor: not-allowed;
+    border-color: #e5e5e5;
 }
 
 .profile-card .form-group textarea {
@@ -418,34 +528,39 @@ button:hover {
 .profile-card button[type="submit"] {
     width: 100%;
     padding: 14px;
-    background: #1C4759;
+    background: linear-gradient(135deg, #1C4759, #2a7fa8);
     color: #fff;
     border: none;
+    border-radius: 8px;
     font-size: 14px;
     font-weight: 700;
     letter-spacing: 1px;
     text-transform: uppercase;
     cursor: pointer;
-    transition: background 0.2s;
-    border-radius: 0;
+    transition: opacity 0.2s, transform 0.1s;
     margin-top: 8px;
 }
 
 .profile-card button[type="submit"]:hover {
-    background: #163743;
+    opacity: 0.88;
+    transform: translateY(-1px);
+}
+
+.profile-card button[type="submit"]:active {
+    transform: translateY(0);
 }
 
 .profile-card .logout {
     text-align: center;
     margin-top: 20px;
     padding-top: 20px;
-    border-top: 1px solid #eee;
+    border-top: 1px solid #d0e6f0;
 }
 
 .profile-card .logout a {
     font-size: 13px;
     font-weight: 700;
-    color: #888;
+    color: #2a7fa8;
     text-decoration: none;
     letter-spacing: 1px;
     text-transform: uppercase;

@@ -41,17 +41,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         $stmt->close(); exit;
 
-    } elseif ($action === 'toggle_stok') {
-        $id      = (int)($_POST['id'] ?? 0);
-        $ukuran  = strtolower($_POST['ukuran'] ?? '');
-        $nilai   = (int)($_POST['nilai'] ?? 1);
+    } elseif ($action === 'update_stok') {
+        $id     = (int)($_POST['id'] ?? 0);
+        $ukuran = strtolower($_POST['ukuran'] ?? '');
+        $jumlah = max(0, (int)($_POST['jumlah'] ?? 0));
         $allowed = ['s','m','l','xl','xxl'];
-        if (!in_array($ukuran, $allowed)) { echo json_encode(['success'=>false]); exit; }
+        if ($id <= 0 || !in_array($ukuran, $allowed)) {
+            echo json_encode(['success'=>false,'message'=>'Data tidak valid.']); exit;
+        }
         $col  = "stok_$ukuran";
         $stmt = $conn->prepare("UPDATE produk SET $col=? WHERE id=?");
-        $stmt->bind_param("ii", $nilai, $id);
+        $stmt->bind_param("ii", $jumlah, $id);
         $stmt->execute();
-        echo json_encode(['success'=>true]);
+        echo json_encode(['success'=>true,'jumlah'=>$jumlah]);
         $stmt->close(); exit;
 
     } else {
@@ -152,19 +154,35 @@ $produk_list    = mysqli_query($conn, "SELECT * FROM produk ORDER BY created_at 
                             Rp <?= number_format($p['harga'],0,',','.') ?>
                         </div>
                         <?php endif; ?>
+
                         <?php if (strtolower($p['kategori']) !== 'accessories'): ?>
-                        <div class="stok-sizes" style="display:flex;gap:4px;margin-top:8px;flex-wrap:wrap;">
+                        <div class="stok-sizes" style="margin-top:10px;">
                             <?php foreach(['S','M','L','XL','XXL'] as $sz):
-                                $col  = 'stok_' . strtolower($sz);
-                                $aktif = $p[$col] ?? 1;
+                                $col    = 'stok_' . strtolower($sz);
+                                $jumlah = (int)($p[$col] ?? 0);
+                                $status = $jumlah > 0 ? 'ada' : 'habis';
                             ?>
-                            <button class="btn-stok <?= $aktif ? 'ada' : 'habis' ?>"
-                                onclick="toggleStok(<?= $p['id'] ?>, '<?= $sz ?>', this)">
-                                <?= $sz ?>
-                            </button>
+                            <div class="stok-row">
+                                <span class="stok-label <?= $status ?>"><?= $sz ?></span>
+                                <div class="stok-input-group">
+                                    <button type="button" class="stok-dec"
+                                        onclick="ubahStok(<?= $p['id'] ?>, '<?= $sz ?>', this, -1)">−</button>
+                                    <input type="number" class="stok-angka"
+                                        id="stok-<?= $p['id'] ?>-<?= strtolower($sz) ?>"
+                                        value="<?= $jumlah ?>" min="0"
+                                        onchange="simpanStok(<?= $p['id'] ?>, '<?= $sz ?>', this)">
+                                    <button type="button" class="stok-inc"
+                                        onclick="ubahStok(<?= $p['id'] ?>, '<?= $sz ?>', this, 1)">+</button>
+                                </div>
+                                <span class="stok-badge <?= $status ?>"
+                                    id="badge-<?= $p['id'] ?>-<?= strtolower($sz) ?>">
+                                    <?= $jumlah > 0 ? $jumlah.' pcs' : 'Habis' ?>
+                                </span>
+                            </div>
                             <?php endforeach; ?>
                         </div>
                         <?php endif; ?>
+
                     </div>
                 </div>
                 <?php endwhile; ?>
@@ -296,21 +314,41 @@ function showToast(msg, type = 'success') {
     toastTimer = setTimeout(() => t.classList.remove('show'), 3500);
 }
 
-async function toggleStok(id, ukuran, btn) {
-    const isAda = btn.classList.contains('ada');
-    const nilai = isAda ? 0 : 1;
+async function simpanStok(id, ukuran, input) {
+    const jumlah = Math.max(0, parseInt(input.value) || 0);
+    input.value = jumlah;
+
     const fd = new FormData();
-    fd.append('action', 'toggle_stok');
+    fd.append('action', 'update_stok');
     fd.append('id', id);
     fd.append('ukuran', ukuran);
-    fd.append('nilai', nilai);
-    const res  = await fetch('produk.php', { method:'POST', body:fd });
-    const data = await res.json();
-    if (data.success) {
-        btn.classList.toggle('ada', !isAda);
-        btn.classList.toggle('habis', isAda);
-        showToast((nilai ? '✓ Stok '+ukuran+' diaktifkan' : '✗ Stok '+ukuran+' dinonaktifkan'), nilai ? 'success' : 'error');
-    }
+    fd.append('jumlah', jumlah);
+
+    try {
+        const res  = await fetch('produk.php', { method:'POST', body:fd });
+        const data = await res.json();
+        if (data.success) {
+            const key   = id + '-' + ukuran.toLowerCase();
+            const badge = document.getElementById('badge-' + key);
+            const label = document.querySelector('#stok-' + key)
+                            .closest('.stok-row').querySelector('.stok-label');
+            const isAda = jumlah > 0;
+            if (badge) {
+                badge.textContent = isAda ? jumlah + ' pcs' : 'Habis';
+                badge.className   = 'stok-badge ' + (isAda ? 'ada' : 'habis');
+            }
+            if (label) {
+                label.className = 'stok-label ' + (isAda ? 'ada' : 'habis');
+            }
+            showToast('✓ Stok ' + ukuran + ' diperbarui: ' + jumlah, 'success');
+        }
+    } catch { showToast('Gagal menyimpan stok.', 'error'); }
+}
+
+function ubahStok(id, ukuran, btn, delta) {
+    const input = document.getElementById('stok-' + id + '-' + ukuran.toLowerCase());
+    input.value = Math.max(0, (parseInt(input.value) || 0) + delta);
+    simpanStok(id, ukuran, input);
 }
 </script>
 </body>

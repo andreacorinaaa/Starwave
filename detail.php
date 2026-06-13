@@ -16,7 +16,6 @@ if (!$item) {
     die("Produk tidak ditemukan");
 }
 
-// Kategori
 $kategori = strtolower($item['kategori'] ?? '');
 $kategori_link = match($kategori) {
     'man'         => 'man.php',
@@ -48,7 +47,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $cek = mysqli_fetch_assoc(mysqli_query($conn,
             "SELECT * FROM keranjang WHERE id_user='$id_user' AND id_produk='$id' AND ukuran='$ukuran'"
         ));
-
         if ($cek) {
             mysqli_query($conn, "UPDATE keranjang SET qty = qty + '$qty' WHERE id='$cek[id]'");
         } else {
@@ -61,7 +59,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
         header("Location: keranjang.php");
         exit;
-
     } else {
         $insert = mysqli_query($conn,
             "INSERT INTO orders (id_user, nama_produk, qty, harga, total_harga, nama_penerima, email, tanggal_order, status)
@@ -74,10 +71,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
 }
 
-// Cek semua stok habis (hanya untuk kategori non-accessories)
 $semua_habis = (strtolower($item['kategori']) !== 'accessories') &&
-    empty($item['stok_s']) && empty($item['stok_m']) && empty($item['stok_l']) &&
-    empty($item['stok_xl']) && empty($item['stok_xxl']);
+    ($item['stok_s'] <= 0) && ($item['stok_m'] <= 0) && ($item['stok_l'] <= 0) &&
+    ($item['stok_xl'] <= 0) && ($item['stok_xxl'] <= 0);
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -90,7 +86,6 @@ $semua_habis = (strtolower($item['kategori']) !== 'accessories') &&
 </head>
 <body>
 
-<!-- NAVBAR -->
 <header>
     <nav>
         <h1>STARWAVE</h1>
@@ -106,14 +101,26 @@ $semua_habis = (strtolower($item['kategori']) !== 'accessories') &&
             <input type="text" name="q" placeholder="Search produk..." style="padding:5px;">
         </form>
         <?php if (isset($_SESSION['user'])): ?>
-            <a href="profile.php" style="margin-left:15px; text-decoration:none; color:#333;">Profile</a>
-        <?php else: ?>
-            <a href="masuk/login.php" style="margin-left:15px; text-decoration:none; color:#333;">Login</a>
-        <?php endif; ?>
+    <a href="profile.php" style="margin-left:15px; text-decoration:none; color:#333; display:flex; align-items:center;" title="Profile">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="8" r="4"/>
+            <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+        </svg>
+    </a>
+<?php elseif (isset($_SESSION['admin'])): ?>
+    <a href="admin/dashboard.php" style="margin-left:15px; text-decoration:none; color:#4f6ef7; display:flex; align-items:center; gap:5px; font-size:12px; font-weight:700; letter-spacing:1px;" title="Admin Panel">
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="8" r="4"/>
+            <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+        </svg>
+        ADMIN
+    </a>
+<?php else: ?>
+    <a href="masuk/login.php" style="margin-left:15px; text-decoration:none; color:#333;">Login</a>
+<?php endif; ?>
     </nav>
 </header>
 
-<!-- BREADCRUMB -->
 <div class="breadcrumb-bar">
     <h1>Detail Produk</h1>
     <div class="breadcrumb">
@@ -124,11 +131,9 @@ $semua_habis = (strtolower($item['kategori']) !== 'accessories') &&
     </div>
 </div>
 
-<!-- DETAIL PRODUK -->
 <section class="dtl-section">
     <div class="dtl-grid">
 
-        <!-- GALERI GAMBAR -->
         <div class="dtl-gallery">
             <div class="dtl-gallery-main">
                 <img id="mainImg"
@@ -137,12 +142,10 @@ $semua_habis = (strtolower($item['kategori']) !== 'accessories') &&
             </div>
         </div>
 
-        <!-- INFO PRODUK -->
         <div class="dtl-product-info">
 
             <h1 class="dtl-product-title"><?= htmlspecialchars($item['nama_produk']) ?></h1>
 
-            <!-- Rating -->
             <div class="dtl-rating-row">
                 <div class="dtl-stars">
                     <span class="dtl-star">★</span>
@@ -157,14 +160,12 @@ $semua_habis = (strtolower($item['kategori']) !== 'accessories') &&
                 <span class="dtl-rating-count">(245 Ulasan)</span>
             </div>
 
-            <!-- Harga -->
             <div class="dtl-price-row">
                 <span class="dtl-price-now">Rp <?= number_format($item['harga'], 0, ',', '.') ?></span>
             </div>
 
             <p class="dtl-product-desc"><?= $item['deskripsi'] ?></p>
 
-            <!-- Notif stok habis semua -->
             <?php if ($semua_habis): ?>
             <div style="background:#fdecea;border-left:4px solid #e05555;padding:14px 18px;font-size:14px;color:#c0392b;font-weight:600;">
                 ⚠️ Produk ini sedang habis stok. Silakan cek kembali nanti.
@@ -173,21 +174,26 @@ $semua_habis = (strtolower($item['kategori']) !== 'accessories') &&
 
             <form method="POST" id="dtl-orderForm">
 
-                <!-- Ukuran -->
                 <?php if (strtolower($item['kategori']) !== 'accessories'): ?>
                 <div>
                     <div class="dtl-size-buttons" style="margin-top:10px;">
                         <?php foreach(['S','M','L','XL','XXL'] as $sz):
-                            $col   = 'stok_' . strtolower($sz);
-                            $habis = empty($item[$col]);
+                            $col    = 'stok_' . strtolower($sz);
+                            $jumlah = (int)($item[$col] ?? 0);
+                            $habis  = $jumlah <= 0;
                         ?>
-                        <button type="button"
-                            class="dtl-size-btn <?= $habis ? 'habis' : '' ?>"
-                            data-size="<?= $sz ?>"
-                            <?= $habis ? 'disabled' : 'onclick="selectSize(this)"' ?>
-                            title="<?= $habis ? 'Stok habis' : '' ?>">
-                            <?= $sz ?>
-                        </button>
+                        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+                            <button type="button"
+                                class="dtl-size-btn <?= $habis ? 'habis' : '' ?>"
+                                data-size="<?= $sz ?>"
+                                <?= $habis ? 'disabled' : 'onclick="selectSize(this)"' ?>
+                                title="<?= $habis ? 'Stok habis' : 'Sisa '.$jumlah.' pcs' ?>">
+                                <?= $sz ?>
+                            </button>
+                            <span style="font-size:10px;color:<?= $habis ? '#e05555' : ($jumlah <= 3 ? '#c0773a' : '#888') ?>;">
+                                <?= $habis ? 'Habis' : ($jumlah <= 3 ? 'Sisa '.$jumlah : 'Ada') ?>
+                            </span>
+                        </div>
                         <?php endforeach; ?>
                     </div>
                     <input type="hidden" name="ukuran" id="ukuranInput" value="">
@@ -196,7 +202,6 @@ $semua_habis = (strtolower($item['kategori']) !== 'accessories') &&
                     <input type="hidden" name="ukuran" id="ukuranInput" value="-">
                 <?php endif; ?>
 
-                <!-- Total harga -->
                 <div class="dtl-total-row">
                     <span class="dtl-total-label">Total Harga</span>
                     <span class="dtl-total-price" id="totalHarga">
@@ -204,7 +209,6 @@ $semua_habis = (strtolower($item['kategori']) !== 'accessories') &&
                     </span>
                 </div>
 
-                <!-- Qty + tombol -->
                 <div class="dtl-order-row">
                     <div class="dtl-qty-control">
                         <button type="button" class="dtl-qty-btn" onclick="changeQty(-1)">−</button>
@@ -222,19 +226,18 @@ $semua_habis = (strtolower($item['kategori']) !== 'accessories') &&
                 </div>
 
             </form>
-        </div><!-- end dtl-product-info -->
+        </div>
 
-    </div><!-- end dtl-grid -->
+    </div>
 
-    <!-- ULASAN -->
     <section>
         <?php
         $ulasanQuery = mysqli_query($conn,
-        "SELECT u.*, us.nama_panggilan
-         FROM ulasan u
-         LEFT JOIN users us ON u.id_user = us.id_user
-         WHERE u.id_produk = '$id'
-         ORDER BY u.created_at DESC"
+            "SELECT u.*, us.nama_panggilan
+             FROM ulasan u
+             LEFT JOIN users us ON u.id_user = us.id_user
+             WHERE u.id_produk = '$id'
+             ORDER BY u.created_at DESC"
         );
         $allUlasan   = mysqli_fetch_all($ulasanQuery, MYSQLI_ASSOC);
         $totalUlasan = count($allUlasan);
@@ -247,7 +250,6 @@ $semua_habis = (strtolower($item['kategori']) !== 'accessories') &&
         }
         ?>
 
-        <!-- Overview Rating -->
         <div class="dtl-review-overview">
             <div class="dtl-rating-big">
                 <div class="num"><?= $totalUlasan > 0 ? $avgRating : '-' ?></div>
@@ -270,7 +272,6 @@ $semua_habis = (strtolower($item['kategori']) !== 'accessories') &&
             </div>
         </div>
 
-        <!-- Daftar Ulasan -->
         <?php if ($totalUlasan === 0): ?>
             <p style="text-align:center; color:#888; padding:30px 0;">
                 Belum ada ulasan untuk produk ini.
@@ -309,9 +310,8 @@ $semua_habis = (strtolower($item['kategori']) !== 'accessories') &&
 
     </section>
 
-</section><!-- end dtl-section -->
+</section>
 
-<!-- FOOTER -->
 <footer>
     <div class="footer-box">
         <div>
@@ -354,7 +354,6 @@ $semua_habis = (strtolower($item['kategori']) !== 'accessories') &&
         document.getElementById('ukuranInput').value = el.getAttribute('data-size');
     }
 
-    // Auto-select ukuran pertama yang tersedia
     document.addEventListener('DOMContentLoaded', () => {
         const firstAvail = document.querySelector('.dtl-size-btn:not(.habis):not([disabled])');
         if (firstAvail) {

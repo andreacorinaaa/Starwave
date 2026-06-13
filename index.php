@@ -31,10 +31,23 @@ $new_arrival = mysqli_query($conn, "SELECT * FROM produk ORDER BY created_at DES
             <input type="text" name="q" placeholder="Search produk..." style="padding:5px;">
         </form>
         <?php if (isset($_SESSION['user'])): ?>
-            <a href="profile.php" style="margin-left:15px; text-decoration:none; color:#333;">Profile</a>
-        <?php else: ?>
-            <a href="masuk/login.php" style="margin-left:15px; text-decoration:none; color:#333;">Login</a>
-        <?php endif; ?>
+    <a href="profile.php" style="margin-left:15px; text-decoration:none; color:#333; display:flex; align-items:center;" title="Profile">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="8" r="4"/>
+            <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+        </svg>
+    </a>
+<?php elseif (isset($_SESSION['admin'])): ?>
+    <a href="admin/dashboard.php" style="margin-left:15px; text-decoration:none; color:#4f6ef7; display:flex; align-items:center; gap:5px; font-size:12px; font-weight:700; letter-spacing:1px;" title="Admin Panel">
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="8" r="4"/>
+            <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+        </svg>
+        ADMIN
+    </a>
+<?php else: ?>
+    <a href="masuk/login.php" style="margin-left:15px; text-decoration:none; color:#333;">Login</a>
+<?php endif; ?>
     </nav>
 </header>
 
