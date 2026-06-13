@@ -12,17 +12,23 @@ if (isset($_SESSION['admin'])) {
 }
 
 $error = "";
-$admin_user = "admin@gmail.com";
-$admin_pass = "starwave2024";
 
 if (isset($_POST['login'])) {
     $email    = trim($_POST['email']);
     $password = trim($_POST['password']);
 
-    if ($email === $admin_user && $password === $admin_pass) {
-        $_SESSION['admin'] = $email;
-        header("Location: ../admin/dashboard.php");
-        exit;
+    // Cek admin dari database
+    $stmt = mysqli_prepare($conn, "SELECT * FROM admin WHERE email = ?");
+    mysqli_stmt_bind_param($stmt, "s", $email);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+
+    if ($row = mysqli_fetch_assoc($result)) {
+        if (password_verify($password, $row['password'])) {
+            $_SESSION['admin'] = $email;
+            header("Location: ../admin/dashboard.php");
+            exit;
+        }
     }
 
     $stmt = mysqli_prepare($conn, "SELECT * FROM users WHERE email = ?");
@@ -31,7 +37,7 @@ if (isset($_POST['login'])) {
     $result = mysqli_stmt_get_result($stmt);
 
     if ($row = mysqli_fetch_assoc($result)) {
-        if ($password === $row['password']) {
+        if (password_verify($password, $row['password'])) {
             $_SESSION['user'] = $email;
             if (isset($_SESSION['redirect_after_login'])) {
                 $redirect = $_SESSION['redirect_after_login'];
@@ -53,6 +59,20 @@ if (isset($_POST['login'])) {
     <title>Login — STARWAVE</title>
     <link rel="stylesheet" href="../style.css">
     <link rel="stylesheet" href="masuk.css">
+    <style>
+        .pw-wrap { position: relative; }
+        .pw-toggle {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            color: #888;
+        }
+    </style>
 </head>
 <body>
 <div class="login-page">
@@ -69,7 +89,10 @@ if (isset($_POST['login'])) {
                 <input type="email" name="email" placeholder="Email" required autocomplete="email">
             </div>
             <div class="form-group">
-                <input type="password" name="password" placeholder="Password" required>
+                <div class="pw-wrap">
+                    <input type="password" name="password" id="login-password" placeholder="Password" required>
+                    <button type="button" class="pw-toggle" onclick="togglePw('login-password')">👁</button>
+                </div>
             </div>
             <button type="submit" name="login">MASUK</button>
         </form>
@@ -86,6 +109,14 @@ if (isset($_POST['login'])) {
         <div><h3>Social</h3><p>Instagram : starwave.fashion</p></div>
     </div>
 </footer>
+
+<script>
+function togglePw(id) {
+    const input = document.getElementById(id);
+    input.type = input.type === 'password' ? 'text' : 'password';
+}
+</script>
+
 </body>
 <header>
     <nav>
@@ -98,7 +129,6 @@ if (isset($_POST['login'])) {
         <li><a href="../order.php">Order</a></li>
         <li><a href="../keranjang.php">Keranjang</a></li>
     </ul>
-    <!-- Search & Login dipisah dari ul, biar tetap di kanan -->
     <form action="search.php" method="GET" style="display:inline;">
         <input type="text" name="q" placeholder="Search produk..." style="padding:5px;">
     </form>

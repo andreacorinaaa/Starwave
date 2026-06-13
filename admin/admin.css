@@ -386,3 +386,40 @@ td { padding: 13px 20px; color: var(--text); vertical-align: middle; }
     border-radius: 10px; min-width: 44px; text-align: center; }
 .stok-badge.ada   { background: #e6f4ea; color: #1a7a3a; }
 .stok-badge.habis { background: #fdecea; color: #c0392b; }
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'DM Sans', sans-serif; background-color: #eef0f5; min-height: 100vh; 
+    display: flex; align-items: center; justify-content: center; }
+.login-wrap { display: flex; flex-direction: column; align-items: center; width: 100%; 
+    max-width: 420px; padding: 2rem 1rem; gap: 1.5rem; }
+.brand { text-align: center; margin-bottom: 0.25rem; }
+.brand-name { font-family: 'Bebas Neue', sans-serif; font-size: 2.6rem; 
+    letter-spacing: 0.2em; color: #4a6cf7; }
+.brand-label { font-size: 0.72rem; font-weight: 500; letter-spacing: 0.25em; 
+    text-transform: uppercase; color: #9aa3b5; margin-top: -4px; }
+.card { width: 100%; background: #ffffff; border-radius: 16px; 
+    padding: 2rem 2rem 2.25rem; box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06); }
+.card-title { font-size: 1.45rem; font-weight: 600; color: #1a1f2e; 
+    letter-spacing: 0.04em; margin-bottom: 4px; }
+.card-sub { font-size: 0.88rem; color: #9aa3b5; margin-bottom: 1.5rem; }
+.error-box { background-color: #fff0f0; border: 1px solid #fcd0d0; color: #d94040; 
+    font-size: 0.85rem; font-weight: 500; padding: 0.65rem 1rem; border-radius: 8px; margin-bottom: 1.25rem; }
+.form-group { margin-bottom: 1.1rem; }
+.form-label { display: block; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.1em; 
+    text-transform: uppercase; color: #9aa3b5; margin-bottom: 0.4rem; }
+.form-input { width: 100%; height: 48px; padding: 0 14px; font-family: 'DM Sans', sans-serif; 
+    font-size: 0.95rem; color: #1a1f2e; background-color: #f3f5f9; border: 1.5px solid transparent; 
+    border-radius: 10px; outline: none; transition: border-color 0.2s, background-color 0.2s; }
+.form-input::placeholder { color: #b8bfcc; }
+.form-input:focus { background-color: #ffffff; border-color: #4a6cf7; }
+.pw-wrap { position: relative; }
+.pw-toggle { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; 
+    border: none; cursor: pointer; font-size: 1rem; color: #9aa3b5; display: flex; align-items: center; 
+    padding: 4px; line-height: 1; transition: color 0.15s; }
+.pw-toggle:hover { color: #4a6cf7; }
+.btn-login { width: 100%; height: 50px; margin-top: 1.5rem; background-color: #4a6cf7; color: #ffffff; 
+    font-family: 'DM Sans', sans-serif; font-size: 1rem; font-weight: 600; border: none; border-radius: 10px; cursor: pointer; letter-spacing: 0.02em; transition: background-color 0.2s, transform 0.1s; }
+.btn-login:hover { background-color: #3a59e0; }
+.btn-login:active { transform: scale(0.99); background-color: #3351cc; }
+.back-link { font-size: 0.85rem; color: #9aa3b5; text-decoration: none; transition: color 0.2s; }
+.back-link:hover { color: #4a6cf7; }

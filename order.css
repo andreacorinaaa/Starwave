@@ -53,48 +53,12 @@ body {
    ORD — Order / Riwayat / Keranjang / Payment
    ══════════════════════════════════════ */
 
-main.ord-container {
-    flex: 1;
-    max-width: 1100px;
-    margin: 0 auto;
-    padding: 40px 24px;
-}
-
-.ord-section-title {
-    font-size: 22px;
-    font-weight: 800;
-    color: #2b1a0e;
-    margin-bottom: 24px;
-    padding-bottom: 12px;
-    border-bottom: 2px solid #f0ece6;
-}
-
-/* Table */
-.ord-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 8px;
-    background: #fff;
-    box-shadow: 0 2px 16px rgba(0,0,0,0.07);
-    margin: 30px;
-}
-.ord-table th {
-    background: #2b1a0e;
-    color: #fff;
-    padding: 14px 16px;
-    text-align: left;
-    font-size: 13px;
-    font-weight: 600;
-    letter-spacing: 0.3px;
-}
-.ord-table td {
-    padding: 14px 16px;
-    border-bottom: 1px solid #f0ece6;
-    font-size: 13px;
-    color: #333;
-}
+main.ord-container { flex: 1; max-width: 1100px; margin: 0 auto; padding: 40px 24px; }
+.ord-section-title { font-size: 22px; font-weight: 800; color: #2b1a0e; margin-bottom: 24px; padding-bottom: 12px; border-bottom: 2px solid #f0ece6; }
+.ord-table { width: 100%; border-collapse: collapse; margin-top: 8px; background: #fff; box-shadow: 0 2px 16px rgba(0,0,0,0.07); margin: 30px; }
+.ord-table th { background: #2b1a0e; color: #fff; padding: 14px 16px; text-align: left; font-size: 13px; font-weight: 600; letter-spacing: 0.3px; }
+.ord-table td { padding: 14px 16px; border-bottom: 1px solid #f0ece6; font-size: 13px; color: #333; }
 .ord-table tr:hover td { background: #fdf8f2; }
-
 .ord-td-aksi { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .ord-no-aksi { color: #bbb; font-size: 12px; }
 .ord-no-order { color: #aaa; font-size: 14px; margin-top: 12px; }
