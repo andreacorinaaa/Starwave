@@ -11,10 +11,9 @@ if (!isset($_GET['order_id'])) {
 
 $order_id = (int)$_GET['order_id'];
 
-$stmt = mysqli_prepare($conn, "SELECT status_bayar FROM orders WHERE id = ?");
-mysqli_stmt_bind_param($stmt, 'i', $order_id);
-mysqli_stmt_execute($stmt);
-$row = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
+$stmt = $pdo->prepare("SELECT status_bayar FROM orders WHERE id = ?");
+$stmt->execute([$order_id]);
+$row = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$row) {
     echo json_encode(['status' => 'error', 'message' => 'Order tidak ditemukan']);

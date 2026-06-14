@@ -1,7 +1,8 @@
 <?php
 require 'auth_check.php';
 
-$pending_orders = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as n FROM orders WHERE status='pending_payment' OR status='pending'"))['n'] ?? 0;
+$stmt = $pdo->query("SELECT COUNT(*) FROM orders WHERE status='pending_payment' OR status='pending'");
+$pending_orders = $stmt->fetchColumn() ?? 0;
 
 $success = '';
 $error   = '';
@@ -17,7 +18,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif ($harga <= 0) {
         $error = 'Harga harus lebih dari 0.';
     } else {
-        // Upload gambar
         $gambar_path = '';
         if (!empty($_FILES['gambar']['name'])) {
             $allowed = ['image/jpeg', 'image/png', 'image/webp'];
@@ -43,17 +43,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if (!$error) {
-            $stmt = $conn->prepare("INSERT INTO produk (nama_produk, harga, gambar, deskripsi, kategori) VALUES (?, ?, ?, ?, ?)");
-            $stmt->bind_param("sisss", $nama_produk, $harga, $gambar_path, $deskripsi, $kategori);
+            $stmt = $pdo->prepare("INSERT INTO produk (nama_produk, harga, gambar, deskripsi, kategori) VALUES (?, ?, ?, ?, ?)");
 
-            if ($stmt->execute()) {
+            if ($stmt->execute([$nama_produk, $harga, $gambar_path, $deskripsi, $kategori])) {
                 $success = 'Produk berhasil ditambahkan!';
-                // Kosongkan nilai form setelah berhasil
                 $nama_produk = $harga = $kategori = $deskripsi = '';
             } else {
                 $error = 'Gagal menyimpan ke database.';
             }
-            $stmt->close();
         }
     }
 }
@@ -125,63 +122,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 <form method="POST" enctype="multipart/form-data">
 
-                    <!-- Nama Produk -->
                     <div class="form-group">
-                        <label class="form-label" for="inp-nama">
-                            Nama Produk<span class="req">*</span>
-                        </label>
+                        <label class="form-label" for="inp-nama">Nama Produk<span class="req">*</span></label>
                         <input class="form-input" id="inp-nama" name="nama_produk"
-                               type="text"
-                               placeholder="cth. Kaos Oversize STARWAVE"
+                               type="text" placeholder="cth. Kaos Oversize STARWAVE"
                                value="<?= htmlspecialchars($nama_produk ?? '') ?>"
                                maxlength="255" required>
                     </div>
 
-                    <!-- Harga -->
                     <div class="form-group">
-                        <label class="form-label" for="inp-harga">
-                            Harga<span class="req">*</span>
-                        </label>
+                        <label class="form-label" for="inp-harga">Harga<span class="req">*</span></label>
                         <div class="input-prefix">
                             <span class="input-prefix-label">Rp</span>
                             <input class="form-input" id="inp-harga" name="harga"
-                                   type="number"
-                                   placeholder="150000"
+                                   type="number" placeholder="150000"
                                    value="<?= htmlspecialchars($harga ?? '') ?>"
                                    min="1" required>
                         </div>
                     </div>
 
-                    <!-- Kategori -->
                     <div class="form-group">
                         <label class="form-label" for="inp-kategori">Kategori</label>
                         <select class="form-select" id="inp-kategori" name="kategori">
                             <option value="">— Pilih kategori —</option>
-                            <?php
-                            $kategori_list = ['man','woman','Accessories'];
-                            foreach ($kategori_list as $k):
-                            ?>
-                            <option value="<?= $k ?>" <?= ($kategori ?? '') === $k ? 'selected' : '' ?>>
-                                <?= $k ?>
-                            </option>
+                            <?php foreach (['man','woman','Accessories'] as $k): ?>
+                            <option value="<?= $k ?>" <?= ($kategori ?? '') === $k ? 'selected' : '' ?>><?= $k ?></option>
                             <?php endforeach; ?>
                         </select>
                     </div>
 
-                    <!-- Deskripsi -->
                     <div class="form-group">
                         <label class="form-label" for="inp-deskripsi">Deskripsi</label>
                         <textarea class="form-textarea" id="inp-deskripsi" name="deskripsi"
-                                  placeholder="Deskripsi singkat produk..."
-                                  rows="3"><?= htmlspecialchars($deskripsi ?? '') ?></textarea>
+                                  placeholder="Deskripsi singkat produk..." rows="3"><?= htmlspecialchars($deskripsi ?? '') ?></textarea>
                     </div>
 
-                    <!-- Gambar -->
                     <div class="form-group">
                         <label class="form-label">Gambar Produk</label>
                         <div class="upload-area" id="upload-area">
-                            <input type="file" id="inp-gambar" name="gambar"
-                                   accept="image/jpeg,image/png,image/webp">
+                            <input type="file" id="inp-gambar" name="gambar" accept="image/jpeg,image/png,image/webp">
                             <div id="upload-placeholder">
                                 <div class="upload-icon">🖼️</div>
                                 <div class="upload-text">
@@ -222,9 +201,7 @@ inpGambar.addEventListener('change', function () {
     reader.readAsDataURL(file);
 });
 
-['dragover','dragleave','drop'].forEach(evt => {
-    uploadArea.addEventListener(evt, e => e.preventDefault());
-});
+['dragover','dragleave','drop'].forEach(evt => uploadArea.addEventListener(evt, e => e.preventDefault()));
 uploadArea.addEventListener('dragover',  () => uploadArea.classList.add('dragover'));
 uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('dragover'));
 uploadArea.addEventListener('drop', e => {

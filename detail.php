@@ -9,8 +9,9 @@ if (!isset($_GET['id'])) {
 
 $id = (int)$_GET['id'];
 
-$query = mysqli_query($conn, "SELECT * FROM produk WHERE id='$id'");
-$item = mysqli_fetch_assoc($query);
+$stmt = $pdo->prepare("SELECT * FROM produk WHERE id = ?");
+$stmt->execute([$id]);
+$item = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$item) {
     die("Produk tidak ditemukan");
@@ -33,9 +34,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
 
     $user_email = $_SESSION['user'];
-    $user = mysqli_fetch_assoc(mysqli_query($conn, "SELECT * FROM users WHERE email='$user_email'"));
-    $id_user = $user['id_user'];
 
+    $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?");
+    $stmt->execute([$user_email]);
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!$user) {
+        session_destroy();
+        header("Location: masuk/login.php");
+        exit;
+    }
+
+    $id_user           = $user['id_user'];
     $qty               = (int)$_POST['qty'];
     $ukuran            = $_POST['ukuran'];
     $harga             = $item['harga'];
@@ -44,28 +54,37 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $aksi              = $_POST['aksi'] ?? 'beli';
 
     if ($aksi === 'keranjang') {
-        $cek = mysqli_fetch_assoc(mysqli_query($conn,
-            "SELECT * FROM keranjang WHERE id_user='$id_user' AND id_produk='$id' AND ukuran='$ukuran'"
-        ));
+        $stmt = $pdo->prepare("SELECT * FROM keranjang WHERE id_user = ? AND id_produk = ? AND ukuran = ?");
+        $stmt->execute([$id_user, $id, $ukuran]);
+        $cek = $stmt->fetch(PDO::FETCH_ASSOC);
+
         if ($cek) {
-            mysqli_query($conn, "UPDATE keranjang SET qty = qty + '$qty' WHERE id='$cek[id]'");
+            $stmt = $pdo->prepare("UPDATE keranjang SET qty = qty + ? WHERE id = ?");
+            $stmt->execute([$qty, $cek['id']]);
         } else {
-            $gambar   = mysqli_real_escape_string($conn, $item['gambar']);
-            $nama_esc = mysqli_real_escape_string($conn, $item['nama_produk']);
-            mysqli_query($conn,
-                "INSERT INTO keranjang (id_user, id_produk, nama_produk, harga, qty, ukuran, gambar)
-                 VALUES ('$id_user', '$id', '$nama_esc', '$harga', '$qty', '$ukuran', '$gambar')"
-            );
+            $stmt = $pdo->prepare("INSERT INTO keranjang (id_user, id_produk, nama_produk, harga, qty, ukuran, gambar)
+                                   VALUES (?, ?, ?, ?, ?, ?, ?)");
+            $stmt->execute([$id_user, $item['nama_produk'], $harga, $qty, $ukuran, $item['gambar']]);
         }
+
         header("Location: keranjang.php");
         exit;
     } else {
-        $insert = mysqli_query($conn,
-            "INSERT INTO orders (id_user, nama_produk, qty, harga, total_harga, nama_penerima, email, tanggal_order, status)
-             VALUES ('$id_user', '$nama_produk_order', '$qty', '$harga', '$total_harga', '{$user['nama_panggilan']}', '$user_email', NOW(), 'pending_payment')"
-        );
-        if (!$insert) die("Gagal insert: " . mysqli_error($conn));
-        $id_order = mysqli_insert_id($conn);
+        $no_telp = trim($user['no_telepon'] ?? '');
+        $alamat  = trim($user['alamat'] ?? '');
+
+        if (empty($no_telp) || empty($alamat)) {
+            $_SESSION['peringatan_profil'] = "Lengkapi nomor HP dan alamat kamu dulu sebelum memesan.";
+            $_SESSION['redirect_after_profil'] = "detail.php?id=" . $id;
+            header("Location: profile.php?peringatan=1");
+            exit;
+        }
+
+        $stmt = $pdo->prepare("INSERT INTO orders (id_user, nama_produk, qty, harga, total_harga, nama_penerima, email, tanggal_order, status)
+                               VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), 'pending_payment')");
+        $stmt->execute([$id_user, $nama_produk_order, $qty, $harga, $total_harga, $user['nama_panggilan'], $user_email]);
+
+        $id_order = $pdo->lastInsertId();
         header("Location: payment.php?id=" . $id_order);
         exit;
     }
@@ -101,23 +120,33 @@ $semua_habis = (strtolower($item['kategori']) !== 'accessories') &&
             <input type="text" name="q" placeholder="Search produk..." style="padding:5px;">
         </form>
         <?php if (isset($_SESSION['user'])): ?>
-    <a href="profile.php" style="margin-left:15px; text-decoration:none; color:#333; display:flex; align-items:center;" title="Profile">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="8" r="4"/>
-            <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
-        </svg>
-    </a>
-<?php elseif (isset($_SESSION['admin'])): ?>
-    <a href="admin/dashboard.php" style="margin-left:15px; text-decoration:none; color:#4f6ef7; display:flex; align-items:center; gap:5px; font-size:12px; font-weight:700; letter-spacing:1px;" title="Admin Panel">
-        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="8" r="4"/>
-            <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
-        </svg>
-        ADMIN
-    </a>
-<?php else: ?>
-    <a href="masuk/login.php" style="margin-left:15px; text-decoration:none; color:#333;">Login</a>
-<?php endif; ?>
+            <a href="profile.php" style="margin-left:15px; text-decoration:none; display:flex; align-items:center;" title="Profile">
+                <?php
+                    $stmt2 = $pdo->prepare("SELECT foto_profil FROM users WHERE email = ?");
+                    $stmt2->execute([$_SESSION['user']]);
+                    $navUser = $stmt2->fetch(PDO::FETCH_ASSOC);
+                ?>
+                <?php if (!empty($navUser['foto_profil']) && file_exists($navUser['foto_profil'])): ?>
+                    <img src="<?= htmlspecialchars($navUser['foto_profil']) ?>"
+                         style="width:34px; height:34px; border-radius:50%; object-fit:cover; border:2px solid #2a7fa8;">
+                <?php else: ?>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#c9dde8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="8" r="4"/>
+                        <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+                    </svg>
+                <?php endif; ?>
+            </a>
+        <?php elseif (isset($_SESSION['admin'])): ?>
+            <a href="admin/dashboard.php" style="margin-left:15px; text-decoration:none; color:#4f6ef7; display:flex; align-items:center; gap:5px; font-size:12px; font-weight:700; letter-spacing:1px;" title="Admin Panel">
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="8" r="4"/>
+                    <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+                </svg>
+                ADMIN
+            </a>
+        <?php else: ?>
+            <a href="masuk/login.php" style="margin-left:15px; text-decoration:none; color:#c9dde8; font-size:14px; font-weight:700;">Login</a>
+        <?php endif; ?>
     </nav>
 </header>
 
@@ -232,14 +261,13 @@ $semua_habis = (strtolower($item['kategori']) !== 'accessories') &&
 
     <section>
         <?php
-        $ulasanQuery = mysqli_query($conn,
-            "SELECT u.*, us.nama_panggilan
-             FROM ulasan u
-             LEFT JOIN users us ON u.id_user = us.id_user
-             WHERE u.id_produk = '$id'
-             ORDER BY u.created_at DESC"
-        );
-        $allUlasan   = mysqli_fetch_all($ulasanQuery, MYSQLI_ASSOC);
+        $stmt = $pdo->prepare("SELECT u.*, us.nama_panggilan, us.foto_profil
+                               FROM ulasan u
+                               LEFT JOIN users us ON u.id_user = us.id_user
+                               WHERE u.id_produk = ?
+                               ORDER BY u.created_at DESC");
+        $stmt->execute([$id]);
+        $allUlasan   = $stmt->fetchAll(PDO::FETCH_ASSOC);
         $totalUlasan = count($allUlasan);
 
         $avgRating = 0;
@@ -286,7 +314,14 @@ $semua_habis = (strtolower($item['kategori']) !== 'accessories') &&
             <div class="dtl-review-card">
                 <div class="dtl-review-card-header">
                     <div class="dtl-reviewer">
-                        <div class="dtl-reviewer-avatar"><?= $initial ?></div>
+                        <div class="dtl-reviewer-avatar" style="overflow:hidden;">
+                            <?php if (!empty($u['foto_profil']) && file_exists($u['foto_profil'])): ?>
+                                <img src="<?= htmlspecialchars($u['foto_profil']) ?>"
+                                     style="width:100%; height:100%; object-fit:cover; border-radius:50%;">
+                            <?php else: ?>
+                                <?= $initial ?>
+                            <?php endif; ?>
+                        </div>
                         <div>
                             <div class="dtl-reviewer-name"><?= $nama ?></div>
                             <div class="dtl-reviewer-badge">✔ Terverifikasi</div>

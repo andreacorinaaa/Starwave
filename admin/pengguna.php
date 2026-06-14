@@ -1,16 +1,17 @@
 <?php
 require 'auth_check.php';
 
-$pending_orders = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as n FROM orders WHERE status='pending_payment' OR status='pending'"))['n'] ?? 0;
-$total_users    = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as n FROM users"))['n'] ?? 0;
+$pending_orders = $pdo->query("SELECT COUNT(*) FROM orders WHERE status='pending_payment' OR status='pending'")->fetchColumn();
+$total_users    = $pdo->query("SELECT COUNT(*) FROM users")->fetchColumn();
 
-$all_users = mysqli_query($conn, "
+$stmt     = $pdo->query("
     SELECT u.*, COUNT(o.id) as total_order
     FROM users u
     LEFT JOIN orders o ON u.id_user = o.id_user
     GROUP BY u.id_user
     ORDER BY u.id_user DESC
 ");
+$all_users = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -73,26 +74,31 @@ $all_users = mysqli_query($conn, "
                         </tr>
                     </thead>
                     <tbody>
-                    <?php if (mysqli_num_rows($all_users) == 0): ?>
+                    <?php if (empty($all_users)): ?>
                         <tr class="empty-row"><td colspan="7">Belum ada pengguna terdaftar</td></tr>
-                    <?php else: while ($u = mysqli_fetch_assoc($all_users)): ?>
+                    <?php else: foreach ($all_users as $u): ?>
                         <?php $nama = $u['nama_panggilan'] ?? ''; ?>
                         <tr>
                             <td class="order-id">#<?= $u['id_user'] ?></td>
                             <td>
                                 <div class="user-cell">
-                                    <div class="user-avatar">
-                                        <?= $nama !== '' ? mb_strtoupper(mb_substr($nama, 0, 1)) : '?' ?>
-                                    </div>
-                                    <div>
-                                        <div style="font-weight:600;">
-                                            <?= $nama !== '' ? htmlspecialchars($nama) : '<span style="color:var(--muted);font-style:italic;">—</span>' ?>
-                                        </div>
-                                        <div style="font-size:11px;color:var(--muted);">
-                                            <?= htmlspecialchars($u['email']) ?>
-                                        </div>
-                                    </div>
-                                </div>
+    <div class="user-avatar" style="overflow:hidden; padding:0;">
+        <?php if (!empty($u['foto_profil']) && file_exists('../' . $u['foto_profil'])): ?>
+            <img src="../<?= htmlspecialchars($u['foto_profil']) ?>"
+                 style="width:100%; height:100%; object-fit:cover; border-radius:50%;">
+        <?php else: ?>
+            <?= $nama !== '' ? mb_strtoupper(mb_substr($nama, 0, 1)) : '?' ?>
+        <?php endif; ?>
+    </div>
+    <div>
+        <div style="font-weight:600;">
+            <?= $nama !== '' ? htmlspecialchars($nama) : '<span style="color:var(--muted);font-style:italic;">—</span>' ?>
+        </div>
+        <div style="font-size:11px;color:var(--muted);">
+            <?= htmlspecialchars($u['email']) ?>
+        </div>
+    </div>
+</div>
                             </td>
                             <td style="color:var(--muted);font-size:13px;"><?= htmlspecialchars($u['email']) ?></td>
                             <td style="font-size:13px;"><?= htmlspecialchars($u['no_telepon'] ?? '-') ?></td>
@@ -104,7 +110,7 @@ $all_users = mysqli_query($conn, "
                                 </span>
                             </td>
                         </tr>
-                    <?php endwhile; endif; ?>
+                    <?php endforeach; endif; ?>
                     </tbody>
                 </table>
             </div>

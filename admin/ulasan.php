@@ -1,46 +1,52 @@
 <?php
 require 'auth_check.php';
 
-$pending_orders = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as n FROM orders WHERE status='pending_payment' OR status='pending'"))['n'] ?? 0;
+$stmt = $pdo->query("SELECT COUNT(*) FROM orders WHERE status='pending_payment' OR status='pending'");
+$pending_orders = $stmt->fetchColumn() ?? 0;
 
-// ── HAPUS ULASAN ───────────────────────────────────────────────
+// ── HAPUS ULASAN ──
 if (isset($_GET['hapus'])) {
     $id = (int)$_GET['hapus'];
-    mysqli_query($conn, "DELETE FROM ulasan WHERE id='$id'");
+    $pdo->prepare("DELETE FROM ulasan WHERE id = ?")->execute([$id]);
     header("Location: ulasan.php?deleted=1");
     exit;
 }
 
-// ── FILTER ────────────────────────────────────────────────────
-$filter_bintang  = isset($_GET['bintang'])  ? (int)$_GET['bintang']                              : 0;
-$filter_produk   = isset($_GET['produk'])   ? (int)$_GET['produk']                               : 0;
-$where = "WHERE 1=1";
-if ($filter_bintang) $where .= " AND u.bintang = $filter_bintang";
-if ($filter_produk)  $where .= " AND u.id_produk = $filter_produk";
+// ── FILTER ──
+$filter_bintang = isset($_GET['bintang']) ? (int)$_GET['bintang'] : 0;
+$filter_produk  = isset($_GET['produk'])  ? (int)$_GET['produk']  : 0;
 
-// ── DATA ──────────────────────────────────────────────────────
-$ulasan_list = mysqli_query($conn, "
+$where  = "WHERE 1=1";
+$params = [];
+if ($filter_bintang) { $where .= " AND u.bintang = ?";   $params[] = $filter_bintang; }
+if ($filter_produk)  { $where .= " AND u.id_produk = ?"; $params[] = $filter_produk; }
+
+// ── DATA ──
+$stmt = $pdo->prepare("
     SELECT u.*, us.nama_panggilan AS nama_user, p.nama_produk, p.gambar
     FROM ulasan u
-    LEFT JOIN users   us ON u.id_user   = us.id_user
-    LEFT JOIN produk  p  ON u.id_produk = p.id
+    LEFT JOIN users  us ON u.id_user   = us.id_user
+    LEFT JOIN produk p  ON u.id_produk = p.id
     $where
     ORDER BY u.created_at DESC
 ");
+$stmt->execute($params);
+$ulasan_list = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-$total_ulasan  = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as n FROM ulasan"))['n'] ?? 0;
-$avg_bintang   = mysqli_fetch_assoc(mysqli_query($conn, "SELECT ROUND(AVG(bintang),1) as avg FROM ulasan"))['avg'] ?? 0;
-$produk_list   = mysqli_query($conn, "SELECT id, nama_produk FROM produk ORDER BY nama_produk");
+$total_ulasan = $pdo->query("SELECT COUNT(*) FROM ulasan")->fetchColumn() ?? 0;
+$avg_bintang  = $pdo->query("SELECT ROUND(AVG(bintang),1) FROM ulasan")->fetchColumn() ?? 0;
+$produk_list  = $pdo->query("SELECT id, nama_produk FROM produk ORDER BY nama_produk")->fetchAll(PDO::FETCH_ASSOC);
 
-function stars($n) {
-    $n = (int)$n;
-    return str_repeat('★', $n) . str_repeat('☆', 5 - $n);
+// Hitung per bintang
+$counts = [];
+for ($i = 1; $i <= 5; $i++) {
+    $s = $pdo->prepare("SELECT COUNT(*) FROM ulasan WHERE bintang = ?");
+    $s->execute([$i]);
+    $counts[$i] = $s->fetchColumn() ?? 0;
 }
-function starClass($n) {
-    if ($n >= 4) return 'done';
-    if ($n == 3) return 'process';
-    return 'pending';
-}
+
+function stars($n) { $n = (int)$n; return str_repeat('★', $n) . str_repeat('☆', 5 - $n); }
+function starClass($n) { if ($n >= 4) return 'done'; if ($n == 3) return 'process'; return 'pending'; }
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -106,26 +112,17 @@ function starClass($n) {
             </div>
             <div class="mini-stat">
                 <div class="label">Bintang 5</div>
-                <div class="value">
-                    <?= mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as n FROM ulasan WHERE bintang=5"))['n'] ?? 0 ?>
-                </div>
+                <div class="value"><?= $counts[5] ?></div>
             </div>
         </div>
 
         <div class="section">
             <div class="section-header">
                 <div class="section-title">SEMUA ULASAN</div>
-                <div class="section-badge"><?= mysqli_num_rows($ulasan_list) ?> ulasan</div>
+                <div class="section-badge"><?= count($ulasan_list) ?> ulasan</div>
             </div>
 
             <!-- RATING BAR -->
-            <?php
-            $counts = [];
-            for ($i = 1; $i <= 5; $i++) {
-                $counts[$i] = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as n FROM ulasan WHERE bintang=$i"))['n'] ?? 0;
-            }
-            $max_count = max($counts) ?: 1;
-            ?>
             <div class="rating-bar-wrap">
                 <?php for ($i = 5; $i >= 1; $i--): ?>
                 <div class="rating-bar-row">
@@ -133,7 +130,7 @@ function starClass($n) {
                         <span style="color:#f59e0b;"><?= str_repeat('★', $i) ?></span>
                     </div>
                     <div class="rating-bar-bg">
-                        <div class="rating-bar-fill" style="width:<?= $total_ulasan ? round($counts[$i]/$total_ulasan*100) : 0 ?>%"></div>
+                        <div class="rating-bar-fill" style="width:<?= $total_ulasan ? round($counts[$i] / $total_ulasan * 100) : 0 ?>%"></div>
                     </div>
                     <div class="rating-bar-count"><?= $counts[$i] ?></div>
                 </div>
@@ -154,14 +151,11 @@ function starClass($n) {
 
                     <select name="produk" class="filter-select">
                         <option value="">Semua Produk</option>
-                        <?php
-                        mysqli_data_seek($produk_list, 0);
-                        while ($p = mysqli_fetch_assoc($produk_list)):
-                        ?>
+                        <?php foreach ($produk_list as $p): ?>
                         <option value="<?= $p['id'] ?>" <?= $filter_produk == $p['id'] ? 'selected' : '' ?>>
                             <?= htmlspecialchars($p['nama_produk']) ?>
                         </option>
-                        <?php endwhile; ?>
+                        <?php endforeach; ?>
                     </select>
 
                     <button type="submit" class="btn-filter">Filter</button>
@@ -170,18 +164,16 @@ function starClass($n) {
             </div>
 
             <!-- LIST ULASAN -->
-            <?php if (mysqli_num_rows($ulasan_list) == 0): ?>
+            <?php if (empty($ulasan_list)): ?>
                 <div class="empty-ulasan">
                     <div class="icon">⭐</div>
                     Belum ada ulasan<?= ($filter_bintang || $filter_produk) ? ' untuk filter ini' : '' ?>.
                 </div>
-            <?php else: while ($u = mysqli_fetch_assoc($ulasan_list)): ?>
+            <?php else: foreach ($ulasan_list as $u): ?>
             <div class="review-card">
 
                 <?php if ($u['gambar']): ?>
-                    <img src="../<?= htmlspecialchars($u['gambar']) ?>"
-                         class="review-prod-img"
-                         onerror="this.src='../asset/posterutama.png'">
+                    <img src="../<?= htmlspecialchars($u['gambar']) ?>" class="review-prod-img" onerror="this.src='../asset/posterutama.png'">
                 <?php else: ?>
                     <div class="review-prod-placeholder">👕</div>
                 <?php endif; ?>
@@ -189,9 +181,7 @@ function starClass($n) {
                 <div class="review-body">
                     <div class="review-meta">
                         <span class="review-user"><?= htmlspecialchars($u['nama_user'] ?? 'Pengguna') ?></span>
-                        <span class="badge <?= starClass($u['bintang']) ?>" style="font-size:11px;">
-                            <?= $u['bintang'] ?>★
-                        </span>
+                        <span class="badge <?= starClass($u['bintang']) ?>" style="font-size:11px;"><?= $u['bintang'] ?>★</span>
                         <span class="review-prod">· <?= htmlspecialchars($u['nama_produk'] ?? '-') ?></span>
                         <span class="review-date"><?= date('d M Y, H:i', strtotime($u['created_at'])) ?></span>
                     </div>
@@ -208,7 +198,7 @@ function starClass($n) {
                    onclick="return confirm('Hapus ulasan ini?')">Hapus</a>
 
             </div>
-            <?php endwhile; endif; ?>
+            <?php endforeach; endif; ?>
 
         </div>
     </div>

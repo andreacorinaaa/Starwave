@@ -10,8 +10,9 @@ if (!isset($_SESSION['user'])) {
 
 $user_email = $_SESSION['user'];
 
-$result = mysqli_query($conn, "SELECT * FROM users WHERE email='" . mysqli_real_escape_string($conn, $user_email) . "'");
-$user   = mysqli_fetch_assoc($result);
+$stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?");
+$stmt->execute([$user_email]);
+$user = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$user) {
     session_destroy();
@@ -21,58 +22,63 @@ if (!$user) {
 
 $id_user = (int)$user['id_user'];
 
+// Hapus item
 if (isset($_GET['hapus'])) {
     $hapus_id = (int)$_GET['hapus'];
-    mysqli_query($conn, "DELETE FROM keranjang WHERE id='$hapus_id' AND id_user='$id_user'");
+    $stmt = $pdo->prepare("DELETE FROM keranjang WHERE id = ? AND id_user = ?");
+    $stmt->execute([$hapus_id, $id_user]);
     header("Location: keranjang.php");
     exit;
 }
 
+// Update qty saja
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_qty'])) {
     if (!empty($_POST['qty']) && is_array($_POST['qty'])) {
+        $stmt = $pdo->prepare("UPDATE keranjang SET qty = ? WHERE id = ? AND id_user = ?");
         foreach ($_POST['qty'] as $kid => $qval) {
-            $kid  = (int)$kid;
-            $qval = max(1, (int)$qval);
-            mysqli_query($conn, "UPDATE keranjang SET qty='$qval' WHERE id='$kid' AND id_user='$id_user'");
+            $stmt->execute([max(1, (int)$qval), (int)$kid, $id_user]);
         }
     }
     header("Location: keranjang.php");
     exit;
 }
 
+// Checkout semua item
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['beli_semua'])) {
     if (!empty($_POST['qty']) && is_array($_POST['qty'])) {
+        $stmt = $pdo->prepare("UPDATE keranjang SET qty = ? WHERE id = ? AND id_user = ?");
         foreach ($_POST['qty'] as $kid => $qval) {
-            $kid  = (int)$kid;
-            $qval = max(1, (int)$qval);
-            mysqli_query($conn, "UPDATE keranjang SET qty='$qval' WHERE id='$kid' AND id_user='$id_user'");
+            $stmt->execute([max(1, (int)$qval), (int)$kid, $id_user]);
         }
     }
 
-    $all_items = mysqli_fetch_all(
-        mysqli_query($conn, "SELECT * FROM keranjang WHERE id_user='$id_user'"),
-        MYSQLI_ASSOC
-    );
+    $stmt = $pdo->prepare("SELECT * FROM keranjang WHERE id_user = ?");
+    $stmt->execute([$id_user]);
+    $all_items = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     if (!empty($all_items)) {
         $last_order_id = null;
 
+        $insert_stmt = $pdo->prepare("INSERT INTO orders (id_user, nama_produk, qty, harga, total_harga, nama_penerima, email, tanggal_order, status)
+                                      VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), 'pending_payment')");
+        $delete_stmt = $pdo->prepare("DELETE FROM keranjang WHERE id = ? AND id_user = ?");
+
         foreach ($all_items as $kitem) {
-            $nama_order    = $kitem['nama_produk'] . " - Size " . $kitem['ukuran'];
-            $total_harga   = (float)$kitem['harga'] * (int)$kitem['qty'];
-            $nama_produk   = mysqli_real_escape_string($conn, $nama_order);
-            $nama_penerima = mysqli_real_escape_string($conn, $user['nama_panggilan'] ?? '');
-            $email_user    = mysqli_real_escape_string($conn, $user_email);
+            $nama_order  = $kitem['nama_produk'] . " - Size " . $kitem['ukuran'];
+            $total_harga = (float)$kitem['harga'] * (int)$kitem['qty'];
 
-            $insert = mysqli_query($conn,
-                "INSERT INTO orders (id_user, nama_produk, qty, harga, total_harga, nama_penerima, email, tanggal_order, status)
-                 VALUES ('$id_user', '$nama_produk', '{$kitem['qty']}', '{$kitem['harga']}', '$total_harga', '$nama_penerima', '$email_user', NOW(), 'pending_payment')"
-            );
+            $insert_stmt->execute([
+                $id_user,
+                $nama_order,
+                $kitem['qty'],
+                $kitem['harga'],
+                $total_harga,
+                $user['nama_panggilan'] ?? '',
+                $user_email
+            ]);
 
-            if ($insert) {
-                $last_order_id = mysqli_insert_id($conn);
-                mysqli_query($conn, "DELETE FROM keranjang WHERE id='{$kitem['id']}' AND id_user='$id_user'");
-            }
+            $last_order_id = $pdo->lastInsertId();
+            $delete_stmt->execute([$kitem['id'], $id_user]);
         }
 
         if ($last_order_id) {
@@ -85,36 +91,47 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['beli_semua'])) {
     exit;
 }
 
+// Beli satu item dari keranjang
 if (isset($_GET['beli'])) {
-    $kid  = (int)$_GET['beli'];
-    $kresult = mysqli_query($conn, "SELECT * FROM keranjang WHERE id='$kid' AND id_user='$id_user'");
-    $kitem   = mysqli_fetch_assoc($kresult);
+    $kid = (int)$_GET['beli'];
+
+    $stmt = $pdo->prepare("SELECT * FROM keranjang WHERE id = ? AND id_user = ?");
+    $stmt->execute([$kid, $id_user]);
+    $kitem = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if ($kitem) {
-        $nama_order    = $kitem['nama_produk'] . " - Size " . $kitem['ukuran'];
-        $total_harga   = (float)$kitem['harga'] * (int)$kitem['qty'];
-        $nama_produk   = mysqli_real_escape_string($conn, $nama_order);
-        $nama_penerima = mysqli_real_escape_string($conn, $user['nama_panggilan'] ?? '');
-        $email_user    = mysqli_real_escape_string($conn, $user_email);
+        $nama_order  = $kitem['nama_produk'] . " - Size " . $kitem['ukuran'];
+        $total_harga = (float)$kitem['harga'] * (int)$kitem['qty'];
 
-        $insert = mysqli_query($conn,
-            "INSERT INTO orders (id_user, nama_produk, qty, harga, total_harga, nama_penerima, email, tanggal_order, status)
-             VALUES ('$id_user', '$nama_produk', '{$kitem['qty']}', '{$kitem['harga']}', '$total_harga', '$nama_penerima', '$email_user', NOW(), 'pending_payment')"
-        );
+        $stmt = $pdo->prepare("INSERT INTO orders (id_user, nama_produk, qty, harga, total_harga, nama_penerima, email, tanggal_order, status)
+                               VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), 'pending_payment')");
+        $stmt->execute([
+            $id_user,
+            $nama_order,
+            $kitem['qty'],
+            $kitem['harga'],
+            $total_harga,
+            $user['nama_panggilan'] ?? '',
+            $user_email
+        ]);
 
-        if ($insert) {
-            $id_order = mysqli_insert_id($conn);
-            mysqli_query($conn, "DELETE FROM keranjang WHERE id='$kid' AND id_user='$id_user'");
-            header("Location: payment.php?id=" . $id_order);
-            exit;
-        }
+        $id_order = $pdo->lastInsertId();
+
+        $stmt = $pdo->prepare("DELETE FROM keranjang WHERE id = ? AND id_user = ?");
+        $stmt->execute([$kid, $id_user]);
+
+        header("Location: payment.php?id=" . $id_order);
+        exit;
     }
+
     header("Location: keranjang.php");
     exit;
 }
 
-$items_result = mysqli_query($conn, "SELECT * FROM keranjang WHERE id_user='$id_user' ORDER BY created_at DESC");
-$items = $items_result ? mysqli_fetch_all($items_result, MYSQLI_ASSOC) : [];
+// Ambil semua item keranjang
+$stmt = $pdo->prepare("SELECT * FROM keranjang WHERE id_user = ? ORDER BY created_at DESC");
+$stmt->execute([$id_user]);
+$items = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 $total_semua = 0;
 foreach ($items as $it) $total_semua += $it['harga'] * $it['qty'];
@@ -146,11 +163,21 @@ foreach ($items as $it) $total_semua += $it['harga'] * $it['qty'];
             <input type="text" name="q" placeholder="Search produk..." style="padding:5px;">
         </form>
         <?php if (isset($_SESSION['user'])): ?>
-    <a href="profile.php" style="margin-left:15px; text-decoration:none; color:#333; display:flex; align-items:center;" title="Profile">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="8" r="4"/>
-            <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
-        </svg>
+    <a href="profile.php" style="margin-left:15px; text-decoration:none; display:flex; align-items:center;" title="Profile">
+        <?php
+            $stmt2 = $pdo->prepare("SELECT foto_profil FROM users WHERE email = ?");
+            $stmt2->execute([$_SESSION['user']]);
+            $navUser = $stmt2->fetch(PDO::FETCH_ASSOC);
+        ?>
+        <?php if (!empty($navUser['foto_profil']) && file_exists($navUser['foto_profil'])): ?>
+            <img src="<?= htmlspecialchars($navUser['foto_profil']) ?>" 
+                 style="width:34px; height:34px; border-radius:50%; object-fit:cover; border:2px solid #2a7fa8;">
+        <?php else: ?>
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#c9dde8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="8" r="4"/>
+                <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+            </svg>
+        <?php endif; ?>
     </a>
 <?php elseif (isset($_SESSION['admin'])): ?>
     <a href="admin/dashboard.php" style="margin-left:15px; text-decoration:none; color:#4f6ef7; display:flex; align-items:center; gap:5px; font-size:12px; font-weight:700; letter-spacing:1px;" title="Admin Panel">
@@ -161,7 +188,7 @@ foreach ($items as $it) $total_semua += $it['harga'] * $it['qty'];
         ADMIN
     </a>
 <?php else: ?>
-    <a href="masuk/login.php" style="margin-left:15px; text-decoration:none; color:#333;">Login</a>
+    <a href="masuk/login.php" style="margin-left:15px; text-decoration:none; color:#c9dde8; font-size:14px; font-weight:700;">Login</a>
 <?php endif; ?>
     </nav>
 </header>

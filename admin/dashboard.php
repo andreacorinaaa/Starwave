@@ -1,10 +1,10 @@
 <?php
 require 'auth_check.php';
 
-$total_produk   = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as n FROM produk"))['n']  ?? 0;
-$total_users    = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as n FROM users"))['n']   ?? 0;
-$total_orders   = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as n FROM orders"))['n'] ?? 0;
-$pending_orders = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as n FROM orders WHERE status='pending_payment' OR status='pending'"))['n'] ?? 0;
+$total_produk   = $pdo->query("SELECT COUNT(*) FROM produk")->fetchColumn();
+$total_users    = $pdo->query("SELECT COUNT(*) FROM users")->fetchColumn();
+$total_orders   = $pdo->query("SELECT COUNT(*) FROM orders")->fetchColumn();
+$pending_orders = $pdo->query("SELECT COUNT(*) FROM orders WHERE status='pending_payment' OR status='pending'")->fetchColumn();
 
 function statusClass($s) {
     return match($s) {
@@ -113,14 +113,16 @@ function statusLabel($s) {
                     </thead>
                     <tbody>
                     <?php
-                    $recent = mysqli_query($conn, "
+                    $stmt = $pdo->query("
                         SELECT o.*, u.nama_panggilan AS nama FROM orders o
                         LEFT JOIN users u ON o.id_user = u.id_user
                         ORDER BY o.created_at DESC LIMIT 8
                     ");
-                    if (mysqli_num_rows($recent) == 0): ?>
+                    $recent = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+                    if (empty($recent)): ?>
                         <tr class="empty-row"><td colspan="5">Belum ada pesanan</td></tr>
-                    <?php else: while ($r = mysqli_fetch_assoc($recent)): ?>
+                    <?php else: foreach ($recent as $r): ?>
                         <tr>
                             <td class="order-id">#<?= $r['id'] ?></td>
                             <td><?= htmlspecialchars($r['nama_produk']) ?></td>
@@ -128,7 +130,7 @@ function statusLabel($s) {
                             <td style="color:var(--muted);font-size:12px;"><?= $r['tanggal_order'] ?></td>
                             <td><span class="badge <?= statusClass($r['status']) ?>"><?= statusLabel($r['status']) ?></span></td>
                         </tr>
-                    <?php endwhile; endif; ?>
+                    <?php endforeach; endif; ?>
                     </tbody>
                 </table>
             </div>

@@ -423,3 +423,32 @@ body { font-family: 'DM Sans', sans-serif; background-color: #eef0f5; min-height
 .btn-login:active { transform: scale(0.99); background-color: #3351cc; }
 .back-link { font-size: 0.85rem; color: #9aa3b5; text-decoration: none; transition: color 0.2s; }
 .back-link:hover { color: #4a6cf7; }
+
+/*pesanan ni punya*/
+
+.main { overflow-x: hidden; }
+.table-wrap { overflow-x: auto; width: 100%; }
+#orders-table { min-width: 1200px; }
+
+.badge-bayar { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 500; }
+.badge-bayar.paid { background: #eafaf3; color: #166534; }
+.badge-bayar.pending { background: #fef9ec; color: #92680a; }
+.table-wrap { overflow-x: auto; width: 100%; }
+#orders-table { min-width: 1200px; }
+#orders-table td:nth-child(2) { min-width: 180px; white-space: normal; word-break: break-word; }
+#orders-table th:nth-child(2) { min-width: 180px; }
+.btn-konfirmasi { padding: 5px 10px; background: #1a1a1a; color: #fff; border: none; border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer; white-space: nowrap; transition: background .15s; }
+.btn-konfirmasi:hover { background: #333; }
+
+.modal-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 999; align-items: center; justify-content: center; }
+.modal-backdrop.open { display: flex; }
+
+.modal-box { background: #fff; border-radius: 14px; padding: 2rem; width: 100%; max-width: 360px; text-align: center; box-shadow: 0 8px 32px rgba(0,0,0,.12); }
+.modal-box h3 { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
+.modal-box p { font-size: 14px; color: #666; margin-bottom: 1.5rem; line-height: 1.5; }
+
+.modal-actions { display: flex; gap: 10px; }
+
+.btn-modal-cancel { flex: 1; padding: 10px; border: 1px solid #e0e0dc; background: #fff; border-radius: 8px; font-size: 14px; cursor: pointer; color: #666; }
+.btn-modal-confirm { flex: 1; padding: 10px; background: #1a1a1a; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; }
+.btn-modal-confirm:hover { background: #333; }

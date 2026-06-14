@@ -28,8 +28,8 @@ if ($action === 'create') {
     // Upload gambar
     $gambar_path = '';
     if (!empty($_FILES['gambar']['name'])) {
-        $allowed  = ['image/jpeg', 'image/png', 'image/webp'];
-        $ftype    = mime_content_type($_FILES['gambar']['tmp_name']);
+        $allowed = ['image/jpeg', 'image/png', 'image/webp'];
+        $ftype   = mime_content_type($_FILES['gambar']['tmp_name']);
         if (!in_array($ftype, $allowed)) {
             echo json_encode(['success' => false, 'message' => 'Format gambar tidak didukung (gunakan JPG/PNG/WEBP).']);
             exit;
@@ -39,9 +39,9 @@ if ($action === 'create') {
             exit;
         }
 
-        $ext         = pathinfo($_FILES['gambar']['name'], PATHINFO_EXTENSION);
-        $filename    = 'produk_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
-        $upload_dir  = __DIR__ . '/../asset/produk/';
+        $ext        = pathinfo($_FILES['gambar']['name'], PATHINFO_EXTENSION);
+        $filename   = 'produk_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
+        $upload_dir = __DIR__ . '/../asset/produk/';
 
         if (!is_dir($upload_dir)) {
             mkdir($upload_dir, 0755, true);
@@ -54,15 +54,14 @@ if ($action === 'create') {
         $gambar_path = 'asset/produk/' . $filename;
     }
 
-    $stmt = $conn->prepare("INSERT INTO produk (nama_produk, harga, gambar, deskripsi, kategori) VALUES (?, ?, ?, ?, ?)");
-    $stmt->bind_param("sisss", $nama_produk, $harga, $gambar_path, $deskripsi, $kategori);
+    $stmt = $pdo->prepare("INSERT INTO produk (nama_produk, harga, gambar, deskripsi, kategori) VALUES (?, ?, ?, ?, ?)");
+    $ok   = $stmt->execute([$nama_produk, $harga, $gambar_path, $deskripsi, $kategori]);
 
-    if ($stmt->execute()) {
-        echo json_encode(['success' => true, 'message' => 'Produk berhasil ditambahkan!', 'id' => $stmt->insert_id]);
+    if ($ok) {
+        echo json_encode(['success' => true, 'message' => 'Produk berhasil ditambahkan!', 'id' => $pdo->lastInsertId()]);
     } else {
-        echo json_encode(['success' => false, 'message' => 'Gagal menyimpan ke database: ' . $conn->error]);
+        echo json_encode(['success' => false, 'message' => 'Gagal menyimpan ke database.']);
     }
-    $stmt->close();
 
 } else {
     echo json_encode(['success' => false, 'message' => 'Aksi tidak dikenal.']);

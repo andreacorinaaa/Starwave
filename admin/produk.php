@@ -10,12 +10,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $id = (int)($_POST['id'] ?? 0);
         if ($id <= 0) { echo json_encode(['success'=>false,'message'=>'ID tidak valid.']); exit; }
 
-        $row = mysqli_fetch_assoc(mysqli_query($conn, "SELECT gambar FROM produk WHERE id=$id"));
+        $stmt = $pdo->prepare("SELECT gambar FROM produk WHERE id = ?");
+        $stmt->execute([$id]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
         if (!$row) { echo json_encode(['success'=>false,'message'=>'Produk tidak ditemukan.']); exit; }
 
-        $stmt = $conn->prepare("DELETE FROM produk WHERE id=?");
-        $stmt->bind_param("i", $id);
-        if ($stmt->execute()) {
+        $stmt = $pdo->prepare("DELETE FROM produk WHERE id = ?");
+        if ($stmt->execute([$id])) {
             if (!empty($row['gambar'])) {
                 $file = __DIR__ . '/../' . $row['gambar'];
                 if (file_exists($file)) unlink($file);
@@ -24,7 +26,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             echo json_encode(['success'=>false,'message'=>'Gagal menghapus produk.']);
         }
-        $stmt->close(); exit;
+        exit;
 
     } elseif ($action === 'update_harga') {
         $id    = (int)($_POST['id'] ?? 0);
@@ -32,29 +34,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($id <= 0)    { echo json_encode(['success'=>false,'message'=>'ID tidak valid.']); exit; }
         if ($harga <= 0) { echo json_encode(['success'=>false,'message'=>'Harga harus lebih dari 0.']); exit; }
 
-        $stmt = $conn->prepare("UPDATE produk SET harga=? WHERE id=?");
-        $stmt->bind_param("ii", $harga, $id);
-        if ($stmt->execute()) {
+        $stmt = $pdo->prepare("UPDATE produk SET harga = ? WHERE id = ?");
+        if ($stmt->execute([$harga, $id])) {
             echo json_encode(['success'=>true,'message'=>'Harga berhasil diperbarui.']);
         } else {
             echo json_encode(['success'=>false,'message'=>'Gagal memperbarui harga.']);
         }
-        $stmt->close(); exit;
+        exit;
 
     } elseif ($action === 'update_stok') {
-        $id     = (int)($_POST['id'] ?? 0);
-        $ukuran = strtolower($_POST['ukuran'] ?? '');
-        $jumlah = max(0, (int)($_POST['jumlah'] ?? 0));
+        $id      = (int)($_POST['id'] ?? 0);
+        $ukuran  = strtolower($_POST['ukuran'] ?? '');
+        $jumlah  = max(0, (int)($_POST['jumlah'] ?? 0));
         $allowed = ['s','m','l','xl','xxl'];
+
         if ($id <= 0 || !in_array($ukuran, $allowed)) {
             echo json_encode(['success'=>false,'message'=>'Data tidak valid.']); exit;
         }
+
         $col  = "stok_$ukuran";
-        $stmt = $conn->prepare("UPDATE produk SET $col=? WHERE id=?");
-        $stmt->bind_param("ii", $jumlah, $id);
-        $stmt->execute();
+        $stmt = $pdo->prepare("UPDATE produk SET $col = ? WHERE id = ?");
+        $stmt->execute([$jumlah, $id]);
         echo json_encode(['success'=>true,'jumlah'=>$jumlah]);
-        $stmt->close(); exit;
+        exit;
 
     } else {
         echo json_encode(['success'=>false,'message'=>'Aksi tidak dikenal.']); exit;
@@ -62,9 +64,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // ── Query data halaman ───────────────────────────────────────
-$pending_orders = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as n FROM orders WHERE status='pending_payment' OR status='pending'"))['n'] ?? 0;
-$total_produk   = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as n FROM produk"))['n'] ?? 0;
-$produk_list    = mysqli_query($conn, "SELECT * FROM produk ORDER BY created_at DESC");
+$pending_orders = $pdo->query("SELECT COUNT(*) FROM orders WHERE status='pending_payment' OR status='pending'")->fetchColumn();
+$total_produk   = $pdo->query("SELECT COUNT(*) FROM produk")->fetchColumn();
+
+$stmt        = $pdo->query("SELECT * FROM produk ORDER BY created_at DESC");
+$produk_list = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -124,11 +128,11 @@ $produk_list    = mysqli_query($conn, "SELECT * FROM produk ORDER BY created_at 
                 </a>
             </div>
 
-            <?php if (mysqli_num_rows($produk_list) == 0): ?>
+            <?php if (empty($produk_list)): ?>
                 <div style="text-align:center;padding:60px;color:var(--muted);">Belum ada produk di database.</div>
             <?php else: ?>
             <div class="produk-grid">
-                <?php while ($p = mysqli_fetch_assoc($produk_list)): ?>
+                <?php foreach ($produk_list as $p): ?>
                 <div class="produk-card" id="card-<?= $p['id'] ?>">
                     <img src="../<?= htmlspecialchars($p['gambar'] ?? 'asset/posterutama.png') ?>"
                          alt="<?= htmlspecialchars($p['nama_produk'] ?? $p['nama'] ?? '') ?>"
@@ -185,7 +189,7 @@ $produk_list    = mysqli_query($conn, "SELECT * FROM produk ORDER BY created_at 
 
                     </div>
                 </div>
-                <?php endwhile; ?>
+                <?php endforeach; ?>
             </div>
             <?php endif; ?>
         </div>

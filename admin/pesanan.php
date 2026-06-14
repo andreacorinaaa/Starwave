@@ -1,47 +1,41 @@
 <?php
 require 'auth_check.php';
 
-$pending_orders = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as n FROM orders WHERE status='pending_payment' OR status='pending'"))['n'] ?? 0;
-$total_orders   = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as n FROM orders"))['n'] ?? 0;
+$pending_orders = $pdo->query("SELECT COUNT(*) FROM orders WHERE status='pending_payment' OR status='pending'")->fetchColumn();
+$total_orders   = $pdo->query("SELECT COUNT(*) FROM orders")->fetchColumn();
 
 $pesan = "";
 
-// ── Update status order (existing) ───────────────────────────
 if (isset($_POST['update_status'])) {
     $id_order   = (int)$_POST['id_order'];
-    $new_status = mysqli_real_escape_string($conn, $_POST['status']);
-    mysqli_query($conn, "UPDATE orders SET status='$new_status' WHERE id='$id_order'");
+    $new_status = $_POST['status'];
+    $pdo->prepare("UPDATE orders SET status = ? WHERE id = ?")->execute([$new_status, $id_order]);
     $pesan = "Status pesanan #$id_order berhasil diperbarui.";
 }
 
-// ── Konfirmasi pembayaran QRIS ────────────────────────────────
 if (isset($_POST['konfirmasi_bayar'])) {
     $id_order = (int)$_POST['id_order'];
-
-    // Update status_bayar jadi paid + ubah status order jadi diproses
-    $stmt = mysqli_prepare($conn, "UPDATE orders SET status_bayar='paid', status='diproses' WHERE id=?");
-    mysqli_stmt_bind_param($stmt, 'i', $id_order);
-    mysqli_stmt_execute($stmt);
-
-    if (mysqli_stmt_affected_rows($stmt) > 0) {
-        $pesan = "Pembayaran QRIS order #$id_order berhasil dikonfirmasi. Status diubah ke Diproses.";
+    $stmt = $pdo->prepare("UPDATE orders SET status_bayar = 'paid', status = 'diproses' WHERE id = ?");
+    $stmt->execute([$id_order]);
+    if ($stmt->rowCount() > 0) {
+        $pesan = "Pembayaran order #$id_order berhasil dikonfirmasi. Status diubah ke Diproses.";
     }
 }
 
-// ── Hapus order (existing) ────────────────────────────────────
 if (isset($_GET['hapus_order'])) {
     $id = (int)$_GET['hapus_order'];
-    mysqli_query($conn, "DELETE FROM orders WHERE id='$id'");
+    $pdo->prepare("DELETE FROM orders WHERE id = ?")->execute([$id]);
     header("Location: pesanan.php?deleted=1");
     exit;
 }
 
-$orders = mysqli_query($conn, "
+$stmt = $pdo->query("
     SELECT o.*, u.nama_panggilan AS nama, u.no_telepon
     FROM orders o
     LEFT JOIN users u ON o.id_user = u.id_user
     ORDER BY o.created_at DESC LIMIT 50
 ");
+$orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 function statusClass($s) {
     return match($s) {
@@ -74,74 +68,33 @@ function statusLabel($s) {
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="admin.css">
     <style>
-        /* ── Badge pembayaran ── */
-        .badge-bayar {
-            display: inline-block;
-            padding: 2px 8px;
-            border-radius: 20px;
-            font-size: 11px;
-            font-weight: 500;
-        }
+        .bukti-thumb { width: 52px; height: 52px; object-fit: cover; border-radius: 6px; border: 1px solid #e5e7eb; cursor: pointer; transition: transform 0.15s; display: block; }
+        .bukti-thumb:hover { transform: scale(1.08); }
+        .no-bukti { font-size: 11px; color: #bbb; font-style: italic; }
+        .modal-bukti-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.7); z-index: 1000; align-items: center; justify-content: center; }
+        .modal-bukti-backdrop.open { display: flex; }
+        .modal-bukti-box { background: #fff; border-radius: 14px; padding: 1.5rem; max-width: 480px; width: 90%; text-align: center; box-shadow: 0 8px 32px rgba(0,0,0,.2); }
+        .modal-bukti-box h3 { font-size: 15px; font-weight: 700; margin-bottom: 12px; }
+        .modal-bukti-box img { max-width: 100%; max-height: 360px; border-radius: 8px; object-fit: contain; border: 1px solid #e5e7eb; }
+        .modal-bukti-box .modal-bukti-meta { font-size: 12px; color: #888; margin-top: 10px; }
+        .modal-bukti-actions { display: flex; gap: 10px; margin-top: 16px; }
+        .btn-modal-bukti-close { flex: 1; padding: 10px; border: 1px solid #e0e0dc; background: #fff; border-radius: 8px; font-size: 14px; cursor: pointer; color: #666; }
+        .btn-modal-bukti-confirm { flex: 1; padding: 10px; background: #1a1a1a; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+        .btn-modal-bukti-confirm:hover { background: #333; }
+        .badge-bayar { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 500; }
         .badge-bayar.paid    { background: #eafaf3; color: #166534; }
         .badge-bayar.pending { background: #fef9ec; color: #92680a; }
-
-        /* ── Tombol konfirmasi ── */
-        .btn-konfirmasi {
-            padding: 5px 10px;
-            background: #1a1a1a;
-            color: #fff;
-            border: none;
-            border-radius: 6px;
-            font-size: 12px;
-            font-weight: 500;
-            cursor: pointer;
-            white-space: nowrap;
-            transition: background .15s;
-        }
+        .badge-bayar.waiting { background: #eff6ff; color: #1d4ed8; }
+        .btn-konfirmasi { padding: 5px 10px; background: #1a1a1a; color: #fff; border: none; border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer; white-space: nowrap; transition: background .15s; }
         .btn-konfirmasi:hover { background: #333; }
-
-        /* ── Modal ── */
-        .modal-backdrop {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,.5);
-            z-index: 999;
-            align-items: center;
-            justify-content: center;
-        }
+        .modal-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 999; align-items: center; justify-content: center; }
         .modal-backdrop.open { display: flex; }
-
-        .modal-box {
-            background: #fff;
-            border-radius: 14px;
-            padding: 2rem;
-            width: 100%;
-            max-width: 360px;
-            text-align: center;
-            box-shadow: 0 8px 32px rgba(0,0,0,.12);
-        }
+        .modal-box { background: #fff; border-radius: 14px; padding: 2rem; width: 100%; max-width: 360px; text-align: center; box-shadow: 0 8px 32px rgba(0,0,0,.12); }
         .modal-box h3 { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
         .modal-box p  { font-size: 14px; color: #666; margin-bottom: 1.5rem; line-height: 1.5; }
-
         .modal-actions { display: flex; gap: 10px; }
-
-        .btn-modal-cancel {
-            flex: 1; padding: 10px;
-            border: 1px solid #e0e0dc;
-            background: #fff;
-            border-radius: 8px;
-            font-size: 14px;
-            cursor: pointer;
-            color: #666;
-        }
-        .btn-modal-confirm {
-            flex: 1; padding: 10px;
-            background: #1a1a1a; color: #fff;
-            border: none; border-radius: 8px;
-            font-size: 14px; font-weight: 500;
-            cursor: pointer;
-        }
+        .btn-modal-cancel  { flex: 1; padding: 10px; border: 1px solid #e0e0dc; background: #fff; border-radius: 8px; font-size: 14px; cursor: pointer; color: #666; }
+        .btn-modal-confirm { flex: 1; padding: 10px; background: #1a1a1a; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; }
         .btn-modal-confirm:hover { background: #333; }
     </style>
 </head>
@@ -214,22 +167,26 @@ function statusLabel($s) {
                             <th>Produk</th>
                             <th>Qty</th>
                             <th>Pemesan</th>
-                            <th>Penerima</th>
                             <th>Tgl Order</th>
                             <th>Status</th>
+                            <th>Bukti Bayar</th>
                             <th>Pembayaran</th>
                             <th>Ubah Status</th>
                             <th>Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
-                    <?php if (mysqli_num_rows($orders) == 0): ?>
+                    <?php if (empty($orders)): ?>
                         <tr class="empty-row"><td colspan="10">Belum ada pesanan</td></tr>
-                    <?php else: while ($o = mysqli_fetch_assoc($orders)): ?>
-                        <?php $is_paid = ($o['status_bayar'] ?? '') === 'paid'; ?>
+                    <?php else: foreach ($orders as $o): ?>
+                        <?php
+                        $is_paid    = ($o['status_bayar'] ?? '') === 'paid';
+                        $is_waiting = ($o['status_bayar'] ?? '') === 'menunggu_konfirmasi';
+                        $ada_bukti  = !empty($o['bukti_bayar']);
+                        ?>
                         <tr data-status="<?= $o['status'] ?>"
                             data-bayar="<?= $is_paid ? 'paid' : 'belum_bayar' ?>"
-                            data-search="<?= strtolower($o['nama_produk'] . ' ' . ($o['nama'] ?? '') . ' ' . $o['nama_penerima']) ?>">
+                            data-search="<?= strtolower($o['nama_produk'] . ' ' . ($o['nama'] ?? '')) ?>">
 
                             <td class="order-id">#<?= $o['id'] ?></td>
                             <td><?= htmlspecialchars($o['nama_produk']) ?></td>
@@ -240,7 +197,6 @@ function statusLabel($s) {
                                     <br><span style="font-size:11px;"><?= $o['no_telepon'] ?></span>
                                 <?php endif; ?>
                             </td>
-                            <td><?= htmlspecialchars($o['nama_penerima']) ?></td>
                             <td style="color:var(--muted);font-size:12px;white-space:nowrap;"><?= $o['tanggal_order'] ?></td>
                             <td>
                                 <span class="badge <?= statusClass($o['status']) ?>">
@@ -248,10 +204,34 @@ function statusLabel($s) {
                                 </span>
                             </td>
 
-                            <!-- ── Kolom Pembayaran QRIS ── -->
+                            <td>
+                                <?php if ($ada_bukti): ?>
+                                    <img src="../<?= htmlspecialchars($o['bukti_bayar']) ?>"
+                                         class="bukti-thumb"
+                                         onclick="openBukti(
+                                             '../<?= htmlspecialchars($o['bukti_bayar']) ?>',
+                                             <?= $o['id'] ?>,
+                                             '<?= htmlspecialchars($o['nama_produk']) ?>',
+                                             'Rp <?= number_format($o['total_harga'], 0, ',', '.') ?>',
+                                             <?= $is_paid ? 'true' : 'false' ?>
+                                         )"
+                                         title="Lihat bukti bayar">
+                                <?php else: ?>
+                                    <span class="no-bukti">Belum upload</span>
+                                <?php endif; ?>
+                            </td>
+
                             <td>
                                 <?php if ($is_paid): ?>
                                     <span class="badge-bayar paid">✓ Lunas</span>
+                                <?php elseif ($is_waiting): ?>
+                                    <div style="display:flex;flex-direction:column;gap:5px;align-items:flex-start;">
+                                        <span class="badge-bayar waiting">⏳ Menunggu</span>
+                                        <button class="btn-konfirmasi"
+                                            onclick="openModal(<?= $o['id'] ?>, '<?= htmlspecialchars($o['nama_produk']) ?>', 'Rp <?= number_format($o['total_harga'], 0, ',', '.') ?>')">
+                                            Konfirmasi Bayar
+                                        </button>
+                                    </div>
                                 <?php else: ?>
                                     <div style="display:flex;flex-direction:column;gap:5px;align-items:flex-start;">
                                         <span class="badge-bayar pending">Belum Bayar</span>
@@ -282,16 +262,28 @@ function statusLabel($s) {
                                    onclick="return confirm('Hapus pesanan #<?= $o['id'] ?>?')">Hapus</a>
                             </td>
                         </tr>
-                    <?php endwhile; endif; ?>
+                    <?php endforeach; endif; ?>
                     </tbody>
                 </table>
             </div>
         </div>
-
     </div>
 </div>
 
-<!-- ── Modal Konfirmasi Pembayaran ── -->
+<!-- Modal lihat bukti bayar -->
+<div class="modal-bukti-backdrop" id="modal-bukti">
+    <div class="modal-bukti-box">
+        <h3>Bukti Pembayaran</h3>
+        <img id="bukti-img" src="" alt="Bukti Bayar">
+        <div class="modal-bukti-meta" id="bukti-meta"></div>
+        <div class="modal-bukti-actions">
+            <button class="btn-modal-bukti-close" onclick="closeBukti()">Tutup</button>
+            <button class="btn-modal-bukti-confirm" id="btn-konfirmasi-dari-bukti">Konfirmasi Lunas</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal konfirmasi pembayaran -->
 <div class="modal-backdrop" id="modal-konfirmasi">
     <div class="modal-box">
         <h3>Konfirmasi Pembayaran</h3>
@@ -325,24 +317,31 @@ function applyFilter() {
         const rowStatus = row.getAttribute('data-status') || '';
         const rowBayar  = row.getAttribute('data-bayar') || '';
         const rowSearch = row.getAttribute('data-search') || '';
-
         let statusMatch = false;
-        if (currentStatus === 'semua') {
-            statusMatch = true;
-        } else if (currentStatus === 'belum_bayar') {
-            statusMatch = rowBayar === 'belum_bayar';
-        } else if (currentStatus === 'pending') {
-            statusMatch = rowStatus === 'pending' || rowStatus === 'pending_payment';
-        } else {
-            statusMatch = rowStatus === currentStatus;
-        }
-
+        if (currentStatus === 'semua') statusMatch = true;
+        else if (currentStatus === 'belum_bayar') statusMatch = rowBayar === 'belum_bayar';
+        else if (currentStatus === 'pending') statusMatch = rowStatus === 'pending' || rowStatus === 'pending_payment';
+        else statusMatch = rowStatus === currentStatus;
         const searchMatch = q === '' || rowSearch.includes(q);
         row.style.display = (statusMatch && searchMatch) ? '' : 'none';
     });
 }
 
-// ── Modal konfirmasi pembayaran ──
+function openBukti(imgSrc, orderId, namaProduk, total, isPaid) {
+    document.getElementById('bukti-img').src = imgSrc;
+    document.getElementById('bukti-meta').innerHTML = `Order <strong>#${orderId}</strong> — ${namaProduk} — <strong>${total}</strong>`;
+    const btnKonfirmasi = document.getElementById('btn-konfirmasi-dari-bukti');
+    if (isPaid) {
+        btnKonfirmasi.style.display = 'none';
+    } else {
+        btnKonfirmasi.style.display = '';
+        btnKonfirmasi.onclick = () => { closeBukti(); openModal(orderId, namaProduk, total); };
+    }
+    document.getElementById('modal-bukti').classList.add('open');
+}
+
+function closeBukti() { document.getElementById('modal-bukti').classList.remove('open'); }
+
 function openModal(orderId, namaProduk, total) {
     document.getElementById('modal-order-id').value = orderId;
     document.getElementById('modal-desc').innerHTML =
@@ -353,13 +352,10 @@ function openModal(orderId, namaProduk, total) {
     document.getElementById('modal-konfirmasi').classList.add('open');
 }
 
-function closeModal() {
-    document.getElementById('modal-konfirmasi').classList.remove('open');
-}
+function closeModal() { document.getElementById('modal-konfirmasi').classList.remove('open'); }
 
-document.getElementById('modal-konfirmasi').addEventListener('click', function(e) {
-    if (e.target === this) closeModal();
-});
+document.getElementById('modal-konfirmasi').addEventListener('click', function(e) { if (e.target === this) closeModal(); });
+document.getElementById('modal-bukti').addEventListener('click', function(e) { if (e.target === this) closeBukti(); });
 </script>
 </body>
 </html>

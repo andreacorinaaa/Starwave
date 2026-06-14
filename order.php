@@ -10,52 +10,61 @@ if (!isset($_SESSION['user'])) {
 
 $user_email = $_SESSION['user'];
 
-$user = mysqli_fetch_assoc(mysqli_query($conn,
-    "SELECT * FROM users WHERE email='$user_email'"
-));
+$stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?");
+$stmt->execute([$user_email]);
+$user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+if (!$user) {
+    session_destroy();
+    header("Location: masuk/login.php");
+    exit;
+}
 
 $user_id = $user['id_user'];
+$pesan   = "";
 
-$pesan = "";
-
+// Batalkan pesanan (hanya kalau belum upload bukti bayar)
 if (isset($_GET['batal'])) {
     $id_order = (int)$_GET['batal'];
-    $cek = mysqli_fetch_assoc(mysqli_query($conn,
-        "SELECT * FROM orders
-         WHERE id='$id_order'
-         AND id_user='$user_id'
-         AND status='pending_payment'"
-    ));
+
+    $stmt = $pdo->prepare("SELECT * FROM orders WHERE id = ? AND id_user = ? AND status = 'pending_payment' AND (status_bayar IS NULL OR status_bayar = 'unpaid')");
+    $stmt->execute([$id_order, $user_id]);
+    $cek = $stmt->fetch(PDO::FETCH_ASSOC);
+
     if ($cek) {
-        mysqli_query($conn, "UPDATE orders SET status='batal' WHERE id='$id_order'");
+        $stmt = $pdo->prepare("UPDATE orders SET status = 'batal' WHERE id = ?");
+        $stmt->execute([$id_order]);
         $pesan = "success|Pesanan berhasil dibatalkan.";
     } else {
         $pesan = "error|Pesanan tidak bisa dibatalkan.";
     }
 }
 
+// Hapus riwayat
 if (isset($_GET['hapus'])) {
     $id_order = (int)$_GET['hapus'];
-    $cek = mysqli_fetch_assoc(mysqli_query($conn,
-        "SELECT * FROM orders
-         WHERE id='$id_order'
-         AND id_user='$user_id'"
-    ));
+
+    $stmt = $pdo->prepare("SELECT * FROM orders WHERE id = ? AND id_user = ?");
+    $stmt->execute([$id_order, $user_id]);
+    $cek = $stmt->fetch(PDO::FETCH_ASSOC);
+
     if ($cek && ($cek['status'] == 'selesai' || $cek['status'] == 'batal')) {
-        mysqli_query($conn, "DELETE FROM orders WHERE id='$id_order' AND id_user='$user_id'");
+        $stmt = $pdo->prepare("DELETE FROM orders WHERE id = ? AND id_user = ?");
+        $stmt->execute([$id_order, $user_id]);
         $pesan = "success|Riwayat pesanan berhasil dihapus.";
     } else {
         $pesan = "error|Riwayat tidak bisa dihapus.";
     }
 }
 
-$riwayat = mysqli_query($conn,
-    "SELECT o.*,
-            (SELECT id FROM ulasan WHERE id_order = o.id LIMIT 1) AS sudah_ulasan
-     FROM orders o
-     WHERE o.id_user='$user_id'
-     ORDER BY o.created_at DESC"
-);
+// Ambil semua riwayat
+$stmt = $pdo->prepare("SELECT o.*,
+                               (SELECT id FROM ulasan WHERE id_order = o.id LIMIT 1) AS sudah_ulasan
+                        FROM orders o
+                        WHERE o.id_user = ?
+                        ORDER BY o.created_at DESC");
+$stmt->execute([$user_id]);
+$riwayat = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 $pesan_type = $pesan_text = "";
 if ($pesan) {
@@ -69,6 +78,9 @@ if ($pesan) {
     <title>Riwayat — STARWAVE</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="order.css">
+    <style>
+        .status-badge.status-waiting { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+    </style>
 </head>
 
 <body>
@@ -89,11 +101,21 @@ if ($pesan) {
             <input type="text" name="q" placeholder="Search produk..." style="padding:5px;">
         </form>
         <?php if (isset($_SESSION['user'])): ?>
-    <a href="profile.php" style="margin-left:15px; text-decoration:none; color:#333; display:flex; align-items:center;" title="Profile">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="8" r="4"/>
-            <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
-        </svg>
+    <a href="profile.php" style="margin-left:15px; text-decoration:none; display:flex; align-items:center;" title="Profile">
+        <?php
+            $stmt2 = $pdo->prepare("SELECT foto_profil FROM users WHERE email = ?");
+            $stmt2->execute([$_SESSION['user']]);
+            $navUser = $stmt2->fetch(PDO::FETCH_ASSOC);
+        ?>
+        <?php if (!empty($navUser['foto_profil']) && file_exists($navUser['foto_profil'])): ?>
+            <img src="<?= htmlspecialchars($navUser['foto_profil']) ?>" 
+                 style="width:34px; height:34px; border-radius:50%; object-fit:cover; border:2px solid #2a7fa8;">
+        <?php else: ?>
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#c9dde8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="8" r="4"/>
+                <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+            </svg>
+        <?php endif; ?>
     </a>
 <?php elseif (isset($_SESSION['admin'])): ?>
     <a href="admin/dashboard.php" style="margin-left:15px; text-decoration:none; color:#4f6ef7; display:flex; align-items:center; gap:5px; font-size:12px; font-weight:700; letter-spacing:1px;" title="Admin Panel">
@@ -104,10 +126,19 @@ if ($pesan) {
         ADMIN
     </a>
 <?php else: ?>
-    <a href="masuk/login.php" style="margin-left:15px; text-decoration:none; color:#333;">Login</a>
+    <a href="masuk/login.php" style="margin-left:15px; text-decoration:none; color:#c9dde8; font-size:14px; font-weight:700;">Login</a>
 <?php endif; ?>
     </nav>
 </header>
+
+<!-- BREADCRUMB -->
+<div class="breadcrumb-bar">
+    <h1>Riwayat Pesanan</h1>
+    <div class="breadcrumb">
+        <a href="index.php">Home</a><span>/</span>
+        <span style="color:#2b1a0e">Order</span>
+    </div>
+</div>
 
 <main class="ord-container">
 
@@ -118,13 +149,11 @@ if ($pesan) {
         </div>
     <?php endif; ?>
 
-    <h2 class="ord-section-title">Riwayat Pesanan</h2>
-
-    <?php if (mysqli_num_rows($riwayat) == 0): ?>
+    <?php if (empty($riwayat)): ?>
         <p class="ord-no-order">Belum ada pesanan.</p>
 
     <?php else: ?>
-        <table class = "ord-table">
+        <table class="ord-table">
             <tr>
                 <th>#</th>
                 <th>Produk</th>
@@ -135,7 +164,12 @@ if ($pesan) {
                 <th>Aksi</th>
             </tr>
 
-            <?php $no = 1; while ($row = mysqli_fetch_assoc($riwayat)): ?>
+            <?php $no = 1; foreach ($riwayat as $row): ?>
+                <?php
+                $status_bayar = $row['status_bayar'] ?? '';
+                $is_waiting   = ($row['status'] == 'pending_payment' && $status_bayar === 'menunggu_konfirmasi');
+                $is_unpaid    = ($row['status'] == 'pending_payment' && $status_bayar !== 'menunggu_konfirmasi');
+                ?>
                 <tr>
                     <td><?= $no++ ?></td>
                     <td><?= htmlspecialchars($row['nama_produk']) ?></td>
@@ -143,14 +177,19 @@ if ($pesan) {
                     <td><?= htmlspecialchars($row['nama_penerima']) ?></td>
                     <td><?= $row['tanggal_order'] ?></td>
                     <td>
-                        <?php if ($row['status'] == 'pending_payment'): ?>
+                        <?php if ($is_waiting): ?>
+                            <span class="status-badge status-waiting">Menunggu Konfirmasi</span>
+                        <?php elseif ($is_unpaid): ?>
                             <span class="status-badge status-pending">Belum Bayar</span>
                         <?php else: ?>
                             <span class="status-badge status-<?= $row['status'] ?>"><?= ucfirst($row['status']) ?></span>
                         <?php endif; ?>
                     </td>
                     <td class="ord-td-aksi">
-                        <?php if ($row['status'] == 'pending_payment'): ?>
+                        <?php if ($is_waiting): ?>
+                            <a href="payment.php?id=<?= $row['id'] ?>" class="ord-btn-edit">Lihat Bukti</a>
+
+                        <?php elseif ($is_unpaid): ?>
                             <a href="payment.php?id=<?= $row['id'] ?>" class="ord-btn-edit">Belum Bayar</a>
                             <a href="#" class="ord-btn-batal" onclick="showModal('Yakin batalkan pesanan ini?', 'order.php?batal=<?= $row['id'] ?>'); return false;">Batal</a>
 
@@ -170,7 +209,7 @@ if ($pesan) {
                         <?php endif; ?>
                     </td>
                 </tr>
-            <?php endwhile; ?>
+            <?php endforeach; ?>
 
         </table>
     <?php endif; ?>
@@ -180,25 +219,21 @@ if ($pesan) {
 <!-- FOOTER -->
 <footer>
     <div class="footer-box">
-
         <div>
             <h3>Store</h3>
             <p>Man</p>
             <p>Woman</p>
             <p>Accessories</p>
         </div>
-
         <div>
             <h3>Business</h3>
             <p><a href="mailto:starwave@gmail.com">starwave@gmail.com</a></p>
             <p>081836737367367</p>
         </div>
-
         <div>
             <h3>Social</h3>
             <p><a href="https://instagram.com/starwave" target="_blank">Instagram : starwave.fashion</a></p>
         </div>
-
     </div>
 </footer>
 

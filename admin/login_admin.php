@@ -2,7 +2,6 @@
 session_start();
 include('../config/koneksi.php');
 
-// Kalau sudah login, langsung ke dashboard
 if (isset($_SESSION['admin'])) {
     header("Location: dashboard.php");
     exit;
@@ -11,11 +10,12 @@ if (isset($_SESSION['admin'])) {
 $error = "";
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $email    = mysqli_real_escape_string($conn, trim($_POST['email']));
+    $email    = trim($_POST['email']);
     $password = $_POST['password'];
 
-    $result = mysqli_query($conn, "SELECT * FROM admin WHERE email='$email'");
-    $admin  = mysqli_fetch_assoc($result);
+    $stmt  = $pdo->prepare("SELECT * FROM admin WHERE email = ?");
+    $stmt->execute([$email]);
+    $admin = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if ($admin && password_verify($password, $admin['password'])) {
         $_SESSION['admin'] = $admin['email'];
