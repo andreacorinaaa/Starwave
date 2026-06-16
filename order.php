@@ -23,7 +23,7 @@ if (!$user) {
 $user_id = $user['id_user'];
 $pesan   = "";
 
-// Batalkan pesanan (hanya kalau belum upload bukti bayar)
+// Batalkan pesanan
 if (isset($_GET['batal'])) {
     $id_order = (int)$_GET['batal'];
 
@@ -48,7 +48,7 @@ if (isset($_GET['hapus'])) {
     $stmt->execute([$id_order, $user_id]);
     $cek = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    if ($cek && ($cek['status'] == 'selesai' || $cek['status'] == 'batal')) {
+    if ($cek && in_array($cek['status'], ['selesai', 'batal', 'qr_expired'])) {
         $stmt = $pdo->prepare("DELETE FROM orders WHERE id = ? AND id_user = ?");
         $stmt->execute([$id_order, $user_id]);
         $pesan = "success|Riwayat pesanan berhasil dihapus.";
@@ -57,9 +57,10 @@ if (isset($_GET['hapus'])) {
     }
 }
 
-// Ambil semua riwayat
+// Ambil semua riwayat + cari id_produk dari nama_produk
 $stmt = $pdo->prepare("SELECT o.*,
-                               (SELECT id FROM ulasan WHERE id_order = o.id LIMIT 1) AS sudah_ulasan
+                               (SELECT id FROM ulasan WHERE id_order = o.id LIMIT 1) AS sudah_ulasan,
+                               (SELECT id FROM produk WHERE o.nama_produk LIKE CONCAT(nama_produk, '%') LIMIT 1) AS id_produk_ref
                         FROM orders o
                         WHERE o.id_user = ?
                         ORDER BY o.created_at DESC");
@@ -80,12 +81,12 @@ if ($pesan) {
     <link rel="stylesheet" href="order.css">
     <style>
         .status-badge.status-waiting { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+        .status-badge.status-qr_expired { background: #fff8e1; color: #b45309; border: 1px solid #fcd34d; }
     </style>
 </head>
 
 <body>
 
-<!-- NAVBAR -->
 <header>
     <nav>
         <h1>STARWAVE</h1>
@@ -101,37 +102,36 @@ if ($pesan) {
             <input type="text" name="q" placeholder="Search produk..." style="padding:5px;">
         </form>
         <?php if (isset($_SESSION['user'])): ?>
-    <a href="profile.php" style="margin-left:15px; text-decoration:none; display:flex; align-items:center;" title="Profile">
-        <?php
-            $stmt2 = $pdo->prepare("SELECT foto_profil FROM users WHERE email = ?");
-            $stmt2->execute([$_SESSION['user']]);
-            $navUser = $stmt2->fetch(PDO::FETCH_ASSOC);
-        ?>
-        <?php if (!empty($navUser['foto_profil']) && file_exists($navUser['foto_profil'])): ?>
-            <img src="<?= htmlspecialchars($navUser['foto_profil']) ?>" 
-                 style="width:34px; height:34px; border-radius:50%; object-fit:cover; border:2px solid #2a7fa8;">
+            <a href="profile.php" style="margin-left:15px; text-decoration:none; display:flex; align-items:center;" title="Profile">
+                <?php
+                    $stmt2 = $pdo->prepare("SELECT foto_profil FROM users WHERE email = ?");
+                    $stmt2->execute([$_SESSION['user']]);
+                    $navUser = $stmt2->fetch(PDO::FETCH_ASSOC);
+                ?>
+                <?php if (!empty($navUser['foto_profil']) && file_exists($navUser['foto_profil'])): ?>
+                    <img src="<?= htmlspecialchars($navUser['foto_profil']) ?>"
+                         style="width:34px; height:34px; border-radius:50%; object-fit:cover; border:2px solid #2a7fa8;">
+                <?php else: ?>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#c9dde8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="8" r="4"/>
+                        <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+                    </svg>
+                <?php endif; ?>
+            </a>
+        <?php elseif (isset($_SESSION['admin'])): ?>
+            <a href="admin/dashboard.php" style="margin-left:15px; text-decoration:none; color:#4f6ef7; display:flex; align-items:center; gap:5px; font-size:12px; font-weight:700; letter-spacing:1px;" title="Admin Panel">
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="8" r="4"/>
+                    <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+                </svg>
+                ADMIN
+            </a>
         <?php else: ?>
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#c9dde8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="8" r="4"/>
-                <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
-            </svg>
+            <a href="masuk/login.php" style="margin-left:15px; text-decoration:none; color:#c9dde8; font-size:14px; font-weight:700;">Login</a>
         <?php endif; ?>
-    </a>
-<?php elseif (isset($_SESSION['admin'])): ?>
-    <a href="admin/dashboard.php" style="margin-left:15px; text-decoration:none; color:#4f6ef7; display:flex; align-items:center; gap:5px; font-size:12px; font-weight:700; letter-spacing:1px;" title="Admin Panel">
-        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="8" r="4"/>
-            <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
-        </svg>
-        ADMIN
-    </a>
-<?php else: ?>
-    <a href="masuk/login.php" style="margin-left:15px; text-decoration:none; color:#c9dde8; font-size:14px; font-weight:700;">Login</a>
-<?php endif; ?>
     </nav>
 </header>
 
-<!-- BREADCRUMB -->
 <div class="breadcrumb-bar">
     <h1>Riwayat Pesanan</h1>
     <div class="breadcrumb">
@@ -181,6 +181,8 @@ if ($pesan) {
                             <span class="status-badge status-waiting">Menunggu Konfirmasi</span>
                         <?php elseif ($is_unpaid): ?>
                             <span class="status-badge status-pending">Belum Bayar</span>
+                        <?php elseif ($row['status'] == 'qr_expired'): ?>
+                            <span class="status-badge status-qr_expired">⏰ QR Kadaluarsa</span>
                         <?php else: ?>
                             <span class="status-badge status-<?= $row['status'] ?>"><?= ucfirst($row['status']) ?></span>
                         <?php endif; ?>
@@ -202,7 +204,13 @@ if ($pesan) {
                             <a href="#" class="ord-btn-hapus" onclick="showModal('Hapus riwayat ini? Tidak bisa dikembalikan!', 'order.php?hapus=<?= $row['id'] ?>'); return false;">Hapus</a>
 
                         <?php elseif ($row['status'] == 'batal'): ?>
-                            <a href="#" class="btn-hapus" onclick="showModal('Hapus riwayat ini? Tidak bisa dikembalikan!', 'order.php?hapus=<?= $row['id'] ?>'); return false;">Hapus</a>
+                            <a href="#" class="ord-btn-hapus" onclick="showModal('Hapus riwayat ini? Tidak bisa dikembalikan!', 'order.php?hapus=<?= $row['id'] ?>'); return false;">Hapus</a>
+
+                        <?php elseif ($row['status'] == 'qr_expired'): ?>
+                            <?php if (!empty($row['id_produk_ref'])): ?>
+                                <a href="detail.php?id=<?= $row['id_produk_ref'] ?>" class="ord-btn-edit">Beli Ulang</a>
+                            <?php endif; ?>
+                            <a href="#" class="ord-btn-hapus" onclick="showModal('Hapus riwayat ini? Tidak bisa dikembalikan!', 'order.php?hapus=<?= $row['id'] ?>'); return false;">Hapus</a>
 
                         <?php else: ?>
                             <span class="ord-no-aksi">—</span>
@@ -216,7 +224,6 @@ if ($pesan) {
 
 </main>
 
-<!-- FOOTER -->
 <footer>
     <div class="footer-box">
         <div>
@@ -237,7 +244,6 @@ if ($pesan) {
     </div>
 </footer>
 
-<!-- MODAL -->
 <div id="ord-modal">
     <div id="ord-modal-inner">
         <h3>STARWAVE</h3>

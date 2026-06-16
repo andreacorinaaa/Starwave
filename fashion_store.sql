@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jun 14, 2026 at 06:33 AM
+-- Generation Time: Jun 16, 2026 at 08:49 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -64,7 +64,9 @@ CREATE TABLE `keranjang` (
 
 INSERT INTO `keranjang` (`id`, `id_user`, `id_produk`, `nama_produk`, `harga`, `qty`, `ukuran`, `gambar`, `created_at`) VALUES
 (1, 1, 31, 'Trilogy Ring', 200000, 2, '-', 'asset/trilogyR.jpg', '2026-06-11 21:44:40'),
-(3, 1, 19, 'Highwaist Straight Jeans', 320000, 1, 'M', 'asset/highwaistS.jpg', '2026-06-12 15:14:27');
+(3, 1, 19, 'Highwaist Straight Jeans', 320000, 1, 'M', 'asset/highwaistS.jpg', '2026-06-12 15:14:27'),
+(4, 1, 27, 'Hobo Bag ', 500000, 1, '-', 'asset/aksesoris3.jpg', '2026-06-16 12:59:04'),
+(5, 1, 14, 'Crop Knit Hoodie Zip-up', 280000, 1, 'S', 'asset/woman3.jpg', '2026-06-16 12:59:38');
 
 -- --------------------------------------------------------
 
@@ -85,24 +87,16 @@ CREATE TABLE `orders` (
   `harga` int(11) NOT NULL,
   `total_harga` int(11) NOT NULL,
   `status_bayar` varchar(20) DEFAULT 'unpaid',
-  `bukti_bayar` varchar(255) DEFAULT NULL
+  `bukti_bayar` varchar(255) DEFAULT NULL,
+  `qris_expired_at` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `orders`
 --
 
-INSERT INTO `orders` (`id`, `id_user`, `nama_produk`, `qty`, `nama_penerima`, `email`, `tanggal_order`, `status`, `created_at`, `harga`, `total_harga`, `status_bayar`, `bukti_bayar`) VALUES
-(29, 1, 'Bomber Jacket - Size S', 1, 'andrea indira', 'rara@gmail.com', '2026-06-07', 'selesai', '2026-06-07 14:29:57', 600000, 600000, 'unpaid', NULL),
-(33, 1, 'Wayfarer Puffer - Size M', 1, 'andrea indira', 'rara@gmail.com', '2026-06-10', 'selesai', '2026-06-10 15:54:09', 350000, 350000, 'unpaid', NULL),
-(34, 1, 'Denim Jacket - Size M', 1, 'andrea indira', 'rara@gmail.com', '2026-06-12', 'selesai', '2026-06-12 05:26:24', 500000, 500000, 'unpaid', NULL),
-(35, 1, 'Formal Pants - Size M', 1, 'andrea indira', 'rara@gmail.com', '2026-06-12', 'selesai', '2026-06-12 08:26:53', 300000, 300000, 'paid', NULL),
-(36, 1, 'Sport T-Shirt - Size M', 1, 'andrea indira', 'rara@gmail.com', '2026-06-12', 'diproses', '2026-06-12 08:39:10', 200000, 200000, 'paid', 'asset/bukti/bukti_36_1781406120.png'),
-(37, 1, 'Bustier Top - Size M', 1, 'andrea indira', 'rara@gmail.com', '2026-06-12', 'diproses', '2026-06-12 08:43:31', 260000, 260000, 'paid', 'asset/bukti/bukti_37_1781367202.png'),
-(38, 1, 'Tank Top - Size M', 1, 'andrea indira', 'rara@gmail.com', '2026-06-12', 'selesai', '2026-06-12 13:12:50', 130000, 130000, 'paid', NULL),
-(39, 4, 'Crop Knit Hoodie Zip-up - Size S', 1, 'nayesha', 'rarageulis405@gmail.com', '2026-06-13', 'pending_payment', '2026-06-13 15:20:44', 280000, 280000, 'unpaid', NULL),
-(40, 1, 'Santos de Cartier - Size -', 1, 'andrea indira', 'rara@gmail.com', '2026-06-13', 'pending_payment', '2026-06-13 15:29:55', 800000, 800000, 'unpaid', NULL),
-(41, 1, 'Montblanc Iced Sea Automatic Date - Size -', 1, 'andrea indira', 'rara@gmail.com', '2026-06-14', 'pending_payment', '2026-06-13 16:19:51', 250000, 250000, 'unpaid', NULL);
+INSERT INTO `orders` (`id`, `id_user`, `nama_produk`, `qty`, `nama_penerima`, `email`, `tanggal_order`, `status`, `created_at`, `harga`, `total_harga`, `status_bayar`, `bukti_bayar`, `qris_expired_at`) VALUES
+(47, 1, 'Montblanc Iced Sea Automatic Date', 1, 'andrea indira', 'rara@gmail.com', '2026-06-16', 'qr_expired', '2026-06-16 06:03:18', 250000, 250000, 'unpaid', NULL, '2026-06-16 14:18:18');
 
 -- --------------------------------------------------------
 
@@ -276,13 +270,13 @@ ALTER TABLE `admin`
 -- AUTO_INCREMENT for table `keranjang`
 --
 ALTER TABLE `keranjang`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `orders`
 --
 ALTER TABLE `orders`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=42;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=48;
 
 --
 -- AUTO_INCREMENT for table `produk`

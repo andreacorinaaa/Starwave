@@ -50,7 +50,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $ukuran            = $_POST['ukuran'];
     $harga             = $item['harga'];
     $total_harga       = $harga * $qty;
-    $nama_produk_order = $item['nama_produk'] . " - Size " . $ukuran;
+    $nama_produk_order = (strtolower($item['kategori']) === 'accessories')
+        ? $item['nama_produk']
+        : $item['nama_produk'] . " - Size " . $ukuran;
     $aksi              = $_POST['aksi'] ?? 'beli';
 
     if ($aksi === 'keranjang') {
@@ -70,23 +72,23 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         header("Location: keranjang.php");
         exit;
     } else {
-        $no_telp = trim($user['no_telepon'] ?? '');
-        $alamat  = trim($user['alamat'] ?? '');
+    $no_telp = trim($user['no_telepon'] ?? '');
+    $alamat  = trim($user['alamat'] ?? '');
 
-        if (empty($no_telp) || empty($alamat)) {
-            $_SESSION['peringatan_profil'] = "Lengkapi nomor HP dan alamat kamu dulu sebelum memesan.";
-            $_SESSION['redirect_after_profil'] = "detail.php?id=" . $id;
-            header("Location: profile.php?peringatan=1");
-            exit;
-        }
-
-        $stmt = $pdo->prepare("INSERT INTO orders (id_user, nama_produk, qty, harga, total_harga, nama_penerima, email, tanggal_order, status)
-                               VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), 'pending_payment')");
-        $stmt->execute([$id_user, $nama_produk_order, $qty, $harga, $total_harga, $user['nama_panggilan'], $user_email]);
-
-        $id_order = $pdo->lastInsertId();
-        header("Location: payment.php?id=" . $id_order);
+    if (empty($no_telp) || empty($alamat)) {
+        $_SESSION['peringatan_profil'] = "Lengkapi nomor HP dan alamat kamu dulu sebelum memesan.";
+        $_SESSION['redirect_after_profil'] = "detail.php?id=" . $id;
+        header("Location: profile.php?peringatan=1");
         exit;
+    }
+
+    $stmt = $pdo->prepare("INSERT INTO orders (id_user, nama_produk, qty, harga, total_harga, nama_penerima, email, tanggal_order, status, qris_expired_at)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), 'pending_payment', DATE_ADD(NOW(), INTERVAL 15 MINUTE))");
+    $stmt->execute([$id_user, $nama_produk_order, $qty, $harga, $total_harga, $user['nama_panggilan'], $user_email]);
+
+    $id_order = $pdo->lastInsertId();
+    header("Location: payment.php?id=" . $id_order);
+    exit;
     }
 }
 

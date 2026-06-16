@@ -16,11 +16,24 @@ if (!$main_order) {
     die("Pesanan tidak ditemukan");
 }
 
+// Cek expired
+$status_bayar = $main_order['status_bayar'] ?? 'unpaid';
+$is_expired   = false;
+
+if ($main_order['status'] === 'pending_payment' && $status_bayar === 'unpaid') {
+    if (!empty($main_order['qris_expired_at']) && strtotime($main_order['qris_expired_at']) < time()) {
+        $stmt = $pdo->prepare("UPDATE orders SET status = 'qr_expired' WHERE id = ?");
+        $stmt->execute([$id_order]);
+        $main_order['status'] = 'qr_expired';
+        $is_expired = true;
+    }
+}
+
 $id_user       = (int)$main_order['id_user'];
 $tanggal_order = $main_order['tanggal_order'];
 
 $stmt = $pdo->prepare("
-    SELECT o.*, p.gambar
+    SELECT o.*, p.gambar, p.id AS id_produk
     FROM orders o
     LEFT JOIN produk p ON o.nama_produk LIKE CONCAT(p.nama_produk, '%')
     WHERE o.id = ?
@@ -32,7 +45,8 @@ if (empty($orders)) {
     die("Pesanan tidak ditemukan");
 }
 
-$total = array_sum(array_column($orders, 'total_harga'));
+$total      = array_sum(array_column($orders, 'total_harga'));
+$id_produk  = $orders[0]['id_produk'] ?? null;
 
 // ── UPLOAD BUKTI BAYAR ──
 $upload_success = '';
@@ -67,6 +81,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['bukti_bayar'])) {
             $stmt = $pdo->prepare("SELECT * FROM orders WHERE id = ?");
             $stmt->execute([$id_order]);
             $main_order = $stmt->fetch(PDO::FETCH_ASSOC);
+            $status_bayar = $main_order['status_bayar'] ?? 'unpaid';
         }
     }
 }
@@ -110,9 +125,8 @@ function generateQrisString(string $nmid, string $merchantName, string $city, in
     return $payload . qrisCrc16($payload);
 }
 
-$qris_string    = generateQrisString(QRIS_NMID, QRIS_MERCHANT_NAME, QRIS_CITY, (int)$total);
-$sudah_upload   = !empty($main_order['bukti_bayar']);
-$status_bayar   = $main_order['status_bayar'] ?? 'unpaid';
+$qris_string  = generateQrisString(QRIS_NMID, QRIS_MERCHANT_NAME, QRIS_CITY, (int)$total);
+$sudah_upload = !empty($main_order['bukti_bayar']);
 ?>
 
 <!DOCTYPE html>
@@ -126,7 +140,6 @@ $status_bayar   = $main_order['status_bayar'] ?? 'unpaid';
 </head>
 <body>
 
-<!-- NAVBAR -->
 <header>
     <nav>
         <h1>STARWAVE</h1>
@@ -142,33 +155,33 @@ $status_bayar   = $main_order['status_bayar'] ?? 'unpaid';
             <input type="text" name="q" placeholder="Search produk..." style="padding:5px;">
         </form>
         <?php if (isset($_SESSION['user'])): ?>
-    <a href="profile.php" style="margin-left:15px; text-decoration:none; display:flex; align-items:center;" title="Profile">
-        <?php
-            $stmt2 = $pdo->prepare("SELECT foto_profil FROM users WHERE email = ?");
-            $stmt2->execute([$_SESSION['user']]);
-            $navUser = $stmt2->fetch(PDO::FETCH_ASSOC);
-        ?>
-        <?php if (!empty($navUser['foto_profil']) && file_exists($navUser['foto_profil'])): ?>
-            <img src="<?= htmlspecialchars($navUser['foto_profil']) ?>" 
-                 style="width:34px; height:34px; border-radius:50%; object-fit:cover; border:2px solid #2a7fa8;">
+            <a href="profile.php" style="margin-left:15px; text-decoration:none; display:flex; align-items:center;" title="Profile">
+                <?php
+                    $stmt2 = $pdo->prepare("SELECT foto_profil FROM users WHERE email = ?");
+                    $stmt2->execute([$_SESSION['user']]);
+                    $navUser = $stmt2->fetch(PDO::FETCH_ASSOC);
+                ?>
+                <?php if (!empty($navUser['foto_profil']) && file_exists($navUser['foto_profil'])): ?>
+                    <img src="<?= htmlspecialchars($navUser['foto_profil']) ?>"
+                         style="width:34px; height:34px; border-radius:50%; object-fit:cover; border:2px solid #2a7fa8;">
+                <?php else: ?>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#c9dde8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="8" r="4"/>
+                        <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+                    </svg>
+                <?php endif; ?>
+            </a>
+        <?php elseif (isset($_SESSION['admin'])): ?>
+            <a href="admin/dashboard.php" style="margin-left:15px; text-decoration:none; color:#4f6ef7; display:flex; align-items:center; gap:5px; font-size:12px; font-weight:700; letter-spacing:1px;" title="Admin Panel">
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="8" r="4"/>
+                    <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+                </svg>
+                ADMIN
+            </a>
         <?php else: ?>
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#c9dde8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="8" r="4"/>
-                <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
-            </svg>
+            <a href="masuk/login.php" style="margin-left:15px; text-decoration:none; color:#c9dde8; font-size:14px; font-weight:700;">Login</a>
         <?php endif; ?>
-    </a>
-<?php elseif (isset($_SESSION['admin'])): ?>
-    <a href="admin/dashboard.php" style="margin-left:15px; text-decoration:none; color:#4f6ef7; display:flex; align-items:center; gap:5px; font-size:12px; font-weight:700; letter-spacing:1px;" title="Admin Panel">
-        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="8" r="4"/>
-            <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
-        </svg>
-        ADMIN
-    </a>
-<?php else: ?>
-    <a href="masuk/login.php" style="margin-left:15px; text-decoration:none; color:#c9dde8; font-size:14px; font-weight:700;">Login</a>
-<?php endif; ?>
     </nav>
 </header>
 
@@ -179,7 +192,6 @@ $status_bayar   = $main_order['status_bayar'] ?? 'unpaid';
         <p>Thank you for your order!</p>
     </div>
 
-    <!-- STEP -->
     <div class="ord-steps">
         <div class="ord-step active"><span>1</span><p>Shipping</p></div>
         <div class="ord-step active"><span>2</span><p>Payment</p></div>
@@ -187,7 +199,6 @@ $status_bayar   = $main_order['status_bayar'] ?? 'unpaid';
         <div class="ord-step current"><span>4</span><p>Confirmation</p></div>
     </div>
 
-    <!-- INFO ORDER -->
     <div class="ord-order-info">
         <div><small>Delivery Date</small><strong><?= date('d M Y'); ?></strong></div>
         <div><small>Order ID</small><strong>#<?= $main_order['id']; ?></strong></div>
@@ -198,18 +209,18 @@ $status_bayar   = $main_order['status_bayar'] ?? 'unpaid';
                 <span class="status-badge paid">✓ Lunas</span>
             <?php elseif ($status_bayar === 'menunggu_konfirmasi'): ?>
                 <span class="status-badge waiting">⏳ Menunggu Konfirmasi</span>
+            <?php elseif ($main_order['status'] === 'qr_expired'): ?>
+                <span class="status-badge" style="background:#fff8e1;color:#b45309;border:1px solid #fcd34d;">⏰ QR Kadaluarsa</span>
             <?php else: ?>
                 <span class="status-badge unpaid">Belum Bayar</span>
             <?php endif; ?>
         </div>
     </div>
 
-    <!-- HEADER TABLE -->
     <div class="ord-table-head">
         <span>Product</span><span>Shipping</span><span>Quantity</span><span>Total</span>
     </div>
 
-    <!-- ITEM -->
     <?php foreach ($orders as $order): ?>
     <div class="ord-product-row">
         <div class="ord-product-info">
@@ -227,105 +238,108 @@ $status_bayar   = $main_order['status_bayar'] ?? 'unpaid';
     </div>
     <?php endforeach; ?>
 
-    <!-- SUMMARY -->
     <div class="ord-summary">
         <div class="ord-sum-box"><p>Discount</p><strong>Rp 0</strong></div>
         <div class="ord-sum-box"><p>Delivery</p><strong>Free</strong></div>
         <div class="ord-sum-box"><p>Total</p><strong>Rp <?= number_format($total, 0, ',', '.'); ?></strong></div>
     </div>
 
-    <!-- QRIS SECTION — sembunyikan kalau sudah lunas -->
-    <?php if ($status_bayar !== 'paid'): ?>
-    <div class="qris-section">
-        <h3>Pembayaran QRIS</h3>
-        <div class="qris-layout">
-            <div style="display:flex; flex-direction:column; gap:10px; align-items:center;">
-                <div class="qr-frame">
-                    <div class="qr-top">
-                        <div class="qris-badge">QRIS</div>
-                        <span class="qr-merchant"><?= QRIS_MERCHANT_NAME; ?></span>
-                    </div>
-                    <canvas id="qr-canvas" width="190" height="190"></canvas>
-                    <div class="qr-nominal">Nominal: <strong>Rp <?= number_format($total, 0, ',', '.'); ?></strong></div>
-                </div>
-                <div class="qr-timer" id="qr-timer">
-                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                        <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-                    </svg>
-                    QR berlaku: <strong id="timer-count">15:00</strong>
-                </div>
-            </div>
+    <?php if ($main_order['status'] === 'qr_expired'): ?>
+        <!-- EXPIRED -->
+        <div style="background:#fff8e1;border-left:4px solid #f59e0b;padding:20px 24px;border-radius:8px;margin:24px 0;text-align:center;">
+            <div style="font-size:32px;">⏰</div>
+            <h3 style="color:#b45309;margin:8px 0 4px;">QR Kadaluarsa</h3>
+            <p style="color:#92400e;margin:0;">Waktu pembayaran sudah habis. Silakan buat pesanan baru.</p>
+            <?php if ($id_produk): ?>
+                <a href="detail.php?id=<?= $id_produk ?>"
+                   style="display:inline-block;margin-top:14px;padding:10px 24px;background:#b45309;color:#fff;border-radius:6px;text-decoration:none;font-weight:700;">
+                    Beli Ulang
+                </a>
+            <?php endif; ?>
+        </div>
 
-            <div class="qris-steps">
-                <h4>Cara bayar</h4>
-                <div class="qstep"><div class="qstep-num">1</div><span class="qstep-text">Buka aplikasi e-wallet atau mobile banking kamu</span></div>
-                <div class="qstep"><div class="qstep-num">2</div><span class="qstep-text">Pilih menu <strong>Bayar</strong> atau <strong>Scan QR</strong></span></div>
-                <div class="qstep"><div class="qstep-num">3</div><span class="qstep-text">Scan QR di samping — nominal <strong>Rp <?= number_format($total, 0, ',', '.'); ?></strong> sudah otomatis terisi</span></div>
-                <div class="qstep"><div class="qstep-num">4</div><span class="qstep-text">Setelah bayar, upload bukti pembayaran di bawah</span></div>
-                <div class="supported-apps">
-                    <p>Didukung oleh semua aplikasi berlogo QRIS:</p>
-                    <div class="app-pills">
-                        <span class="app-pill">GoPay</span><span class="app-pill">OVO</span>
-                        <span class="app-pill">Dana</span><span class="app-pill">ShopeePay</span>
-                        <span class="app-pill">BCA Mobile</span><span class="app-pill">Livin' Mandiri</span>
-                        <span class="app-pill">BRImo</span><span class="app-pill">& lainnya</span>
+    <?php elseif ($status_bayar !== 'paid'): ?>
+        <!-- QRIS -->
+        <div class="qris-section">
+            <h3>Pembayaran QRIS</h3>
+            <div class="qris-layout">
+                <div style="display:flex; flex-direction:column; gap:10px; align-items:center;">
+                    <div class="qr-frame">
+                        <div class="qr-top">
+                            <div class="qris-badge">QRIS</div>
+                            <span class="qr-merchant"><?= QRIS_MERCHANT_NAME; ?></span>
+                        </div>
+                        <canvas id="qr-canvas" width="190" height="190"></canvas>
+                        <div class="qr-nominal">Nominal: <strong>Rp <?= number_format($total, 0, ',', '.'); ?></strong></div>
+                    </div>
+                    <?php if (!$sudah_upload): ?>
+                    <div class="qr-timer" id="qr-timer">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                        </svg>
+                        QR berlaku: <strong id="timer-count">15:00</strong>
+                    </div>
+                    <?php endif; ?>
+                </div>
+                <div class="qris-steps">
+                    <h4>Cara bayar</h4>
+                    <div class="qstep"><div class="qstep-num">1</div><span class="qstep-text">Buka aplikasi e-wallet atau mobile banking kamu</span></div>
+                    <div class="qstep"><div class="qstep-num">2</div><span class="qstep-text">Pilih menu <strong>Bayar</strong> atau <strong>Scan QR</strong></span></div>
+                    <div class="qstep"><div class="qstep-num">3</div><span class="qstep-text">Scan QR di samping — nominal <strong>Rp <?= number_format($total, 0, ',', '.'); ?></strong> sudah otomatis terisi</span></div>
+                    <div class="qstep"><div class="qstep-num">4</div><span class="qstep-text">Setelah bayar, upload bukti pembayaran di bawah</span></div>
+                    <div class="supported-apps">
+                        <p>Didukung oleh semua aplikasi berlogo QRIS:</p>
+                        <div class="app-pills">
+                            <span class="app-pill">GoPay</span><span class="app-pill">OVO</span>
+                            <span class="app-pill">Dana</span><span class="app-pill">ShopeePay</span>
+                            <span class="app-pill">BCA Mobile</span><span class="app-pill">Livin' Mandiri</span>
+                            <span class="app-pill">BRImo</span><span class="app-pill">& lainnya</span>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
+
+        <!-- UPLOAD BUKTI -->
+        <div class="bukti-section">
+            <h3>📎 Upload Bukti Pembayaran</h3>
+            <p class="sub">Setelah transfer, upload screenshot atau foto bukti pembayaran kamu.</p>
+
+            <?php if ($upload_success): ?>
+                <div class="bukti-alert success">✓ <?= htmlspecialchars($upload_success) ?></div>
+            <?php endif; ?>
+            <?php if ($upload_error): ?>
+                <div class="bukti-alert error">✗ <?= htmlspecialchars($upload_error) ?></div>
+            <?php endif; ?>
+
+            <?php if ($sudah_upload): ?>
+                <div class="bukti-alert waiting">⏳ Bukti bayar sudah dikirim. Menunggu konfirmasi admin...</div>
+                <div class="bukti-preview-existing">
+                    <img src="<?= htmlspecialchars($main_order['bukti_bayar']) ?>" alt="Bukti Bayar">
+                    <p>Bukti pembayaran Order #<?= $id_order ?></p>
+                </div>
+            <?php else: ?>
+                <form method="POST" enctype="multipart/form-data">
+                    <label class="upload-zone" for="bukti_input" id="upload-zone">
+                        <input type="file" id="bukti_input" name="bukti_bayar" accept="image/jpeg,image/png,image/webp">
+                        <div id="placeholder1">
+                            <div class="icon">📷</div>
+                            <div class="text"><strong>Klik untuk upload</strong> atau drag & drop<br><span style="font-size:11px;color:#aaa;">JPG, PNG, WEBP · Maks 3MB</span></div>
+                        </div>
+                        <img id="img-preview" class="upload-preview-img" alt="Preview">
+                    </label>
+                    <button type="submit" class="btn-upload">Kirim Bukti Pembayaran</button>
+                </form>
+            <?php endif; ?>
+        </div>
+
+    <?php else: ?>
+        <!-- SUDAH LUNAS -->
+        <div class="bukti-section">
+            <div class="bukti-alert paid">✓ Pembayaran kamu sudah dikonfirmasi oleh admin. Pesanan sedang diproses!</div>
+        </div>
     <?php endif; ?>
 
-    <!-- UPLOAD BUKTI BAYAR -->
-    <div class="bukti-section">
-        <h3>📎 Upload Bukti Pembayaran</h3>
-        <p class="sub">Setelah transfer, upload screenshot atau foto bukti pembayaran kamu.</p>
-
-        <?php if ($upload_success): ?>
-            <div class="bukti-alert success">✓ <?= htmlspecialchars($upload_success) ?></div>
-        <?php endif; ?>
-
-        <?php if ($upload_error): ?>
-            <div class="bukti-alert error">✗ <?= htmlspecialchars($upload_error) ?></div>
-        <?php endif; ?>
-
-        <?php if ($status_bayar === 'paid'): ?>
-            <div class="bukti-alert paid">✓ Pembayaran kamu sudah dikonfirmasi oleh admin. Pesanan sedang diproses!</div>
-
-        <?php elseif ($sudah_upload): ?>
-            <div class="bukti-alert waiting">⏳ Bukti bayar sudah dikirim. Menunggu konfirmasi admin...</div>
-            <div class="bukti-preview-existing">
-                <img src="<?= htmlspecialchars($main_order['bukti_bayar']) ?>" alt="Bukti Bayar">
-                <p>Bukti pembayaran Order #<?= $id_order ?></p>
-            </div>
-            <form method="POST" enctype="multipart/form-data" style="margin-top:16px;">
-                <label class="upload-zone" for="bukti_input2" id="upload-zone2">
-                    <input type="file" id="bukti_input2" name="bukti_bayar" accept="image/jpeg,image/png,image/webp">
-                    <div id="placeholder2">
-                        <div class="icon">🔄</div>
-                        <div class="text"><strong>Ganti bukti bayar</strong><br><span style="font-size:11px;color:#aaa;">JPG, PNG, WEBP · Maks 3MB</span></div>
-                    </div>
-                    <img id="img-preview2" class="upload-preview-img" alt="Preview">
-                </label>
-                <button type="submit" class="btn-upload">Kirim Ulang Bukti</button>
-            </form>
-
-        <?php else: ?>
-            <form method="POST" enctype="multipart/form-data">
-                <label class="upload-zone" for="bukti_input" id="upload-zone">
-                    <input type="file" id="bukti_input" name="bukti_bayar" accept="image/jpeg,image/png,image/webp">
-                    <div id="placeholder1">
-                        <div class="icon">📷</div>
-                        <div class="text"><strong>Klik untuk upload</strong> atau drag & drop<br><span style="font-size:11px;color:#aaa;">JPG, PNG, WEBP · Maks 3MB</span></div>
-                    </div>
-                    <img id="img-preview" class="upload-preview-img" alt="Preview">
-                </label>
-                <button type="submit" class="btn-upload">Kirim Bukti Pembayaran</button>
-            </form>
-        <?php endif; ?>
-    </div>
-
-    <!-- BUTTON -->
     <div class="ord-button-group">
         <a href="index.php" class="ord-btn-back">Back to Shop</a>
         <a href="order.php" class="ord-btn-place">Lihat Pesanan</a>
@@ -333,7 +347,6 @@ $status_bayar   = $main_order['status_bayar'] ?? 'unpaid';
 
 </div>
 
-<!-- FOOTER -->
 <footer>
     <div class="footer-box">
         <div><h3>Store</h3><p>Man</p><p>Woman</p><p>Accessories</p></div>
@@ -346,22 +359,30 @@ $status_bayar   = $main_order['status_bayar'] ?? 'unpaid';
 <script>
 const QRIS_STRING = <?= json_encode($qris_string); ?>;
 
-<?php if ($status_bayar !== 'paid'): ?>
+<?php if ($main_order['status'] !== 'qr_expired' && $status_bayar !== 'paid'): ?>
 QRCode.toCanvas(document.getElementById('qr-canvas'), QRIS_STRING, {
     width: 190, margin: 1, color: { dark: '#1a1a1a', light: '#ffffff' }
 });
 
-const expiredAt = new Date(Date.now() + 15 * 60 * 1000);
+<?php if (!$sudah_upload): ?>
+const expiredAt = <?= !empty($main_order['qris_expired_at']) 
+    ? strtotime($main_order['qris_expired_at']) * 1000 
+    : (time() + 900) * 1000 ?>;
+
 const timerInterval = setInterval(() => {
     const remaining = Math.max(0, expiredAt - Date.now());
     const mins = String(Math.floor(remaining / 60000)).padStart(2, '0');
     const secs = String(Math.floor((remaining % 60000) / 1000)).padStart(2, '0');
     document.getElementById('timer-count').textContent = `${mins}:${secs}`;
-    if (remaining === 0) clearInterval(timerInterval);
+    if (remaining <= 0) {
+        clearInterval(timerInterval);
+        location.reload();
+    }
 }, 1000);
 <?php endif; ?>
 
-// Preview gambar di dalam kotak upload — ganti placeholder dengan gambar
+<?php endif; ?>
+
 function setupPreview(inputId, previewId, placeholderId) {
     const input = document.getElementById(inputId);
     if (!input) return;
@@ -379,8 +400,7 @@ function setupPreview(inputId, previewId, placeholderId) {
     });
 }
 
-setupPreview('bukti_input',  'img-preview',  'placeholder1');
-setupPreview('bukti_input2', 'img-preview2', 'placeholder2');
+setupPreview('bukti_input', 'img-preview', 'placeholder1');
 </script>
 </body>
 </html>

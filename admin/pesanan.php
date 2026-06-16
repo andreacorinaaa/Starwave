@@ -44,6 +44,7 @@ function statusClass($s) {
         'dikirim'                    => 'ship',
         'pending_payment', 'pending' => 'pending',
         'batal'                      => 'cancel',
+        'qr_expired'                 => 'cancel',
         default                      => 'pending'
     };
 }
@@ -55,6 +56,7 @@ function statusLabel($s) {
         'dikirim'         => 'Dikirim',
         'selesai'         => 'Selesai',
         'batal'           => 'Dibatalkan',
+        'qr_expired'      => 'QR Expired',
         default           => ucfirst($s)
     };
 }
@@ -67,36 +69,6 @@ function statusLabel($s) {
     <title>Pesanan — STARWAVE Admin</title>
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="admin.css">
-    <style>
-        .bukti-thumb { width: 52px; height: 52px; object-fit: cover; border-radius: 6px; border: 1px solid #e5e7eb; cursor: pointer; transition: transform 0.15s; display: block; }
-        .bukti-thumb:hover { transform: scale(1.08); }
-        .no-bukti { font-size: 11px; color: #bbb; font-style: italic; }
-        .modal-bukti-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.7); z-index: 1000; align-items: center; justify-content: center; }
-        .modal-bukti-backdrop.open { display: flex; }
-        .modal-bukti-box { background: #fff; border-radius: 14px; padding: 1.5rem; max-width: 480px; width: 90%; text-align: center; box-shadow: 0 8px 32px rgba(0,0,0,.2); }
-        .modal-bukti-box h3 { font-size: 15px; font-weight: 700; margin-bottom: 12px; }
-        .modal-bukti-box img { max-width: 100%; max-height: 360px; border-radius: 8px; object-fit: contain; border: 1px solid #e5e7eb; }
-        .modal-bukti-box .modal-bukti-meta { font-size: 12px; color: #888; margin-top: 10px; }
-        .modal-bukti-actions { display: flex; gap: 10px; margin-top: 16px; }
-        .btn-modal-bukti-close { flex: 1; padding: 10px; border: 1px solid #e0e0dc; background: #fff; border-radius: 8px; font-size: 14px; cursor: pointer; color: #666; }
-        .btn-modal-bukti-confirm { flex: 1; padding: 10px; background: #1a1a1a; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
-        .btn-modal-bukti-confirm:hover { background: #333; }
-        .badge-bayar { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 500; }
-        .badge-bayar.paid    { background: #eafaf3; color: #166534; }
-        .badge-bayar.pending { background: #fef9ec; color: #92680a; }
-        .badge-bayar.waiting { background: #eff6ff; color: #1d4ed8; }
-        .btn-konfirmasi { padding: 5px 10px; background: #1a1a1a; color: #fff; border: none; border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer; white-space: nowrap; transition: background .15s; }
-        .btn-konfirmasi:hover { background: #333; }
-        .modal-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 999; align-items: center; justify-content: center; }
-        .modal-backdrop.open { display: flex; }
-        .modal-box { background: #fff; border-radius: 14px; padding: 2rem; width: 100%; max-width: 360px; text-align: center; box-shadow: 0 8px 32px rgba(0,0,0,.12); }
-        .modal-box h3 { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
-        .modal-box p  { font-size: 14px; color: #666; margin-bottom: 1.5rem; line-height: 1.5; }
-        .modal-actions { display: flex; gap: 10px; }
-        .btn-modal-cancel  { flex: 1; padding: 10px; border: 1px solid #e0e0dc; background: #fff; border-radius: 8px; font-size: 14px; cursor: pointer; color: #666; }
-        .btn-modal-confirm { flex: 1; padding: 10px; background: #1a1a1a; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; }
-        .btn-modal-confirm:hover { background: #333; }
-    </style>
 </head>
 <body>
 
@@ -130,7 +102,7 @@ function statusLabel($s) {
     <div class="topbar">
         <div class="topbar-title">MANAJEMEN PESANAN</div>
         <div class="topbar-right">
-            <span>📅 <?= date('d M Y, H:i') ?> WIB</span>
+            <span>📅 <?= date('d M Y, H:i') ?> WITA</span>
             <a href="../index.php" target="_blank">↗ Toko</a>
         </div>
     </div>
@@ -158,6 +130,7 @@ function statusLabel($s) {
                 <button class="filter-btn" onclick="filterStatus('dikirim', this)">Dikirim</button>
                 <button class="filter-btn" onclick="filterStatus('selesai', this)">Selesai</button>
                 <button class="filter-btn" onclick="filterStatus('batal', this)">Dibatalkan</button>
+                <button class="filter-btn" onclick="filterStatus('qr_expired', this)">QR Expired</button>
             </div>
             <div class="table-wrap">
                 <table id="orders-table">
@@ -180,9 +153,11 @@ function statusLabel($s) {
                         <tr class="empty-row"><td colspan="10">Belum ada pesanan</td></tr>
                     <?php else: foreach ($orders as $o): ?>
                         <?php
-                        $is_paid    = ($o['status_bayar'] ?? '') === 'paid';
-                        $is_waiting = ($o['status_bayar'] ?? '') === 'menunggu_konfirmasi';
-                        $ada_bukti  = !empty($o['bukti_bayar']);
+                        $is_paid      = ($o['status_bayar'] ?? '') === 'paid';
+                        $is_waiting   = ($o['status_bayar'] ?? '') === 'menunggu_konfirmasi';
+                        $ada_bukti    = !empty($o['bukti_bayar']);
+                        $is_expired   = $o['status'] === 'qr_expired';
+                        $is_cancelled = $o['status'] === 'batal';
                         ?>
                         <tr data-status="<?= $o['status'] ?>"
                             data-bayar="<?= $is_paid ? 'paid' : 'belum_bayar' ?>"
@@ -221,8 +196,11 @@ function statusLabel($s) {
                                 <?php endif; ?>
                             </td>
 
+                            <!-- KOLOM PEMBAYARAN -->
                             <td>
-                                <?php if ($is_paid): ?>
+                                <?php if ($is_expired): ?>
+                                    <span style="color:#b45309;font-weight:600;">⏰ Expired</span>
+                                <?php elseif ($is_paid): ?>
                                     <span class="badge-bayar paid">✓ Lunas</span>
                                 <?php elseif ($is_waiting): ?>
                                     <div style="display:flex;flex-direction:column;gap:5px;align-items:flex-start;">
@@ -233,33 +211,33 @@ function statusLabel($s) {
                                         </button>
                                     </div>
                                 <?php else: ?>
-                                    <div style="display:flex;flex-direction:column;gap:5px;align-items:flex-start;">
-                                        <span class="badge-bayar pending">Belum Bayar</span>
-                                        <button class="btn-konfirmasi"
-                                            onclick="openModal(<?= $o['id'] ?>, '<?= htmlspecialchars($o['nama_produk']) ?>', 'Rp <?= number_format($o['total_harga'], 0, ',', '.') ?>')">
-                                            Konfirmasi Bayar
-                                        </button>
-                                    </div>
+                                    <span class="badge-bayar pending">Belum Bayar</span>
+                                <?php endif; ?>
+                            </td>
+
+                            <!-- KOLOM UBAH STATUS -->
+                            <td>
+                                <?php if ($is_expired): ?>
+                                    <span style="color:#b45309;font-size:12px;font-weight:600;">— Expired —</span>
+                                <?php else: ?>
+                                    <form method="POST" style="display:flex;gap:6px;align-items:center;">
+                                        <input type="hidden" name="id_order" value="<?= $o['id'] ?>">
+                                        <select name="status" class="select-status">
+                                            <option value="pending_payment"<?= $o['status']=='pending_payment'?' selected':'' ?>>Belum Bayar</option>
+                                            <option value="pending"<?= $o['status']=='pending'?' selected':'' ?>>Pending</option>
+                                            <option value="diproses"<?= $o['status']=='diproses'?' selected':'' ?>>Diproses</option>
+                                            <option value="dikirim"<?= $o['status']=='dikirim'?' selected':'' ?>>Dikirim</option>
+                                            <option value="selesai"<?= $o['status']=='selesai'?' selected':'' ?>>Selesai</option>
+                                            <option value="batal"<?= $o['status']=='batal'?' selected':'' ?>>Dibatalkan</option>
+                                        </select>
+                                        <button type="submit" name="update_status" class="btn-save">✓</button>
+                                    </form>
                                 <?php endif; ?>
                             </td>
 
                             <td>
-                                <form method="POST" style="display:flex;gap:6px;align-items:center;">
-                                    <input type="hidden" name="id_order" value="<?= $o['id'] ?>">
-                                    <select name="status" class="select-status">
-                                        <option value="pending_payment"<?= $o['status']=='pending_payment'?' selected':'' ?>>Belum Bayar</option>
-                                        <option value="pending"<?= $o['status']=='pending'?' selected':'' ?>>Pending</option>
-                                        <option value="diproses"<?= $o['status']=='diproses'?' selected':'' ?>>Diproses</option>
-                                        <option value="dikirim"<?= $o['status']=='dikirim'?' selected':'' ?>>Dikirim</option>
-                                        <option value="selesai"<?= $o['status']=='selesai'?' selected':'' ?>>Selesai</option>
-                                        <option value="batal"<?= $o['status']=='batal'?' selected':'' ?>>Dibatalkan</option>
-                                    </select>
-                                    <button type="submit" name="update_status" class="btn-save">✓</button>
-                                </form>
-                            </td>
-                            <td>
-                                <a href="?hapus_order=<?= $o['id'] ?>" class="btn-hapus-order"
-                                   onclick="return confirm('Hapus pesanan #<?= $o['id'] ?>?')">Hapus</a>
+                                <button type="button" class="btn-hapus-order"
+                                        onclick="openHapusModal(<?= $o['id'] ?>)">Hapus</button>
                             </td>
                         </tr>
                     <?php endforeach; endif; ?>
@@ -299,6 +277,18 @@ function statusLabel($s) {
     </div>
 </div>
 
+<!-- Modal konfirmasi hapus pesanan -->
+<div class="modal-hapus-backdrop" id="modal-hapus">
+    <div class="modal-hapus-box">
+        <h3>STARWAVE</h3>
+        <p id="hapus-desc">Hapus pesanan ini? Tidak bisa dikembalikan!</p>
+        <div class="modal-hapus-actions">
+            <button type="button" class="btn-hapus-ya" id="btn-hapus-ya">Ya</button>
+            <button type="button" class="btn-hapus-tidak" onclick="closeHapusModal()">Tidak</button>
+        </div>
+    </div>
+</div>
+
 <script>
 let currentStatus = 'semua';
 
@@ -321,6 +311,7 @@ function applyFilter() {
         if (currentStatus === 'semua') statusMatch = true;
         else if (currentStatus === 'belum_bayar') statusMatch = rowBayar === 'belum_bayar';
         else if (currentStatus === 'pending') statusMatch = rowStatus === 'pending' || rowStatus === 'pending_payment';
+        else if (currentStatus === 'qr_expired') statusMatch = rowStatus === 'qr_expired';
         else statusMatch = rowStatus === currentStatus;
         const searchMatch = q === '' || rowSearch.includes(q);
         row.style.display = (statusMatch && searchMatch) ? '' : 'none';
@@ -354,8 +345,19 @@ function openModal(orderId, namaProduk, total) {
 
 function closeModal() { document.getElementById('modal-konfirmasi').classList.remove('open'); }
 
+function openHapusModal(orderId) {
+    document.getElementById('hapus-desc').textContent = `Hapus pesanan #${orderId}? Tidak bisa dikembalikan!`;
+    document.getElementById('btn-hapus-ya').onclick = () => {
+        window.location.href = `pesanan.php?hapus_order=${orderId}`;
+    };
+    document.getElementById('modal-hapus').classList.add('open');
+}
+
+function closeHapusModal() { document.getElementById('modal-hapus').classList.remove('open'); }
+
 document.getElementById('modal-konfirmasi').addEventListener('click', function(e) { if (e.target === this) closeModal(); });
 document.getElementById('modal-bukti').addEventListener('click', function(e) { if (e.target === this) closeBukti(); });
+document.getElementById('modal-hapus').addEventListener('click', function(e) { if (e.target === this) closeHapusModal(); });
 </script>
 </body>
 </html>

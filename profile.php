@@ -56,10 +56,9 @@ if (isset($_POST['update_profile'])) {
     $no_telepon     = trim($_POST['no_telepon']);
     $alamat         = trim($_POST['alamat']);
     $tanggal_lahir  = $_POST['tanggal_lahir'];
-    $jenis_kelamin  = $_POST['jenis_kelamin'];
 
-    $stmt = $pdo->prepare("UPDATE users SET nama_panggilan = ?, no_telepon = ?, alamat = ?, tanggal_lahir = ?, jenis_kelamin = ? WHERE email = ?");
-    $stmt->execute([$nama_panggilan, $no_telepon, $alamat, $tanggal_lahir, $jenis_kelamin, $email]);
+    $stmt = $pdo->prepare("UPDATE users SET nama_panggilan = ?, no_telepon = ?, alamat = ?, tanggal_lahir  = ? WHERE email = ?");
+    $stmt->execute([$nama_panggilan, $no_telepon, $alamat, $tanggal_lahir, $email]);
 
     $success = "Profil berhasil diperbarui!";
 
@@ -203,19 +202,9 @@ if (isset($_POST['update_profile'])) {
                     <textarea name="alamat" placeholder="Alamat lengkap kamu..."><?= htmlspecialchars($user['alamat'] ?? '') ?></textarea>
                 </div>
 
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Tanggal Lahir</label>
-                        <input type="date" name="tanggal_lahir" value="<?= htmlspecialchars($user['tanggal_lahir'] ?? '') ?>">
-                    </div>
-                    <div class="form-group">
-                        <label>Jenis Kelamin</label>
-                        <select name="jenis_kelamin">
-                            <option value="">-- Pilih --</option>
-                            <option value="Laki-laki" <?= ($user['jenis_kelamin'] ?? '') === 'Laki-laki' ? 'selected' : '' ?>>Laki-laki</option>
-                            <option value="Perempuan" <?= ($user['jenis_kelamin'] ?? '') === 'Perempuan' ? 'selected' : '' ?>>Perempuan</option>
-                        </select>
-                    </div>
+                <div class="form-group">
+                    <label>Tanggal Lahir</label>
+                    <input type="date" name="tanggal_lahir" value="<?= htmlspecialchars($user['tanggal_lahir'] ?? '') ?>">
                 </div>
 
                 <button type="submit" name="update_profile">Simpan Perubahan</button>

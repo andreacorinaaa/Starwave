@@ -56,7 +56,26 @@ if (isset($_POST['login'])) {
     <link rel="stylesheet" href="../style.css">
     <link rel="stylesheet" href="masuk.css">
 </head>
+
 <body>
+    <header>
+        <nav>
+            <h1>STARWAVE</h1>
+            <ul>
+                <li><a href="../index.php">Home</a></li>
+                <li><a href="../man.php">Man</a></li>
+                <li><a href="../woman.php">Woman</a></li>
+                <li><a href="../accessories.php">Accessories</a></li>
+                <li><a href="../order.php">Order</a></li>
+                <li><a href="../keranjang.php">Keranjang</a></li>
+            </ul>
+            <form action="search.php" method="GET" style="display:inline;">
+                <input type="text" name="q" placeholder="Search produk..." style="padding:5px;">
+            </form>
+            <a href="login.php" style="margin-left:15px; text-decoration:none; color:#c9dde8; font-size:14px; font-weight:700;" class="active">Login</a>
+        </nav>
+    </header>
+
 <div class="login-page">
     <div class="login-container">
         <h2>Login</h2>
@@ -101,21 +120,4 @@ function togglePw(id) {
 </script>
 
 </body>
-<header>
-    <nav>
-        <h1>STARWAVE</h1>
-        <ul>
-            <li><a href="../index.php">Home</a></li>
-            <li><a href="../man.php">Man</a></li>
-            <li><a href="../woman.php">Woman</a></li>
-            <li><a href="../accessories.php">Accessories</a></li>
-            <li><a href="../order.php">Order</a></li>
-            <li><a href="../keranjang.php">Keranjang</a></li>
-        </ul>
-        <form action="search.php" method="GET" style="display:inline;">
-            <input type="text" name="q" placeholder="Search produk..." style="padding:5px;">
-        </form>
-        <a href="login.php" style="margin-left:15px; text-decoration:none; color:#c9dde8; font-size:14px; font-weight:700;" class="active">Login</a>
-    </nav>
-</header>
 </html>
