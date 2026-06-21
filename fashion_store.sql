@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jun 16, 2026 at 08:49 AM
+-- Generation Time: Jun 21, 2026 at 05:45 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -63,10 +63,14 @@ CREATE TABLE `keranjang` (
 --
 
 INSERT INTO `keranjang` (`id`, `id_user`, `id_produk`, `nama_produk`, `harga`, `qty`, `ukuran`, `gambar`, `created_at`) VALUES
-(1, 1, 31, 'Trilogy Ring', 200000, 2, '-', 'asset/trilogyR.jpg', '2026-06-11 21:44:40'),
-(3, 1, 19, 'Highwaist Straight Jeans', 320000, 1, 'M', 'asset/highwaistS.jpg', '2026-06-12 15:14:27'),
-(4, 1, 27, 'Hobo Bag ', 500000, 1, '-', 'asset/aksesoris3.jpg', '2026-06-16 12:59:04'),
-(5, 1, 14, 'Crop Knit Hoodie Zip-up', 280000, 1, 'S', 'asset/woman3.jpg', '2026-06-16 12:59:38');
+(15, 9, 35, 'Knot Jewelry Set', 320000, 6, '-', 'asset/setJ.jpg', '2026-06-17 15:45:55'),
+(25, 1, 6, 'Classic Trucker Jacket', 200000, 1, 'S', 'asset/trendcl2.jpg', '2026-06-18 14:06:14'),
+(28, 11, 26, 'Wayfarer Puffer', 350000, 1, '-', 'asset/aksesoris2.jpg', '2026-06-20 00:35:11'),
+(29, 11, 2, 'Black Hoodie', 350000, 1, 'S', 'asset/mingyuman2.jpg', '2026-06-20 00:41:28'),
+(30, 11, 15, 'Casual Shirt Women', 250000, 1, 'S', 'asset/woman4.jpg', '2026-06-20 00:41:33'),
+(35, 15, 30, 'Santos de Cartier', 800000, 1, '-', 'asset/santosC.jpg', '2026-06-21 10:15:37'),
+(36, 15, 15, 'Casual Shirt Women', 250000, 1, 'M', 'asset/woman4.jpg', '2026-06-21 10:20:17'),
+(37, 15, 25, 'Rhinestone Cylinder Clutch Bag', 150000, 1, '-', 'asset/aksesoris1.jpg', '2026-06-21 10:51:35');
 
 -- --------------------------------------------------------
 
@@ -77,7 +81,9 @@ INSERT INTO `keranjang` (`id`, `id_user`, `id_produk`, `nama_produk`, `harga`, `
 CREATE TABLE `orders` (
   `id` int(11) NOT NULL,
   `id_user` int(11) NOT NULL,
+  `kode_order` varchar(40) DEFAULT NULL,
   `nama_produk` varchar(150) NOT NULL,
+  `id_produk` int(11) DEFAULT NULL,
   `qty` int(11) NOT NULL DEFAULT 1,
   `nama_penerima` varchar(100) NOT NULL,
   `email` varchar(100) NOT NULL,
@@ -90,13 +96,6 @@ CREATE TABLE `orders` (
   `bukti_bayar` varchar(255) DEFAULT NULL,
   `qris_expired_at` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `orders`
---
-
-INSERT INTO `orders` (`id`, `id_user`, `nama_produk`, `qty`, `nama_penerima`, `email`, `tanggal_order`, `status`, `created_at`, `harga`, `total_harga`, `status_bayar`, `bukti_bayar`, `qris_expired_at`) VALUES
-(47, 1, 'Montblanc Iced Sea Automatic Date', 1, 'andrea indira', 'rara@gmail.com', '2026-06-16', 'qr_expired', '2026-06-16 06:03:18', 250000, 250000, 'unpaid', NULL, '2026-06-16 14:18:18');
 
 -- --------------------------------------------------------
 
@@ -116,50 +115,51 @@ CREATE TABLE `produk` (
   `stok_m` tinyint(1) DEFAULT 1,
   `stok_l` tinyint(1) DEFAULT 1,
   `stok_xl` tinyint(1) DEFAULT 1,
-  `stok_xxl` tinyint(1) DEFAULT 1
+  `stok_xxl` tinyint(1) DEFAULT 1,
+  `stok` int(11) NOT NULL DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `produk`
 --
 
-INSERT INTO `produk` (`id`, `nama_produk`, `harga`, `gambar`, `deskripsi`, `kategori`, `created_at`, `stok_s`, `stok_m`, `stok_l`, `stok_xl`, `stok_xxl`) VALUES
-(1, 'Basic White T-Shirt', 200000, 'asset/mingyuman1.jpg', 'Kaos basic premium berbahan cotton lembut dan nyaman dipakai sehari-hari.', 'man', '2026-05-17 19:49:24', 1, 0, 1, 1, 1),
-(2, 'Black Hoodie', 350000, 'asset/mingyuman2.jpg', 'Hoodie hitam dengan desain minimalis dan bahan tebal berkualitas.', 'man', '2026-05-17 19:49:24', 1, 1, 1, 1, 1),
-(3, 'Denim Jacket', 500000, 'asset/mingyuman3.jpg', 'Jacket denim modern dengan style casual dan fashionable.', 'man', '2026-05-17 19:49:24', 1, 1, 1, 1, 1),
-(4, 'Casual Shirt', 250000, 'asset/mingyuman4.jpg', 'Kemeja casual modern cocok untuk daily outfit.', 'man', '2026-05-17 19:49:24', 1, 1, 1, 1, 1),
-(5, 'Monologo Tee', 800000, 'asset/trendcl1.jpg', 'Kaos premium dengan desain grafis logo minimalis yang ikonik, berbahan katun lembut yang nyaman dan cocok untuk gaya streetwear sehari-hari.', 'man', '2026-05-17 19:49:24', 1, 1, 1, 1, 1),
-(6, 'Classic Trucker Jacket', 200000, 'asset/trendcl2.jpg', 'Jaket denim model trucker klasik dengan potongan timeless, dilengkapi kancing besi robust dan saku fungsional untuk tampilan maskulin yang tangguh.', 'man', '2026-05-17 19:49:24', 1, 1, 1, 1, 1),
-(7, '90s Denim Trucker Jacket', 400000, 'asset/trendcl3.1.jpg', 'Jaket denim bergaya retro era 90-an dengan potongan relaxed fit yang longgar, memberikan kesan vintage yang autentik dan kasual.', 'man', '2026-05-17 19:49:24', 1, 1, 1, 1, 1),
-(8, 'Oversize Tee', 180000, 'asset/oversizedT.jpg', 'Kaos berpotongan longgar dengan siluet dropped-shoulder modern, berbahan katun tebal namun adem yang sempurna untuk gaya casual streetwear.', 'man', '2026-05-17 19:49:24', 1, 1, 1, 1, 1),
-(9, 'Cotton Crewneck T-Shirt', 270000, 'asset/trendcl4.jpg', 'Kaos leher bulat klasik berbahan 100% katun premium yang lembut, sejuk, dan menyerap keringat dengan pas sempurna untuk kenyamanan sepanjang hari.', 'man', '2026-05-17 19:49:24', 1, 1, 1, 1, 1),
-(10, 'Chino Pants', 320000, 'asset/chinoP.jpg', 'Celana chino potongan slim-fit berbahan katun twill elastis yang ringan, memberikan tampilan semi-formal yang rapi namun tetap fleksibel.', 'man', '2026-05-17 19:49:24', 1, 1, 1, 1, 1),
-(11, 'Bomber Jacket', 600000, 'asset/bomberJ.jpg', 'Jaket bomber modern dengan bahan luar windproof dan liner dalam yang lembut, dilengkapi saku lengan ikonik untuk gaya sporty urban yang tangguh.', 'man', '2026-05-17 19:49:24', 1, 1, 1, 1, 1),
-(12, 'Basic White T-Shirt Women', 150000, 'asset/woman1.jpg', 'Kaos basic premium berbahan cotton lembut dan nyaman dipakai sehari-hari.', 'woman', '2026-05-17 19:49:24', 1, 1, 1, 1, 1),
-(13, 'Bustier Top', 260000, 'asset/bustierT.png', 'Atasan bustier modis yang memberikan siluet tegas dan elegan untuk tampilan kasual maupun formal.', 'woman', '2026-05-17 19:49:24', 1, 1, 1, 1, 1),
-(14, 'Crop Knit Hoodie Zip-up', 280000, 'asset/woman3.jpg', 'Hoodie rajut model crop dengan resleting depan yang hangat, trendi, dan nyaman digunakan.', 'woman', '2026-05-17 19:49:24', 1, 1, 1, 1, 1),
-(15, 'Casual Shirt Women', 250000, 'asset/woman4.jpg', 'Kemeja kasual dengan potongan santai, sangat cocok untuk aktivitas harian atau hangout.', 'woman', '2026-05-17 19:49:24', 1, 1, 1, 1, 1),
-(16, 'Formal Pants', 300000, 'asset/woman5.jpg', 'Celana formal berpotongan rapi dan bahan premium, ideal untuk kerja maupun acara semi-formal.', 'woman', '2026-05-17 19:49:24', 1, 1, 1, 1, 1),
-(17, 'Mini Skirt', 210000, 'asset/miniS.jpg', 'Rok mini dengan desain modern yang mudah dipadukan untuk tampilan feminin yang aktif.', 'woman', '2026-05-17 19:49:24', 1, 1, 1, 1, 1),
-(18, 'Sport T-Shirt', 200000, 'asset/sportT.jpg', 'Kaos olahraga berbahan cepat kering dan elastis, menjaga kenyamanan optimal saat bergerak.', 'woman', '2026-05-17 19:49:24', 1, 1, 1, 1, 1),
-(19, 'Highwaist Straight Jeans', 320000, 'asset/highwaistS.jpg', 'Celana jeans highwaist potongan lurus yang memberikan kesan kaki lebih jenjang dan stylish.', 'woman', '2026-05-17 19:49:24', 1, 1, 1, 1, 1),
-(20, 'Mini Dress', 380000, 'asset/miniD.png', 'Gaun mini elegan dengan potongan fit yang anggun, cocok untuk pesta maupun kencan malam.', 'woman', '2026-05-17 19:49:24', 1, 1, 1, 1, 1),
-(21, 'Tank Top', 130000, 'asset/tankT.png', 'Tank top basic esensial berbahan adem, sangat pas untuk dalaman atau pakaian santai di rumah.', 'woman', '2026-05-17 19:49:24', 1, 1, 1, 1, 1),
-(22, 'Oversize Shirt', 240000, 'asset/oversizeS.jpg', 'Kemeja berukuran oversize dengan gaya kekinian yang memberikan kesan santai namun tetap modis.', 'woman', '2026-05-17 19:49:24', 1, 1, 1, 1, 1),
-(23, 'Cropped Ribbed Knit Cardigan', 230000, 'asset/croppedR.jpg', 'Kardigan rajut model crop bertekstur rib yang lembut, sempurna sebagai pelapis pakaian Anda.', 'woman', '2026-05-17 19:49:24', 1, 1, 1, 1, 1),
-(24, 'Formal Pants Man', 300000, 'asset/mingyuman5.jpg', 'Celana formal berpotongan rapi dan bahan premium, ideal untuk kerja maupun acara semi-formal.', 'man', '2026-05-17 19:49:24', 1, 1, 1, 1, 1),
-(25, 'Rhinestone Cylinder Clutch Bag', 150000, 'asset/aksesoris1.jpg', 'Tas genggam berbentuk silinder dengan hiasan rhinestones berkilau, sempurna untuk melengkapi gaun pesta malam Anda.', 'Accessories', '2026-05-17 19:49:24', 1, 1, 1, 1, 1),
-(26, 'Wayfarer Puffer', 350000, 'asset/aksesoris2.jpg', 'Tas model puffer kasual dengan desain modern yang empuk dan ringan, sangat muat banyak untuk kebutuhan harian.', 'Accessories', '2026-05-17 19:49:24', 1, 1, 1, 1, 1),
-(27, 'Hobo Bag ', 500000, 'asset/aksesoris3.jpg', 'Tas bahu model hobo berbahan kulit lembut dengan siluet melengkung yang elegan dan kompartemen yang luas.', 'Accessories', '2026-05-17 19:49:24', 1, 1, 1, 1, 1),
-(28, 'Montblanc Iced Sea Automatic Date', 250000, 'asset/jamT.jpg', 'Jam tangan otomatis dengan dial bermotif tekstur es yang mewah, memberikan kesan sporty sekaligus profesional.', 'Accessories', '2026-05-17 19:49:24', 1, 1, 1, 1, 1),
-(29, 'Collar Necklace ', 300000, 'asset/collarN.jpg', 'Kalung model kerah yang tegas dan berkilau, dirancang khusus sebagai statment piece untuk memperindah lingkar leher.', 'Accessories', '2026-05-17 19:49:24', 1, 1, 1, 1, 1),
-(30, 'Santos de Cartier', 800000, 'asset/santosC.jpg', 'Jam tangan berdesain ikonik dengan bezel sekrup persegi yang legendaris, memancarkan kemewahan yang timeless.', 'Accessories', '2026-05-17 19:49:24', 1, 1, 1, 1, 1),
-(31, 'Trilogy Ring', 200000, 'asset/trilogyR.jpg', 'Cincin tiga mata yang melambangkan masa lalu, masa kini, dan masa depan, dihiasi batu permata tiruan yang anggun.', 'Accessories', '2026-05-17 19:49:24', 1, 1, 1, 1, 1),
-(32, ' Tiffany HardWear & Fred Force 10', 400000, 'asset/tifany.png', 'Perpaduan gelang rantai kokoh bergaya industrial urban dengan sentuhan maritime buckle yang mewah dan bold.', 'Accessories', '2026-05-17 19:49:24', 1, 1, 1, 1, 1),
-(33, 'Triangle Bandana Lace', 180000, 'asset/bandana.jpg', 'Bandana rajut renda berbentuk segitiga bergaya vintage yang manis untuk menghias rambut atau pelengkap gaya kasual.', 'Accessories', '2026-05-17 19:49:24', 1, 1, 1, 1, 1),
-(34, 'Chopard Alpine Eagle', 270000, 'asset/chopard.jpg', 'Jam tangan mewah dengan desain dial bertekstur iris mata elang yang kontemporer dan strap stainless steel yang kokoh.', 'Accessories', '2026-05-17 19:49:24', 1, 1, 1, 1, 1),
-(35, 'Knot Jewelry Set', 320000, 'asset/setJ.jpg', 'Satu set perhiasan bermotif simpul ikatan yang serasi, terdiri dari kalung dan anting untuk tampilan formal yang padu.', 'Accessories', '2026-05-17 19:49:24', 1, 1, 1, 1, 1),
-(36, 'Tiffany T1 Narrow Diamond Hinged Bangle', 600000, 'asset/bagle.jpg', 'Gelang bangle ramping dengan motif huruf T ikonik bertabur aksen permata berkilau yang elegan di satu sisinya.', 'Accessories', '2026-05-17 19:49:24', 1, 1, 1, 1, 1);
+INSERT INTO `produk` (`id`, `nama_produk`, `harga`, `gambar`, `deskripsi`, `kategori`, `created_at`, `stok_s`, `stok_m`, `stok_l`, `stok_xl`, `stok_xxl`, `stok`) VALUES
+(1, 'Basic White T-Shirt', 200000, 'asset/mingyuman1.jpg', 'Kaos basic premium berbahan cotton lembut dan nyaman dipakai sehari-hari.', 'man', '2026-05-17 19:49:24', 2, 0, 1, 1, 1, 0),
+(2, 'Black Hoodie', 350000, 'asset/mingyuman2.jpg', 'Hoodie hitam dengan desain minimalis dan bahan tebal berkualitas.', 'man', '2026-05-17 19:49:24', 1, 1, 1, 1, 1, 0),
+(3, 'Denim Jacket', 500000, 'asset/mingyuman3.jpg', 'Jacket denim modern dengan style casual dan fashionable.', 'man', '2026-05-17 19:49:24', 1, 1, 5, 1, 1, 0),
+(4, 'Casual Shirt', 250000, 'asset/mingyuman4.jpg', 'Kemeja casual modern cocok untuk daily outfit.', 'man', '2026-05-17 19:49:24', 1, 1, 1, 1, 1, 0),
+(5, 'Monologo Tee', 800000, 'asset/trendcl1.jpg', 'Kaos premium dengan desain grafis logo minimalis yang ikonik, berbahan katun lembut yang nyaman dan cocok untuk gaya streetwear sehari-hari.', 'man', '2026-05-17 19:49:24', 1, 1, 1, 1, 1, 0),
+(6, 'Classic Trucker Jacket', 200000, 'asset/trendcl2.jpg', 'Jaket denim model trucker klasik dengan potongan timeless, dilengkapi kancing besi robust dan saku fungsional untuk tampilan maskulin yang tangguh.', 'man', '2026-05-17 19:49:24', 1, 1, 1, 1, 1, 0),
+(7, '90s Denim Trucker Jacket', 400000, 'asset/trendcl3.1.jpg', 'Jaket denim bergaya retro era 90-an dengan potongan relaxed fit yang longgar, memberikan kesan vintage yang autentik dan kasual.', 'man', '2026-05-17 19:49:24', 1, 3, 1, 1, 1, 0),
+(8, 'Oversize Tee', 180000, 'asset/oversizedT.jpg', 'Kaos berpotongan longgar dengan siluet dropped-shoulder modern, berbahan katun tebal namun adem yang sempurna untuk gaya casual streetwear.', 'man', '2026-05-17 19:49:24', 1, 1, 1, 1, 1, 0),
+(9, 'Cotton Crewneck T-Shirt', 270000, 'asset/trendcl4.jpg', 'Kaos leher bulat klasik berbahan 100% katun premium yang lembut, sejuk, dan menyerap keringat dengan pas sempurna untuk kenyamanan sepanjang hari.', 'man', '2026-05-17 19:49:24', 1, 1, 3, 1, 1, 0),
+(10, 'Chino Pants', 320000, 'asset/chinoP.jpg', 'Celana chino potongan slim-fit berbahan katun twill elastis yang ringan, memberikan tampilan semi-formal yang rapi namun tetap fleksibel.', 'man', '2026-05-17 19:49:24', 1, 1, 1, 1, 1, 0),
+(11, 'Bomber Jacket', 600000, 'asset/bomberJ.jpg', 'Jaket bomber modern dengan bahan luar windproof dan liner dalam yang lembut, dilengkapi saku lengan ikonik untuk gaya sporty urban yang tangguh.', 'man', '2026-05-17 19:49:24', 1, 1, 1, 1, 1, 0),
+(12, 'Basic White T-Shirt Women', 150000, 'asset/woman1.jpg', 'Kaos basic premium berbahan cotton lembut dan nyaman dipakai sehari-hari.', 'woman', '2026-05-17 19:49:24', 1, 1, 1, 1, 1, 0),
+(13, 'Bustier Top', 260000, 'asset/bustierT.png', 'Atasan bustier modis yang memberikan siluet tegas dan elegan untuk tampilan kasual maupun formal.', 'woman', '2026-05-17 19:49:24', 1, 1, 1, 1, 1, 0),
+(14, 'Crop Knit Hoodie Zip-up', 280000, 'asset/woman3.jpg', 'Hoodie rajut model crop dengan resleting depan yang hangat, trendi, dan nyaman digunakan.', 'woman', '2026-05-17 19:49:24', 1, 1, 1, 1, 1, 0),
+(15, 'Casual Shirt Women', 250000, 'asset/woman4.jpg', 'Kemeja kasual dengan potongan santai, sangat cocok untuk aktivitas harian atau hangout.', 'woman', '2026-05-17 19:49:24', 1, 1, 1, 1, 1, 0),
+(16, 'Formal Pants', 300000, 'asset/woman5.jpg', 'Celana formal berpotongan rapi dan bahan premium, ideal untuk kerja maupun acara semi-formal.', 'woman', '2026-05-17 19:49:24', 1, 1, 1, 1, 1, 0),
+(17, 'Mini Skirt', 210000, 'asset/miniS.jpg', 'Rok mini dengan desain modern yang mudah dipadukan untuk tampilan feminin yang aktif.', 'woman', '2026-05-17 19:49:24', 1, 1, 1, 1, 1, 0),
+(18, 'Sport T-Shirt', 200000, 'asset/sportT.jpg', 'Kaos olahraga berbahan cepat kering dan elastis, menjaga kenyamanan optimal saat bergerak.', 'woman', '2026-05-17 19:49:24', 1, 1, 1, 1, 1, 0),
+(19, 'Highwaist Straight Jeans', 320000, 'asset/highwaistS.jpg', 'Celana jeans highwaist potongan lurus yang memberikan kesan kaki lebih jenjang dan stylish.', 'woman', '2026-05-17 19:49:24', 1, 1, 1, 1, 1, 0),
+(20, 'Mini Dress', 380000, 'asset/miniD.png', 'Gaun mini elegan dengan potongan fit yang anggun, cocok untuk pesta maupun kencan malam.', 'woman', '2026-05-17 19:49:24', 1, 1, 1, 1, 1, 0),
+(21, 'Tank Top', 130000, 'asset/tankT.png', 'Tank top basic esensial berbahan adem, sangat pas untuk dalaman atau pakaian santai di rumah.', 'woman', '2026-05-17 19:49:24', 1, 1, 1, 1, 1, 0),
+(22, 'Oversize Shirt', 240000, 'asset/oversizeS.jpg', 'Kemeja berukuran oversize dengan gaya kekinian yang memberikan kesan santai namun tetap modis.', 'woman', '2026-05-17 19:49:24', 1, 1, 1, 1, 1, 0),
+(23, 'Cropped Ribbed Knit Cardigan', 230000, 'asset/croppedR.jpg', 'Kardigan rajut model crop bertekstur rib yang lembut, sempurna sebagai pelapis pakaian Anda.', 'woman', '2026-05-17 19:49:24', 1, 1, 1, 1, 3, 0),
+(24, 'Formal Pants Man', 300000, 'asset/mingyuman5.jpg', 'Celana formal berpotongan rapi dan bahan premium, ideal untuk kerja maupun acara semi-formal.', 'man', '2026-05-17 19:49:24', 1, 1, 1, 1, 1, 0),
+(25, 'Rhinestone Cylinder Clutch Bag', 150000, 'asset/aksesoris1.jpg', 'Tas genggam berbentuk silinder dengan hiasan rhinestones berkilau, sempurna untuk melengkapi gaun pesta malam Anda.', 'Accessories', '2026-05-17 19:49:24', 1, 1, 1, 1, 1, 3),
+(26, 'Wayfarer Puffer', 350000, 'asset/aksesoris2.jpg', 'Tas model puffer kasual dengan desain modern yang empuk dan ringan, sangat muat banyak untuk kebutuhan harian.', 'Accessories', '2026-05-17 19:49:24', 1, 1, 1, 1, 1, 2),
+(27, 'Hobo Bag ', 500000, 'asset/aksesoris3.jpg', 'Tas bahu model hobo berbahan kulit lembut dengan siluet melengkung yang elegan dan kompartemen yang luas.', 'Accessories', '2026-05-17 19:49:24', 1, 1, 1, 1, 1, 0),
+(28, 'Montblanc Iced Sea Automatic Date', 250000, 'asset/jamT.jpg', 'Jam tangan otomatis dengan dial bermotif tekstur es yang mewah, memberikan kesan sporty sekaligus profesional.', 'Accessories', '2026-05-17 19:49:24', 1, 1, 1, 1, 1, 0),
+(29, 'Collar Necklace ', 300000, 'asset/collarN.jpg', 'Kalung model kerah yang tegas dan berkilau, dirancang khusus sebagai statment piece untuk memperindah lingkar leher.', 'Accessories', '2026-05-17 19:49:24', 1, 1, 1, 1, 1, 0),
+(30, 'Santos de Cartier', 800000, 'asset/santosC.jpg', 'Jam tangan berdesain ikonik dengan bezel sekrup persegi yang legendaris, memancarkan kemewahan yang timeless.', 'Accessories', '2026-05-17 19:49:24', 1, 1, 1, 1, 1, 0),
+(31, 'Trilogy Ring', 200000, 'asset/trilogyR.jpg', 'Cincin tiga mata yang melambangkan masa lalu, masa kini, dan masa depan, dihiasi batu permata tiruan yang anggun.', 'Accessories', '2026-05-17 19:49:24', 1, 1, 1, 1, 1, 0),
+(32, ' Tiffany HardWear & Fred Force 10', 400000, 'asset/tifany.png', 'Perpaduan gelang rantai kokoh bergaya industrial urban dengan sentuhan maritime buckle yang mewah dan bold.', 'Accessories', '2026-05-17 19:49:24', 1, 1, 1, 1, 1, 0),
+(33, 'Triangle Bandana Lace', 180000, 'asset/bandana.jpg', 'Bandana rajut renda berbentuk segitiga bergaya vintage yang manis untuk menghias rambut atau pelengkap gaya kasual.', 'Accessories', '2026-05-17 19:49:24', 1, 1, 1, 1, 1, 0),
+(34, 'Chopard Alpine Eagle', 270000, 'asset/chopard.jpg', 'Jam tangan mewah dengan desain dial bertekstur iris mata elang yang kontemporer dan strap stainless steel yang kokoh.', 'Accessories', '2026-05-17 19:49:24', 1, 1, 1, 1, 1, 0),
+(35, 'Knot Jewelry Set', 320000, 'asset/setJ.jpg', 'Satu set perhiasan bermotif simpul ikatan yang serasi, terdiri dari kalung dan anting untuk tampilan formal yang padu.', 'Accessories', '2026-05-17 19:49:24', 1, 1, 1, 1, 1, 0),
+(36, 'Tiffany T1 Narrow Diamond Hinged Bangle', 600000, 'asset/bagle.jpg', 'Gelang bangle ramping dengan motif huruf T ikonik bertabur aksen permata berkilau yang elegan di satu sisinya.', 'Accessories', '2026-05-17 19:49:24', 1, 1, 1, 1, 1, 0);
 
 -- --------------------------------------------------------
 
@@ -178,15 +178,6 @@ CREATE TABLE `ulasan` (
   `created_at` datetime NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
---
--- Dumping data for table `ulasan`
---
-
-INSERT INTO `ulasan` (`id`, `id_user`, `nama_produk`, `id_order`, `id_produk`, `bintang`, `komentar`, `created_at`) VALUES
-(2, 1, 'Bomber Jacket - Size S', 29, 11, 4, 'jacket nya nyaman dan gabikin gerah', '2026-06-11 21:20:45'),
-(3, 1, 'Denim Jacket - Size M', 34, 3, 4, 'jacketnya pas ga kebesaran dan bahannya nyaman', '2026-06-12 15:37:32'),
-(4, 1, 'Tank Top - Size M', 38, 21, 5, 'bahannya nyaman dipake seharian', '2026-06-12 21:33:30');
-
 -- --------------------------------------------------------
 
 --
@@ -201,18 +192,18 @@ CREATE TABLE `users` (
   `nama_panggilan` varchar(100) DEFAULT NULL,
   `no_telepon` varchar(20) DEFAULT NULL,
   `alamat` text DEFAULT NULL,
-  `jenis_kelamin` varchar(20) DEFAULT NULL,
-  `foto_profil` varchar(255) DEFAULT NULL
+  `wilayah` varchar(50) DEFAULT NULL,
+  `foto_profil` varchar(255) DEFAULT NULL,
+  `reset_token` varchar(64) DEFAULT NULL,
+  `reset_expiry` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `users`
 --
 
-INSERT INTO `users` (`id_user`, `email`, `password`, `tanggal_lahir`, `nama_panggilan`, `no_telepon`, `alamat`, `jenis_kelamin`, `foto_profil`) VALUES
-(1, 'rara@gmail.com', '$2y$10$ni4VDuJgKAadmvf.7HVxAOsnFFFQ6JODhO29edCJVm2WklvbHMFPW', '2006-10-20', 'andrea indira', '0812345678910', 'narmada muhajirin utara', '', 'uploads/foto_profil/foto_52ec04599fb923e58e35253e1d2ee7b8.jpg'),
-(4, 'rarageulis405@gmail.com', '$2y$10$oo.5lOOhMMH/0QH.4aYUb.Ko8Z12kXZUNBAwY9C7LQdoB3jcjk.Lq', '1998-10-13', 'nayesha', '', '', '', 'uploads/foto_profil/foto_22525be81fa1f46ad456759759f3cdd9.jpg'),
-(8, 'nayesha@gmail.com', '$2y$10$EwVZwoOjBKSZWO32By64wuHapzcgzjgmYAcC4DApUfKq3UN9GbTAq', '2002-10-20', NULL, NULL, NULL, NULL, NULL);
+INSERT INTO `users` (`id_user`, `email`, `password`, `tanggal_lahir`, `nama_panggilan`, `no_telepon`, `alamat`, `wilayah`, `foto_profil`, `reset_token`, `reset_expiry`) VALUES
+(15, 'indiraRamadhani@gmail.com', '$2y$10$LXeqrWW.5yzmH8J2GDJyXeJQXAqr7gkZgsE3Cn1rWUvUtqrJgSSai', '2006-10-20', NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 
 --
 -- Indexes for dumped tables
@@ -270,31 +261,31 @@ ALTER TABLE `admin`
 -- AUTO_INCREMENT for table `keranjang`
 --
 ALTER TABLE `keranjang`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=38;
 
 --
 -- AUTO_INCREMENT for table `orders`
 --
 ALTER TABLE `orders`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=48;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=90;
 
 --
 -- AUTO_INCREMENT for table `produk`
 --
 ALTER TABLE `produk`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=38;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=42;
 
 --
 -- AUTO_INCREMENT for table `ulasan`
 --
 ALTER TABLE `ulasan`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id_user` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `id_user` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
 
 --
 -- Constraints for dumped tables

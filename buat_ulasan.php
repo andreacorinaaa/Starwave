@@ -1,10 +1,13 @@
 <?php
+
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
+
 session_start();
 include('config/koneksi.php');
 
 if (!isset($_SESSION['user'])) {
+    // Simpan tujuan asli, biar nanti setelah login bisa balik ke sini
     $_SESSION['redirect_after_login'] = 'buat_ulasan.php';
     header("Location: masuk/login.php?msg=login_dulu");
     exit;
@@ -16,6 +19,7 @@ $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?");
 $stmt->execute([$user_email]);
 $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
+// Kalau email di session tidak ketemu di database -> paksa logout
 if (!$user) {
     session_destroy();
     header("Location: masuk/login.php");
@@ -25,17 +29,21 @@ if (!$user) {
 $user_id = $user['id_user'];
 
 if (!isset($_GET['id'])) {
+    // Tidak ada id order dikirim -> tolak, lempar ke halaman order
     header("Location: order.php");
     exit;
 }
 
+// (int) di sini buat mastiin nilainya angka, bukan teks aneh-aneh
 $id_order = (int)$_GET['id'];
 
+// Hanya order yang sudah "selesai" yang boleh diberi ulasan
 $stmt = $pdo->prepare("SELECT * FROM orders WHERE id = ? AND id_user = ? AND status = 'selesai'");
 $stmt->execute([$id_order, $user_id]);
 $order = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$order) {
+    // Order tidak ditemukan / bukan milik user ini / belum selesai -> tolak
     header("Location: order.php");
     exit;
 }
@@ -43,34 +51,48 @@ if (!$order) {
 $stmt = $pdo->prepare("SELECT * FROM ulasan WHERE id_order = ?");
 $stmt->execute([$id_order]);
 $cek_ulasan = $stmt->fetch(PDO::FETCH_ASSOC);
+// Kalau $cek_ulasan ADA isinya -> berarti sudah pernah diulas
 
 $pesan = "";
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+
     $bintang  = (int)$_POST['bintang'];
     $komentar = trim($_POST['komentar']);
 
+    // --- Validasi 1: bintang harus 1-5 ---
     if ($bintang < 1 || $bintang > 5) {
         $pesan = "error|Pilih bintang antara 1 sampai 5.";
+
+    // --- Validasi 2: komentar tidak boleh kosong ---
     } elseif (empty($komentar)) {
         $pesan = "error|Komentar tidak boleh kosong.";
+
+    // --- Validasi 3: cek dobel, jangan sampai ulasan dikirim 2x ---
     } elseif ($cek_ulasan) {
         $pesan = "error|Kamu sudah memberikan ulasan untuk pesanan ini.";
+
+    // --- Semua validasi lolos -> simpan ulasan ---
     } else {
         $nama_produk_order = $order['nama_produk'];
 
+        // Coba cari id produk asli di tabel produk berdasarkan nama produk dari order
+        // (pakai LIKE karena nama produk di order kadang ada tambahan teks, misal varian/ukuran)
         $stmt = $pdo->prepare("SELECT id FROM produk WHERE ? LIKE CONCAT(nama_produk, '%') LIMIT 1");
         $stmt->execute([$nama_produk_order]);
         $cari_produk = $stmt->fetch(PDO::FETCH_ASSOC);
 
+        // Kalau produk ketemu, pakai id-nya. Kalau tidak ketemu, pakai 0 (default)
         $id_produk_order = $cari_produk ? (int)$cari_produk['id'] : 0;
 
+        // Simpan ulasan baru ke database
         $stmt = $pdo->prepare("INSERT INTO ulasan (id_order, id_user, id_produk, nama_produk, bintang, komentar, created_at)
                                VALUES (?, ?, ?, ?, ?, ?, NOW())");
         $stmt->execute([$id_order, $user_id, $id_produk_order, $nama_produk_order, $bintang, $komentar]);
 
         $pesan = "success|Terima kasih! Ulasan kamu berhasil disimpan.";
 
+        // Ambil ulang data ulasan yang baru disimpan, biar langsung tampil di halaman
         $stmt = $pdo->prepare("SELECT * FROM ulasan WHERE id_order = ?");
         $stmt->execute([$id_order]);
         $cek_ulasan = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -91,14 +113,15 @@ if ($pesan) {
     <title>Ulasan Produk — STARWAVE</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="order.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 
 <body>
 
-<!-- NAVBAR -->
+<!-- ================= NAVBAR ================= -->
 <header>
     <nav>
-        <h1>STARWAVE</h1>
+        <h1><a href="index.php">STARWAVE</a></h1>
         <ul>
             <li><a href="index.php">Home</a></li>
             <li><a href="man.php">Man</a></li>
@@ -107,41 +130,47 @@ if ($pesan) {
             <li><a href="order.php" class="active">Order</a></li>
             <li><a href="keranjang.php">Keranjang</a></li>
         </ul>
-        <form action="search.php" method="GET" style="display:inline;">
-            <input type="text" name="q" placeholder="Search produk..." style="padding:5px;">
+        <form action="search.php" method="GET" class="search-form" onsubmit="return validateSearch(this)">
+            <input type="text" name="q" placeholder="Search produk..." class="search-input">
+            <button type="submit" class="search-btn">
+                <i class="fa fa-search"></i>
+            </button>
         </form>
         <?php if (isset($_SESSION['user'])): ?>
-    <a href="profile.php" style="margin-left:15px; text-decoration:none; display:flex; align-items:center;" title="Profile">
-        <?php
-            $stmt2 = $pdo->prepare("SELECT foto_profil FROM users WHERE email = ?");
-            $stmt2->execute([$_SESSION['user']]);
-            $navUser = $stmt2->fetch(PDO::FETCH_ASSOC);
-        ?>
-        <?php if (!empty($navUser['foto_profil']) && file_exists($navUser['foto_profil'])): ?>
-            <img src="<?= htmlspecialchars($navUser['foto_profil']) ?>" 
-                 style="width:34px; height:34px; border-radius:50%; object-fit:cover; border:2px solid #2a7fa8;">
+            <!-- User biasa login -> tampilkan foto profil -->
+            <a href="profile.php" style="margin-left:15px; text-decoration:none; display:flex; align-items:center;" title="Profile">
+                <?php
+                    $stmt2 = $pdo->prepare("SELECT foto_profil FROM users WHERE email = ?");
+                    $stmt2->execute([$_SESSION['user']]);
+                    $navUser = $stmt2->fetch(PDO::FETCH_ASSOC);
+                ?>
+                <?php if (!empty($navUser['foto_profil']) && file_exists($navUser['foto_profil'])): ?>
+                    <img src="<?= htmlspecialchars($navUser['foto_profil']) ?>"
+                         style="width:34px; height:34px; border-radius:50%; object-fit:cover; border:2px solid #2a7fa8;">
+                <?php else: ?>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#c9dde8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="8" r="4"/>
+                        <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+                    </svg>
+                <?php endif; ?>
+            </a>
+        <?php elseif (isset($_SESSION['admin'])): ?>
+            <!-- Admin login -> tampilkan tombol ke dashboard admin -->
+            <a href="admin/dashboard.php" style="margin-left:15px; text-decoration:none; color:#4f6ef7; display:flex; align-items:center; gap:5px; font-size:12px; font-weight:700; letter-spacing:1px;" title="Admin Panel">
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="8" r="4"/>
+                    <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+                </svg>
+                ADMIN
+            </a>
         <?php else: ?>
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#c9dde8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="8" r="4"/>
-                <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
-            </svg>
+            <!-- Belum login -> tombol Login -->
+            <a href="masuk/login.php" class="btn-login">Login</a>
         <?php endif; ?>
-    </a>
-<?php elseif (isset($_SESSION['admin'])): ?>
-    <a href="admin/dashboard.php" style="margin-left:15px; text-decoration:none; color:#4f6ef7; display:flex; align-items:center; gap:5px; font-size:12px; font-weight:700; letter-spacing:1px;" title="Admin Panel">
-        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="8" r="4"/>
-            <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
-        </svg>
-        ADMIN
-    </a>
-<?php else: ?>
-    <a href="masuk/login.php" style="margin-left:15px; text-decoration:none; color:#c9dde8; font-size:14px; font-weight:700;">Login</a>
-<?php endif; ?>
     </nav>
 </header>
 
-<!-- Breadcrumb -->
+<!-- ================= BREADCRUMB ================= -->
 <div class="breadcrumb-bar">
     <h1>Ulasan Produk</h1>
     <div class="breadcrumb">
@@ -155,6 +184,7 @@ if ($pesan) {
 
 <div class="uls-section">
 
+    <!-- Tampilkan pesan sukses/error (kalau ada) -->
     <?php if ($pesan_text): ?>
         <div class="alert <?= $pesan_type ?>">
             <?= $pesan_type == 'success' ? '✅' : '❌' ?>
@@ -162,7 +192,7 @@ if ($pesan) {
         </div>
     <?php endif; ?>
 
-    <!-- Info Pesanan -->
+    <!-- ================= INFO PESANAN ================= -->
     <div class="uls-order-info-card">
         <div class="uls-order-info-row">
             <span class="uls-order-info-label">Produk</span>
@@ -184,11 +214,12 @@ if ($pesan) {
 
     <?php if ($cek_ulasan): ?>
 
-        <!-- Ulasan sudah ada -->
+        <!-- ===== KONDISI: Ulasan SUDAH ADA -> tampilkan saja, jangan munculkan form lagi ===== -->
         <div class="uls-sudah-ada">
             <p class="uls-sudah-judul">Ulasan Kamu</p>
             <div class="uls-bintang-display">
                 <?php for ($i = 1; $i <= 5; $i++): ?>
+                    <!-- Tampilkan bintang terisi sesuai nilai yang disimpan -->
                     <span class="uls-bintang-icon <?= $i <= $cek_ulasan['bintang'] ? 'aktif' : '' ?>">★</span>
                 <?php endfor; ?>
                 <span class="uls-bintang-angka"><?= $cek_ulasan['bintang'] ?>/5</span>
@@ -203,7 +234,7 @@ if ($pesan) {
 
     <?php else: ?>
 
-        <!-- Form Ulasan -->
+        <!-- ===== KONDISI: Belum ada ulasan -> tampilkan form input ulasan ===== -->
         <form method="POST" action="buat_ulasan.php?id=<?= $id_order ?>" class="uls-form" style="width:100%;box-sizing:border-box;">
 
             <div class="uls-form-group">
@@ -213,6 +244,7 @@ if ($pesan) {
                         <span class="uls-bintang-btn" data-nilai="<?= $i ?>">★</span>
                     <?php endfor; ?>
                 </div>
+                <!-- Nilai bintang yang dipilih disimpan di sini (diatur via JS) -->
                 <input type="hidden" name="bintang" id="input-bintang" value="0">
                 <p class="uls-bintang-label-teks" id="bintang-label">Pilih bintang di atas</p>
             </div>
@@ -239,7 +271,7 @@ if ($pesan) {
 
 </div>
 
-<!-- FOOTER -->
+<!-- ================= FOOTER ================= -->
 <footer>
     <div class="footer-box">
         <div>
@@ -260,39 +292,8 @@ if ($pesan) {
     </div>
 </footer>
 
-<script>
-const bintangBtns = document.querySelectorAll('.uls-bintang-btn');
-const inputBintang = document.getElementById('input-bintang');
-const bintangLabel = document.getElementById('bintang-label');
-
-const labelTeks = ['', 'Sangat Buruk', 'Buruk', 'Cukup', 'Bagus', 'Sangat Bagus'];
-
-bintangBtns.forEach(btn => {
-    btn.addEventListener('mouseover', () => {
-        const nilai = parseInt(btn.dataset.nilai);
-        bintangBtns.forEach((b, i) => {
-            b.classList.toggle('hover', i < nilai);
-        });
-    });
-
-    btn.addEventListener('mouseout', () => {
-        const terpilih = parseInt(inputBintang.value);
-        bintangBtns.forEach((b, i) => {
-            b.classList.remove('hover');
-            b.classList.toggle('aktif', i < terpilih);
-        });
-    });
-
-    btn.addEventListener('click', () => {
-        const nilai = parseInt(btn.dataset.nilai);
-        inputBintang.value = nilai;
-        bintangBtns.forEach((b, i) => {
-            b.classList.toggle('aktif', i < nilai);
-        });
-        bintangLabel.textContent = labelTeks[nilai];
-    });
-});
-</script>
+<script src="pengguna.js"></script>
+<script src="order.js"></script>
 
 </body>
 </html>

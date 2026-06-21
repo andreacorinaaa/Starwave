@@ -1,4 +1,5 @@
 <?php
+
 session_start();
 include('config/koneksi.php');
 
@@ -7,40 +8,52 @@ if (!isset($_SESSION['user'])) {
     exit;
 }
 
-$success = "";
-$email   = $_SESSION['user'];
+$success       = "";
+$error_profile = "";
+$email         = $_SESSION['user'];
 
+// Ambil data user yang lagi login
 $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?");
 $stmt->execute([$email]);
 $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
+// Jaga-jaga: kalau user di session ternyata sudah tidak ada di DB
 if (!$user) {
     session_destroy();
     header("Location: masuk/login.php");
     exit;
 }
 
-/* ── Handle photo upload ── */
+// Daftar wilayah yang bisa dipilih (dipakai di <select> bawah)
+$daftar_wilayah = ['Lombok Barat', 'Lombok Tengah', 'Lombok Timur', 'Lombok Utara', 'Mataram'];
+
 if (isset($_POST['update_photo']) && isset($_FILES['foto_profil']) && $_FILES['foto_profil']['error'] === 0) {
     $allowed = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
     $mime    = mime_content_type($_FILES['foto_profil']['tmp_name']);
 
     if (in_array($mime, $allowed)) {
-        $ext      = pathinfo($_FILES['foto_profil']['name'], PATHINFO_EXTENSION);
+
+        $map_ext  = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/gif' => 'gif', 'image/webp' => 'webp'];
+        $ext      = $map_ext[$mime];
         $filename = 'foto_' . md5($email . time()) . '.' . $ext;
         $dir      = 'uploads/foto_profil/';
 
-        if (!is_dir($dir)) mkdir($dir, 0755, true);
+        if (!is_dir($dir)) {
+            mkdir($dir, 0755, true);
+        }
 
         if (move_uploaded_file($_FILES['foto_profil']['tmp_name'], $dir . $filename)) {
+            // Hapus foto lama biar tidak numpuk sampah file
             if (!empty($user['foto_profil']) && file_exists($user['foto_profil'])) {
                 unlink($user['foto_profil']);
             }
+
             $foto_path = $dir . $filename;
             $stmt = $pdo->prepare("UPDATE users SET foto_profil = ? WHERE email = ?");
             $stmt->execute([$foto_path, $email]);
             $success = "Foto profil berhasil diperbarui!";
 
+            // Refresh data user biar foto baru langsung kepakai di tampilan
             $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?");
             $stmt->execute([$email]);
             $user = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -50,21 +63,31 @@ if (isset($_POST['update_photo']) && isset($_FILES['foto_profil']) && $_FILES['f
     }
 }
 
-/* ── Handle profile update ── */
 if (isset($_POST['update_profile'])) {
     $nama_panggilan = trim($_POST['nama_panggilan']);
     $no_telepon     = trim($_POST['no_telepon']);
+    $wilayah        = trim($_POST['wilayah']);
     $alamat         = trim($_POST['alamat']);
     $tanggal_lahir  = $_POST['tanggal_lahir'];
 
-    $stmt = $pdo->prepare("UPDATE users SET nama_panggilan = ?, no_telepon = ?, alamat = ?, tanggal_lahir  = ? WHERE email = ?");
-    $stmt->execute([$nama_panggilan, $no_telepon, $alamat, $tanggal_lahir, $email]);
+    // --- Validasi no HP: wajib angka semua & panjang 10-13 digit ---
+    if (!preg_match('/^\d{10,13}$/', $no_telepon)) {
+        $error_profile = "Nomor HP harus berupa angka, panjang 10–13 digit.";
+    } else {
+        $stmt = $pdo->prepare("
+            UPDATE users 
+            SET nama_panggilan = ?, no_telepon = ?, wilayah = ?, alamat = ?, tanggal_lahir = ? 
+            WHERE email = ?
+        ");
+        $stmt->execute([$nama_panggilan, $no_telepon, $wilayah, $alamat, $tanggal_lahir, $email]);
 
-    $success = "Profil berhasil diperbarui!";
+        $success = "Profil berhasil diperbarui!";
 
-    $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?");
-    $stmt->execute([$email]);
-    $user = $stmt->fetch(PDO::FETCH_ASSOC);
+        // Refresh data user biar form langsung nampilin data terbaru
+        $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?");
+        $stmt->execute([$email]);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+    }
 }
 ?>
 <!DOCTYPE html>
@@ -74,12 +97,14 @@ if (isset($_POST['update_profile'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Account — STARWAVE</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="order.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body>
 
 <header>
     <nav>
-        <h1>STARWAVE</h1>
+        <h1><a href="index.php">STARWAVE</a></h1>
         <ul>
             <li><a href="index.php">Home</a></li>
             <li><a href="man.php">Man</a></li>
@@ -88,39 +113,50 @@ if (isset($_POST['update_profile'])) {
             <li><a href="order.php">Order</a></li>
             <li><a href="keranjang.php">Keranjang</a></li>
         </ul>
-        <form action="search.php" method="GET" style="display:inline;">
-            <input type="text" name="q" placeholder="Search produk..." style="padding:5px;">
+        <form action="search.php" method="GET" class="search-form" onsubmit="return validateSearch(this)">
+            <input type="text" name="q" placeholder="Search produk..." class="search-input">
+            <button type="submit" class="search-btn">
+                <i class="fa fa-search"></i>
+            </button>
         </form>
         <?php if (isset($_SESSION['user'])): ?>
-    <a href="profile.php" style="margin-left:15px; text-decoration:none; display:flex; align-items:center;" title="Profile">
-        <?php
-            $stmt2 = $pdo->prepare("SELECT foto_profil FROM users WHERE email = ?");
-            $stmt2->execute([$_SESSION['user']]);
-            $navUser = $stmt2->fetch(PDO::FETCH_ASSOC);
-        ?>
-        <?php if (!empty($navUser['foto_profil']) && file_exists($navUser['foto_profil'])): ?>
-            <img src="<?= htmlspecialchars($navUser['foto_profil']) ?>" 
-                 style="width:34px; height:34px; border-radius:50%; object-fit:cover; border:2px solid #2a7fa8;">
+            <a href="profile.php" style="margin-left:15px; text-decoration:none; display:flex; align-items:center;" title="Profile" class="active">
+                <?php
+                    $stmt2 = $pdo->prepare("SELECT foto_profil FROM users WHERE email = ?");
+                    $stmt2->execute([$_SESSION['user']]);
+                    $navUser = $stmt2->fetch(PDO::FETCH_ASSOC);
+                ?>
+                <?php if (!empty($navUser['foto_profil']) && file_exists($navUser['foto_profil'])): ?>
+                    <img src="<?= htmlspecialchars($navUser['foto_profil']) ?>"
+                         style="width:34px; height:34px; border-radius:50%; object-fit:cover; border:2px solid #2a7fa8;">
+                <?php else: ?>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#c9dde8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="8" r="4"/>
+                        <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+                    </svg>
+                <?php endif; ?>
+            </a>
+        <?php elseif (isset($_SESSION['admin'])): ?>
+            <a href="admin/dashboard.php" style="margin-left:15px; text-decoration:none; color:#4f6ef7; display:flex; align-items:center; gap:5px; font-size:12px; font-weight:700; letter-spacing:1px;" title="Admin Panel">
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="8" r="4"/>
+                    <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+                </svg>
+                ADMIN
+            </a>
         <?php else: ?>
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#c9dde8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="8" r="4"/>
-                <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
-            </svg>
+            <a href="masuk/login.php" class="btn-login">Login</a>
         <?php endif; ?>
-    </a>
-<?php elseif (isset($_SESSION['admin'])): ?>
-    <a href="admin/dashboard.php" style="margin-left:15px; text-decoration:none; color:#4f6ef7; display:flex; align-items:center; gap:5px; font-size:12px; font-weight:700; letter-spacing:1px;" title="Admin Panel">
-        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="8" r="4"/>
-            <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
-        </svg>
-        ADMIN
-    </a>
-<?php else: ?>
-    <a href="masuk/login.php" style="margin-left:15px; text-decoration:none; color:#c9dde8; font-size:14px; font-weight:700;">Login</a>
-<?php endif; ?>
     </nav>
 </header>
+
+<div class="breadcrumb-bar">
+    <h1>My Account</h1>
+    <div class="breadcrumb">
+        <a href="index.php">Home</a><span>/</span>
+        <span style="color:#2b1a0e">Profile</span>
+    </div>
+</div>
 
 <?php if (isset($_GET['peringatan']) && isset($_SESSION['peringatan_profil'])): ?>
     <div class="alert-profil">
@@ -180,31 +216,60 @@ if (isset($_POST['update_profile'])) {
             <?php if ($success): ?>
                 <div class="auth-alert success"><?= htmlspecialchars($success) ?></div>
             <?php endif; ?>
+            <?php if (!empty($error_profile)): ?>
+                <div class="auth-alert" style="background:#fdecea;color:#c0392b;border-left:4px solid #e05555;padding:12px 16px;border-radius:6px;margin-bottom:14px;font-weight:600;font-size:14px;">
+                    ⚠️ <?= htmlspecialchars($error_profile) ?>
+                </div>
+            <?php endif; ?>
 
             <form action="" method="POST">
-                <div class="form-group">
-                    <label>Email</label>
-                    <input type="email" value="<?= htmlspecialchars($user['email']) ?>" disabled>
+
+                <!-- Baris 1: Email & Nama Panggilan -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" value="<?= htmlspecialchars($user['email']) ?>" disabled>
+                    </div>
+                    <div class="form-group">
+                        <label>Nama Panggilan</label>
+                        <input type="text" name="nama_panggilan" placeholder="Nama panggilan kamu" value="<?= htmlspecialchars($user['nama_panggilan'] ?? '') ?>">
+                    </div>
                 </div>
 
-                <div class="form-group">
-                    <label>Nama Panggilan</label>
-                    <input type="text" name="nama_panggilan" placeholder="Nama panggilan kamu" value="<?= htmlspecialchars($user['nama_panggilan'] ?? '') ?>">
+                <!-- Baris 2: Nomor Telepon & Tanggal Lahir -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Nomor Telepon</label>
+                        <input type="text" name="no_telepon" placeholder="08xxxxxxxxxx" maxlength="13" minlength="10"
+                               pattern="\d{10,13}" title="Nomor HP harus 10–13 digit angka"
+                               inputmode="numeric"
+                               oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 13)"
+                               required
+                               value="<?= htmlspecialchars($user['no_telepon'] ?? '') ?>">
+                    </div>
+                    <div class="form-group">
+                        <label>Tanggal Lahir</label>
+                        <input type="date" name="tanggal_lahir" value="<?= htmlspecialchars($user['tanggal_lahir'] ?? '') ?>">
+                    </div>
                 </div>
 
+                <!-- Baris 3: Wilayah -->
                 <div class="form-group">
-                    <label>Nomor Telepon</label>
-                    <input type="text" name="no_telepon" placeholder="08xxxxxxxxxx" value="<?= htmlspecialchars($user['no_telepon'] ?? '') ?>">
+                    <label>Wilayah</label>
+                    <select name="wilayah">
+                        <option value="" disabled <?= empty($user['wilayah']) ? 'selected' : '' ?>>-- Pilih Wilayah --</option>
+                        <?php foreach ($daftar_wilayah as $w): ?>
+                            <option value="<?= htmlspecialchars($w) ?>" <?= (($user['wilayah'] ?? '') === $w) ? 'selected' : '' ?>>
+                                <?= htmlspecialchars($w) ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
                 </div>
 
+                <!-- Baris 4: Alamat full width -->
                 <div class="form-group">
                     <label>Alamat</label>
-                    <textarea name="alamat" placeholder="Alamat lengkap kamu..."><?= htmlspecialchars($user['alamat'] ?? '') ?></textarea>
-                </div>
-
-                <div class="form-group">
-                    <label>Tanggal Lahir</label>
-                    <input type="date" name="tanggal_lahir" value="<?= htmlspecialchars($user['tanggal_lahir'] ?? '') ?>">
+                    <textarea name="alamat" placeholder="Isi alamat secara lengkap. Contoh: Jl. Pejanggik No. 12, RT 03 RW 05, Kel. Cilinaya, Kec. Mataram"><?= htmlspecialchars($user['alamat'] ?? '') ?></textarea>
                 </div>
 
                 <button type="submit" name="update_profile">Simpan Perubahan</button>
@@ -216,33 +281,24 @@ if (isset($_POST['update_profile'])) {
 
 <footer>
     <div class="footer-box">
-        <div><h3>Store</h3><p>Man</p><p>Woman</p><p>Accessories</p></div>
-        <div><h3>Business</h3><p>starwave@gmail.com</p><p>081836737367367</p></div>
-        <div><h3>Social</h3><p>Instagram : starwave.fashion</p></div>
+        <div>
+            <h3>Store</h3>
+            <p>Man</p><p>Woman</p><p>Accessories</p>
+        </div>
+        <div>
+            <h3>Business</h3>
+            <p><a href="mailto:starwave@gmail.com">starwave@gmail.com</a></p>
+            <p>081836737367367</p>
+        </div>
+        <div>
+            <h3>Social</h3>
+            <p><a href="https://instagram.com/starwave" target="_blank">Instagram : starwave.fashion</a></p>
+        </div>
     </div>
 </footer>
 
-<script>
-    const input   = document.getElementById('foto_profil');
-    const preview = document.getElementById('avatar-preview');
-    const defSvg  = document.getElementById('avatar-default-svg');
-    const hint    = document.getElementById('file-name-hint');
-    const saveBtn = document.getElementById('save-photo-btn');
-
-    input.addEventListener('change', function () {
-        if (!this.files || !this.files[0]) return;
-        const file = this.files[0];
-        hint.textContent = file.name.length > 24 ? file.name.slice(0, 22) + '…' : file.name;
-        const reader = new FileReader();
-        reader.onload = function (e) {
-            preview.src = e.target.result;
-            preview.style.display = 'block';
-            if (defSvg) defSvg.style.display = 'none';
-        };
-        reader.readAsDataURL(file);
-        saveBtn.style.display = 'inline-block';
-    });
-</script>
+<script src="pengguna.js"></script>
+<script src="order.js"></script>
 
 </body>
 </html>

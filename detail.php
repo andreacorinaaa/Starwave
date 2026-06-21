@@ -2,13 +2,14 @@
 session_start();
 include 'config/koneksi.php';
 
+// --- Ambil ID produk dari URL --------------------------------
 if (!isset($_GET['id'])) {
-    header("Location: man.php");
+    header("Location: index.php");
     exit;
 }
-
 $id = (int)$_GET['id'];
 
+// --- Ambil data produk dari database --------------------------
 $stmt = $pdo->prepare("SELECT * FROM produk WHERE id = ?");
 $stmt->execute([$id]);
 $item = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -17,8 +18,10 @@ if (!$item) {
     die("Produk tidak ditemukan");
 }
 
+// --- Tentuin link breadcrumb sesuai kategori produk -----------
 $kategori = strtolower($item['kategori'] ?? '');
-$kategori_link = match($kategori) {
+
+$kategori_link = match ($kategori) {
     'man'         => 'man.php',
     'woman'       => 'woman.php',
     'accessories' => 'accessories.php',
@@ -26,75 +29,17 @@ $kategori_link = match($kategori) {
 };
 $kategori_label = ucfirst($kategori);
 
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    if (!isset($_SESSION['user'])) {
-        $_SESSION['redirect_after_login'] = "detail.php?id=" . $id;
-        header("Location: masuk/login.php");
-        exit;
-    }
-
-    $user_email = $_SESSION['user'];
-
-    $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?");
-    $stmt->execute([$user_email]);
-    $user = $stmt->fetch(PDO::FETCH_ASSOC);
-
-    if (!$user) {
-        session_destroy();
-        header("Location: masuk/login.php");
-        exit;
-    }
-
-    $id_user           = $user['id_user'];
-    $qty               = (int)$_POST['qty'];
-    $ukuran            = $_POST['ukuran'];
-    $harga             = $item['harga'];
-    $total_harga       = $harga * $qty;
-    $nama_produk_order = (strtolower($item['kategori']) === 'accessories')
-        ? $item['nama_produk']
-        : $item['nama_produk'] . " - Size " . $ukuran;
-    $aksi              = $_POST['aksi'] ?? 'beli';
-
-    if ($aksi === 'keranjang') {
-        $stmt = $pdo->prepare("SELECT * FROM keranjang WHERE id_user = ? AND id_produk = ? AND ukuran = ?");
-        $stmt->execute([$id_user, $id, $ukuran]);
-        $cek = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        if ($cek) {
-            $stmt = $pdo->prepare("UPDATE keranjang SET qty = qty + ? WHERE id = ?");
-            $stmt->execute([$qty, $cek['id']]);
-        } else {
-            $stmt = $pdo->prepare("INSERT INTO keranjang (id_user, id_produk, nama_produk, harga, qty, ukuran, gambar)
-                                   VALUES (?, ?, ?, ?, ?, ?, ?)");
-            $stmt->execute([$id_user, $item['nama_produk'], $harga, $qty, $ukuran, $item['gambar']]);
-        }
-
-        header("Location: keranjang.php");
-        exit;
-    } else {
-    $no_telp = trim($user['no_telepon'] ?? '');
-    $alamat  = trim($user['alamat'] ?? '');
-
-    if (empty($no_telp) || empty($alamat)) {
-        $_SESSION['peringatan_profil'] = "Lengkapi nomor HP dan alamat kamu dulu sebelum memesan.";
-        $_SESSION['redirect_after_profil'] = "detail.php?id=" . $id;
-        header("Location: profile.php?peringatan=1");
-        exit;
-    }
-
-    $stmt = $pdo->prepare("INSERT INTO orders (id_user, nama_produk, qty, harga, total_harga, nama_penerima, email, tanggal_order, status, qris_expired_at)
-                       VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), 'pending_payment', DATE_ADD(NOW(), INTERVAL 15 MINUTE))");
-    $stmt->execute([$id_user, $nama_produk_order, $qty, $harga, $total_harga, $user['nama_panggilan'], $user_email]);
-
-    $id_order = $pdo->lastInsertId();
-    header("Location: payment.php?id=" . $id_order);
-    exit;
-    }
+if ($kategori === 'accessories') {
+    $stok_accessories = (int)($item['stok'] ?? 0);
+    $semua_habis = $stok_accessories <= 0;
+} else {
+    $semua_habis =
+        ($item['stok_s']   <= 0) &&
+        ($item['stok_m']   <= 0) &&
+        ($item['stok_l']   <= 0) &&
+        ($item['stok_xl']  <= 0) &&
+        ($item['stok_xxl'] <= 0);
 }
-
-$semua_habis = (strtolower($item['kategori']) !== 'accessories') &&
-    ($item['stok_s'] <= 0) && ($item['stok_m'] <= 0) && ($item['stok_l'] <= 0) &&
-    ($item['stok_xl'] <= 0) && ($item['stok_xxl'] <= 0);
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -104,12 +49,14 @@ $semua_habis = (strtolower($item['kategori']) !== 'accessories') &&
     <title><?= htmlspecialchars($item['nama_produk']) ?> – STARWAVE</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="order.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
 </head>
 <body>
 
 <header>
     <nav>
-        <h1>STARWAVE</h1>
+        <h1><a href="index.php">STARWAVE</a></h1>
         <ul>
             <li><a href="index.php">Home</a></li>
             <li><a href="man.php" <?= $kategori === 'man' ? 'class="active"' : '' ?>>Man</a></li>
@@ -118,9 +65,13 @@ $semua_habis = (strtolower($item['kategori']) !== 'accessories') &&
             <li><a href="order.php">Order</a></li>
             <li><a href="keranjang.php">Keranjang</a></li>
         </ul>
-        <form action="search.php" method="GET" style="display:inline;">
-            <input type="text" name="q" placeholder="Search produk..." style="padding:5px;">
+        <form action="search.php" method="GET" class="search-form" onsubmit="return validateSearch(this)">
+            <input type="text" name="q" placeholder="Search produk..." class="search-input">
+            <button type="submit" class="search-btn">
+                <i class="fa fa-search"></i>
+            </button>
         </form>
+
         <?php if (isset($_SESSION['user'])): ?>
             <a href="profile.php" style="margin-left:15px; text-decoration:none; display:flex; align-items:center;" title="Profile">
                 <?php
@@ -147,7 +98,7 @@ $semua_habis = (strtolower($item['kategori']) !== 'accessories') &&
                 ADMIN
             </a>
         <?php else: ?>
-            <a href="masuk/login.php" style="margin-left:15px; text-decoration:none; color:#c9dde8; font-size:14px; font-weight:700;">Login</a>
+            <a href="masuk/login.php" class="btn-login">Login</a>
         <?php endif; ?>
     </nav>
 </header>
@@ -165,6 +116,7 @@ $semua_habis = (strtolower($item['kategori']) !== 'accessories') &&
 <section class="dtl-section">
     <div class="dtl-grid">
 
+        <!-- Galeri gambar produk -->
         <div class="dtl-gallery">
             <div class="dtl-gallery-main">
                 <img id="mainImg"
@@ -173,6 +125,7 @@ $semua_habis = (strtolower($item['kategori']) !== 'accessories') &&
             </div>
         </div>
 
+        <!-- Info produk + form order -->
         <div class="dtl-product-info">
 
             <h1 class="dtl-product-title"><?= htmlspecialchars($item['nama_produk']) ?></h1>
@@ -197,18 +150,30 @@ $semua_habis = (strtolower($item['kategori']) !== 'accessories') &&
 
             <p class="dtl-product-desc"><?= $item['deskripsi'] ?></p>
 
+            <?php if (isset($_SESSION['error_stok'])): ?>
+            <!-- pesan error stok dikirim dari proses_order.php -->
+            <div style="background:#fdecea;border-left:4px solid #e05555;padding:14px 18px;font-size:14px;color:#c0392b;font-weight:600;margin-bottom:10px;">
+                ⚠️ <?= htmlspecialchars($_SESSION['error_stok']) ?>
+            </div>
+            <?php unset($_SESSION['error_stok']); ?>
+            <?php endif; ?>
+
             <?php if ($semua_habis): ?>
             <div style="background:#fdecea;border-left:4px solid #e05555;padding:14px 18px;font-size:14px;color:#c0392b;font-weight:600;">
                 ⚠️ Produk ini sedang habis stok. Silakan cek kembali nanti.
             </div>
             <?php endif; ?>
 
-            <form method="POST" id="dtl-orderForm">
 
-                <?php if (strtolower($item['kategori']) !== 'accessories'): ?>
+            <form method="POST" action="proses_beli.php" id="dtl-orderForm"
+                  data-harga="<?= (int)$item['harga'] ?>"
+                  data-stok-max="<?= $kategori === 'accessories' ? $stok_accessories : '' ?>">
+                <input type="hidden" name="id" value="<?= $id ?>">
+
+                <?php if ($kategori !== 'accessories'): ?>
                 <div>
                     <div class="dtl-size-buttons" style="margin-top:10px;">
-                        <?php foreach(['S','M','L','XL','XXL'] as $sz):
+                        <?php foreach (['S', 'M', 'L', 'XL', 'XXL'] as $sz):
                             $col    = 'stok_' . strtolower($sz);
                             $jumlah = (int)($item[$col] ?? 0);
                             $habis  = $jumlah <= 0;
@@ -217,12 +182,13 @@ $semua_habis = (strtolower($item['kategori']) !== 'accessories') &&
                             <button type="button"
                                 class="dtl-size-btn <?= $habis ? 'habis' : '' ?>"
                                 data-size="<?= $sz ?>"
+                                data-stok="<?= $jumlah ?>"
                                 <?= $habis ? 'disabled' : 'onclick="selectSize(this)"' ?>
-                                title="<?= $habis ? 'Stok habis' : 'Sisa '.$jumlah.' pcs' ?>">
+                                title="<?= $habis ? 'Stok habis' : 'Sisa ' . $jumlah . ' pcs' ?>">
                                 <?= $sz ?>
                             </button>
-                            <span style="font-size:10px;color:<?= $habis ? '#e05555' : ($jumlah <= 3 ? '#c0773a' : '#888') ?>;">
-                                <?= $habis ? 'Habis' : ($jumlah <= 3 ? 'Sisa '.$jumlah : 'Ada') ?>
+                            <span style="font-size:10px;color:<?= $habis ? '#e05555' : '#c0773a' ?>;">
+                                <?= $habis ? 'Habis' : ($jumlah <= 2 ? 'Sisa ' . $jumlah : '') ?>
                             </span>
                         </div>
                         <?php endforeach; ?>
@@ -230,7 +196,14 @@ $semua_habis = (strtolower($item['kategori']) !== 'accessories') &&
                     <input type="hidden" name="ukuran" id="ukuranInput" value="">
                 </div>
                 <?php else: ?>
+                    <!-- ====== ACCESSORIES: tampilkan info stok total (tanpa pilihan ukuran) ====== -->
                     <input type="hidden" name="ukuran" id="ukuranInput" value="-">
+                    <div style="margin-top:10px;font-size:12px;font-weight:600;
+                                color:<?= $stok_accessories > 0 ? '#c0773a' : '#e05555' ?>;">
+                        <?= $stok_accessories > 0
+                            ? 'Stok tersedia: ' . $stok_accessories . ' pcs'
+                            : 'Stok habis' ?>
+                    </div>
                 <?php endif; ?>
 
                 <div class="dtl-total-row">
@@ -255,7 +228,6 @@ $semua_habis = (strtolower($item['kategori']) !== 'accessories') &&
                         Beli
                     </button>
                 </div>
-
             </form>
         </div>
 
@@ -274,8 +246,11 @@ $semua_habis = (strtolower($item['kategori']) !== 'accessories') &&
 
         $avgRating = 0;
         $dist = [5 => 0, 4 => 0, 3 => 0, 2 => 0, 1 => 0];
+
         if ($totalUlasan > 0) {
-            foreach ($allUlasan as $u) $dist[(int)$u['bintang']]++;
+            foreach ($allUlasan as $u) {
+                $dist[(int)$u['bintang']]++;
+            }
             $avgRating = round(array_sum(array_column($allUlasan, 'bintang')) / $totalUlasan, 1);
         }
         ?>
@@ -344,7 +319,6 @@ $semua_habis = (strtolower($item['kategori']) !== 'accessories') &&
             </div>
             <?php endforeach; ?>
         <?php endif; ?>
-
     </section>
 
 </section>
@@ -369,36 +343,8 @@ $semua_habis = (strtolower($item['kategori']) !== 'accessories') &&
     </div>
 </footer>
 
-<script>
-    const harga = <?= $item['harga'] ?>;
-
-    function changeQty(delta) {
-        const input = document.getElementById('qty');
-        let val = parseInt(input.value) + delta;
-        if (val < 1) val = 1;
-        input.value = val;
-        updateTotal(val);
-    }
-
-    function updateTotal(qty) {
-        const total = harga * qty;
-        document.getElementById('totalHarga').innerText = 'Rp ' + total.toLocaleString('id-ID');
-    }
-
-    function selectSize(el) {
-        document.querySelectorAll('.dtl-size-btn').forEach(b => b.classList.remove('active'));
-        el.classList.add('active');
-        document.getElementById('ukuranInput').value = el.getAttribute('data-size');
-    }
-
-    document.addEventListener('DOMContentLoaded', () => {
-        const firstAvail = document.querySelector('.dtl-size-btn:not(.habis):not([disabled])');
-        if (firstAvail) {
-            firstAvail.classList.add('active');
-            document.getElementById('ukuranInput').value = firstAvail.dataset.size;
-        }
-    });
-</script>
+<script src="pengguna.js"></script>
+<script src="order.js"></script>
 
 </body>
 </html>

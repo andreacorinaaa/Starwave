@@ -1,7 +1,9 @@
 <?php
+
 session_start();
 include 'config/koneksi.php';
 
+// --- Wajib login dulu ---
 if (!isset($_SESSION['user'])) {
     $_SESSION['redirect_after_login'] = 'keranjang.php';
     header("Location: masuk/login.php");
@@ -22,119 +24,38 @@ if (!$user) {
 
 $id_user = (int)$user['id_user'];
 
-// Hapus item
-if (isset($_GET['hapus'])) {
-    $hapus_id = (int)$_GET['hapus'];
-    $stmt = $pdo->prepare("DELETE FROM keranjang WHERE id = ? AND id_user = ?");
-    $stmt->execute([$hapus_id, $id_user]);
-    header("Location: keranjang.php");
-    exit;
-}
-
-// Update qty saja
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_qty'])) {
-    if (!empty($_POST['qty']) && is_array($_POST['qty'])) {
-        $stmt = $pdo->prepare("UPDATE keranjang SET qty = ? WHERE id = ? AND id_user = ?");
-        foreach ($_POST['qty'] as $kid => $qval) {
-            $stmt->execute([max(1, (int)$qval), (int)$kid, $id_user]);
-        }
-    }
-    header("Location: keranjang.php");
-    exit;
-}
-
-// Checkout semua item
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['beli_semua'])) {
-    if (!empty($_POST['qty']) && is_array($_POST['qty'])) {
-        $stmt = $pdo->prepare("UPDATE keranjang SET qty = ? WHERE id = ? AND id_user = ?");
-        foreach ($_POST['qty'] as $kid => $qval) {
-            $stmt->execute([max(1, (int)$qval), (int)$kid, $id_user]);
-        }
-    }
-
-    $stmt = $pdo->prepare("SELECT * FROM keranjang WHERE id_user = ?");
-    $stmt->execute([$id_user]);
-    $all_items = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-    if (!empty($all_items)) {
-        $last_order_id = null;
-
-        $insert_stmt = $pdo->prepare("INSERT INTO orders (id_user, nama_produk, qty, harga, total_harga, nama_penerima, email, tanggal_order, status)
-                                      VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), 'pending_payment')");
-        $delete_stmt = $pdo->prepare("DELETE FROM keranjang WHERE id = ? AND id_user = ?");
-
-        foreach ($all_items as $kitem) {
-            $nama_order  = $kitem['nama_produk'] . " - Size " . $kitem['ukuran'];
-            $total_harga = (float)$kitem['harga'] * (int)$kitem['qty'];
-
-            $insert_stmt->execute([
-                $id_user,
-                $nama_order,
-                $kitem['qty'],
-                $kitem['harga'],
-                $total_harga,
-                $user['nama_panggilan'] ?? '',
-                $user_email
-            ]);
-
-            $last_order_id = $pdo->lastInsertId();
-            $delete_stmt->execute([$kitem['id'], $id_user]);
-        }
-
-        if ($last_order_id) {
-            header("Location: payment.php?id=" . $last_order_id);
-            exit;
-        }
-    }
-
-    header("Location: keranjang.php");
-    exit;
-}
-
-// Beli satu item dari keranjang
-if (isset($_GET['beli'])) {
-    $kid = (int)$_GET['beli'];
-
-    $stmt = $pdo->prepare("SELECT * FROM keranjang WHERE id = ? AND id_user = ?");
-    $stmt->execute([$kid, $id_user]);
-    $kitem = $stmt->fetch(PDO::FETCH_ASSOC);
-
-    if ($kitem) {
-        $nama_order  = $kitem['nama_produk'] . " - Size " . $kitem['ukuran'];
-        $total_harga = (float)$kitem['harga'] * (int)$kitem['qty'];
-
-        $stmt = $pdo->prepare("INSERT INTO orders (id_user, nama_produk, qty, harga, total_harga, nama_penerima, email, tanggal_order, status)
-                               VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), 'pending_payment')");
-        $stmt->execute([
-            $id_user,
-            $nama_order,
-            $kitem['qty'],
-            $kitem['harga'],
-            $total_harga,
-            $user['nama_panggilan'] ?? '',
-            $user_email
-        ]);
-
-        $id_order = $pdo->lastInsertId();
-
-        $stmt = $pdo->prepare("DELETE FROM keranjang WHERE id = ? AND id_user = ?");
-        $stmt->execute([$kid, $id_user]);
-
-        header("Location: payment.php?id=" . $id_order);
-        exit;
-    }
-
-    header("Location: keranjang.php");
-    exit;
-}
-
-// Ambil semua item keranjang
-$stmt = $pdo->prepare("SELECT * FROM keranjang WHERE id_user = ? ORDER BY created_at DESC");
+// --- Ambil semua item di keranjang milik user ini + data stok produk ----
+$stmt = $pdo->prepare("
+    SELECT k.*,
+           p.stok, p.stok_s, p.stok_m, p.stok_l, p.stok_xl, p.stok_xxl, p.kategori AS kategori_produk
+    FROM keranjang k
+    LEFT JOIN produk p ON k.id_produk = p.id
+    WHERE k.id_user = ?
+    ORDER BY k.created_at DESC
+");
 $stmt->execute([$id_user]);
 $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 $total_semua = 0;
-foreach ($items as $it) $total_semua += $it['harga'] * $it['qty'];
+foreach ($items as &$it) {
+    $kategori = strtolower($it['kategori_produk'] ?? '');
+
+    if ($kategori === 'accessories') {
+        $it['stok_max'] = isset($it['stok']) ? (int)$it['stok'] : 0;
+    } else {
+        $kolom = 'stok_' . strtolower($it['ukuran'] ?? '');
+        $it['stok_max'] = isset($it[$kolom]) ? (int)$it[$kolom] : 0;
+    }
+
+    if ($it['qty'] > $it['stok_max']) {
+        $it['qty'] = max(1, $it['stok_max']);
+    }
+
+    if ($it['stok_max'] > 0) {
+        $total_semua += $it['harga'] * $it['qty'];
+    }
+}
+unset($it);
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -144,13 +65,14 @@ foreach ($items as $it) $total_semua += $it['harga'] * $it['qty'];
     <title>Keranjang – STARWAVE</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="order.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
 </head>
 <body>
 
-<!-- NAVBAR -->
 <header>
     <nav>
-        <h1>STARWAVE</h1>
+        <h1><a href="index.php">STARWAVE</a></h1>
         <ul>
             <li><a href="index.php">Home</a></li>
             <li><a href="man.php">Man</a></li>
@@ -159,41 +81,43 @@ foreach ($items as $it) $total_semua += $it['harga'] * $it['qty'];
             <li><a href="order.php">Order</a></li>
             <li><a href="keranjang.php" class="active">Keranjang</a></li>
         </ul>
-        <form action="search.php" method="GET" style="display:inline;">
-            <input type="text" name="q" placeholder="Search produk..." style="padding:5px;">
+        <form action="search.php" method="GET" class="search-form" onsubmit="return validateSearch(this)">
+            <input type="text" name="q" placeholder="Search produk..." class="search-input">
+            <button type="submit" class="search-btn">
+                <i class="fa fa-search"></i>
+            </button>
         </form>
         <?php if (isset($_SESSION['user'])): ?>
-    <a href="profile.php" style="margin-left:15px; text-decoration:none; display:flex; align-items:center;" title="Profile">
-        <?php
-            $stmt2 = $pdo->prepare("SELECT foto_profil FROM users WHERE email = ?");
-            $stmt2->execute([$_SESSION['user']]);
-            $navUser = $stmt2->fetch(PDO::FETCH_ASSOC);
-        ?>
-        <?php if (!empty($navUser['foto_profil']) && file_exists($navUser['foto_profil'])): ?>
-            <img src="<?= htmlspecialchars($navUser['foto_profil']) ?>" 
-                 style="width:34px; height:34px; border-radius:50%; object-fit:cover; border:2px solid #2a7fa8;">
+            <a href="profile.php" style="margin-left:15px; text-decoration:none; display:flex; align-items:center;" title="Profile">
+                <?php
+                    $stmt2 = $pdo->prepare("SELECT foto_profil FROM users WHERE email = ?");
+                    $stmt2->execute([$_SESSION['user']]);
+                    $navUser = $stmt2->fetch(PDO::FETCH_ASSOC);
+                ?>
+                <?php if (!empty($navUser['foto_profil']) && file_exists($navUser['foto_profil'])): ?>
+                    <img src="<?= htmlspecialchars($navUser['foto_profil']) ?>"
+                         style="width:34px; height:34px; border-radius:50%; object-fit:cover; border:2px solid #2a7fa8;">
+                <?php else: ?>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#c9dde8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="8" r="4"/>
+                        <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+                    </svg>
+                <?php endif; ?>
+            </a>
+        <?php elseif (isset($_SESSION['admin'])): ?>
+            <a href="admin/dashboard.php" style="margin-left:15px; text-decoration:none; color:#4f6ef7; display:flex; align-items:center; gap:5px; font-size:12px; font-weight:700; letter-spacing:1px;" title="Admin Panel">
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="8" r="4"/>
+                    <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+                </svg>
+                ADMIN
+            </a>
         <?php else: ?>
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#c9dde8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="8" r="4"/>
-                <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
-            </svg>
+            <a href="masuk/login.php" class="btn-login">Login</a>
         <?php endif; ?>
-    </a>
-<?php elseif (isset($_SESSION['admin'])): ?>
-    <a href="admin/dashboard.php" style="margin-left:15px; text-decoration:none; color:#4f6ef7; display:flex; align-items:center; gap:5px; font-size:12px; font-weight:700; letter-spacing:1px;" title="Admin Panel">
-        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="8" r="4"/>
-            <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
-        </svg>
-        ADMIN
-    </a>
-<?php else: ?>
-    <a href="masuk/login.php" style="margin-left:15px; text-decoration:none; color:#c9dde8; font-size:14px; font-weight:700;">Login</a>
-<?php endif; ?>
     </nav>
 </header>
 
-<!-- BREADCRUMB -->
 <div class="breadcrumb-bar">
     <h1>Keranjang Belanja</h1>
     <div class="breadcrumb">
@@ -202,10 +126,18 @@ foreach ($items as $it) $total_semua += $it['harga'] * $it['qty'];
     </div>
 </div>
 
-<!-- KERANJANG -->
 <section class="ord-detail-section">
 
+<?php if (isset($_SESSION['error_keranjang'])): ?>
+    <div style="background:#fdecea;border-left:4px solid #e05555;padding:14px 18px;font-size:14px;color:#c0392b;font-weight:600;margin:0 auto 16px;max-width:900px;">
+        ⚠️ <?= htmlspecialchars($_SESSION['error_keranjang']) ?>
+    </div>
+    <?php unset($_SESSION['error_keranjang']); ?>
+<?php endif; ?>
+
 <?php if (empty($items)): ?>
+
+    <!-- Kalau keranjang kosong -->
     <div style="text-align:center; padding:80px 0; color:#888;">
         <div style="font-size:60px; margin-bottom:16px;">🛒</div>
         <h2 style="margin-bottom:8px;">Keranjang kamu kosong</h2>
@@ -215,11 +147,14 @@ foreach ($items as $it) $total_semua += $it['harga'] * $it['qty'];
 
 <?php else: ?>
 
-    <form method="POST" action="keranjang.php">
+    <form method="POST" action="proses_keranjang.php">
         <div style="display:flex; flex-direction:column; align-items:center;">
             <table class="ord-keranjang-table">
                 <thead>
                     <tr>
+                        <th style="width:36px;">
+                            <input type="checkbox" id="checkAllItems" checked onclick="toggleAllItems(this)" title="Pilih semua">
+                        </th>
                         <th style="width:50px;"></th>
                         <th>Produk</th>
                         <th>Harga Satuan</th>
@@ -230,10 +165,20 @@ foreach ($items as $it) $total_semua += $it['harga'] * $it['qty'];
                 <tbody>
                 <?php foreach ($items as $it):
                     $subtotal = $it['harga'] * $it['qty'];
+                    $stok_max = (int)$it['stok_max'];
+                    $habis    = $stok_max <= 0;
                 ?>
                     <tr class="ord-keranjang-row">
                         <td>
-                            <a href="keranjang.php?hapus=<?= $it['id'] ?>" class="ord-btn-hapus-item" title="Hapus">✕</a>
+                            <!-- checkbox pilih item ini buat di-checkout -->
+                            <input type="checkbox" name="checked[]" value="<?= $it['id'] ?>"
+                                   class="item-checkbox" data-harga="<?= $it['harga'] ?>"
+                                   <?= $habis ? '' : 'checked' ?> <?= $habis ? 'disabled' : '' ?>
+                                   onchange="recalcTotal()">
+                        </td>
+                        <td>
+                            <!-- link hapus item -> diproses di proses_keranjang.php -->
+                            <a href="proses_keranjang.php?hapus=<?= $it['id'] ?>" class="ord-btn-hapus-item" title="Hapus">✕</a>
                         </td>
                         <td>
                             <div class="ord-keranjang-produk">
@@ -242,6 +187,11 @@ foreach ($items as $it) $total_semua += $it['harga'] * $it['qty'];
                                     <div class="ord-keranjang-nama"><?= htmlspecialchars($it['nama_produk']) ?></div>
                                     <?php if (!empty($it['ukuran']) && $it['ukuran'] !== '-'): ?>
                                         <div class="ord-keranjang-ukuran">Size: <?= htmlspecialchars($it['ukuran']) ?></div>
+                                    <?php endif; ?>
+                                    <?php if ($habis): ?>
+                                        <div style="font-size:11px;color:#e05555;font-weight:700;margin-top:2px;">Stok habis</div>
+                                    <?php elseif ($stok_max <= 2): ?>
+                                        <div style="font-size:11px;color:#c0773a;font-weight:700;margin-top:2px;">Sisa <?= $stok_max ?></div>
                                     <?php endif; ?>
                                 </div>
                             </div>
@@ -252,7 +202,9 @@ foreach ($items as $it) $total_semua += $it['harga'] * $it['qty'];
                         <td>
                             <div class="ord-qty-control" style="justify-content:center;">
                                 <button type="button" class="ord-qty-btn" onclick="ubahQty(this, -1)">−</button>
-                                <input class="ord-qty-input" type="number" name="qty[<?= $it['id'] ?>]" value="<?= $it['qty'] ?>" min="1" style="width:50px;" readonly>
+                                <input class="ord-qty-input" type="number" name="qty[<?= $it['id'] ?>]"
+                                       value="<?= $it['qty'] ?>" min="1" max="<?= $stok_max ?>"
+                                       data-max="<?= $stok_max ?>" style="width:50px;" readonly>
                                 <button type="button" class="ord-qty-btn" onclick="ubahQty(this, 1)">+</button>
                             </div>
                         </td>
@@ -266,12 +218,12 @@ foreach ($items as $it) $total_semua += $it['harga'] * $it['qty'];
 
             <div class="ord-keranjang-footer">
                 <div class="ord-keranjang-total-box">
-                    <div class="ord-keranjang-total-label">Total Semua</div>
+                    <div class="ord-keranjang-total-label">Total (item dicentang)</div>
                     <div class="ord-keranjang-total-harga" id="grandTotal">
                         Rp <?= number_format($total_semua, 0, ',', '.') ?>
                     </div>
                 </div>
-                <button type="submit" name="beli_semua" value="1" class="ord-btn-cart">
+                <button type="submit" name="beli_semua" value="1" class="ord-btn-cart" id="btnCheckout">
                     Checkout
                 </button>
             </div>
@@ -282,7 +234,6 @@ foreach ($items as $it) $total_semua += $it['harga'] * $it['qty'];
 
 </section>
 
-<!-- FOOTER -->
 <footer>
     <div class="footer-box">
         <div>
@@ -303,27 +254,8 @@ foreach ($items as $it) $total_semua += $it['harga'] * $it['qty'];
     </div>
 </footer>
 
-<script>
-function ubahQty(btn, delta) {
-    const row   = btn.closest('tr');
-    const input = row.querySelector('input[type=number]');
-    const sub   = row.querySelector('.ord-keranjang-subtotal');
-    const harga = parseInt(sub.dataset.harga);
-
-    let val = parseInt(input.value) + delta;
-    if (val < 1) val = 1;
-    input.value = val;
-
-    sub.innerText = 'Rp ' + (harga * val).toLocaleString('id-ID');
-
-    let total = 0;
-    document.querySelectorAll('.ord-keranjang-subtotal').forEach(s => {
-        const num = parseInt(s.innerText.replace(/[^0-9]/g, ''));
-        total += num;
-    });
-    document.getElementById('grandTotal').innerText = 'Rp ' + total.toLocaleString('id-ID');
-}
-</script>
+<script src="pengguna.js"></script>
+<script src="order.js"></script>
 
 </body>
 </html>

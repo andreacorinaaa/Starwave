@@ -1,30 +1,33 @@
 <?php
-session_start();
-include('config/koneksi.php');
+session_start();           
+include('config/koneksi.php'); 
 
 if (!isset($_SESSION['user'])) {
+   
     $_SESSION['redirect_after_login'] = 'order.php';
+
+    // Redirect ke halaman login dengan pesan peringatan
     header("Location: masuk/login.php?msg=login_dulu");
-    exit;
+    exit; 
 }
 
-$user_email = $_SESSION['user'];
+$user_email = $_SESSION['user']; 
 
 $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?");
 $stmt->execute([$user_email]);
-$user = $stmt->fetch(PDO::FETCH_ASSOC);
+$user = $stmt->fetch(PDO::FETCH_ASSOC); // Ambil satu baris data user
 
 if (!$user) {
-    session_destroy();
+    session_destroy();           
     header("Location: masuk/login.php");
     exit;
 }
 
-$user_id = $user['id_user'];
-$pesan   = "";
+$user_id = $user['id_user']; 
+$pesan   = "";               
 
-// Batalkan pesanan
 if (isset($_GET['batal'])) {
+    // (int) → paksa jadi angka bulat, mencegah injeksi lewat URL
     $id_order = (int)$_GET['batal'];
 
     $stmt = $pdo->prepare("SELECT * FROM orders WHERE id = ? AND id_user = ? AND status = 'pending_payment' AND (status_bayar IS NULL OR status_bayar = 'unpaid')");
@@ -32,6 +35,7 @@ if (isset($_GET['batal'])) {
     $cek = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if ($cek) {
+        // Order valid → ubah status jadi 'batal'
         $stmt = $pdo->prepare("UPDATE orders SET status = 'batal' WHERE id = ?");
         $stmt->execute([$id_order]);
         $pesan = "success|Pesanan berhasil dibatalkan.";
@@ -40,14 +44,15 @@ if (isset($_GET['batal'])) {
     }
 }
 
-// Hapus riwayat
 if (isset($_GET['hapus'])) {
     $id_order = (int)$_GET['hapus'];
 
+    // Verifikasi: pastikan order ini benar-benar milik user yang login
     $stmt = $pdo->prepare("SELECT * FROM orders WHERE id = ? AND id_user = ?");
     $stmt->execute([$id_order, $user_id]);
     $cek = $stmt->fetch(PDO::FETCH_ASSOC);
 
+    // in_array() → cek apakah status ada di dalam daftar yang diizinkan
     if ($cek && in_array($cek['status'], ['selesai', 'batal', 'qr_expired'])) {
         $stmt = $pdo->prepare("DELETE FROM orders WHERE id = ? AND id_user = ?");
         $stmt->execute([$id_order, $user_id]);
@@ -57,18 +62,25 @@ if (isset($_GET['hapus'])) {
     }
 }
 
-// Ambil semua riwayat + cari id_produk dari nama_produk
-$stmt = $pdo->prepare("SELECT o.*,
-                               (SELECT id FROM ulasan WHERE id_order = o.id LIMIT 1) AS sudah_ulasan,
-                               (SELECT id FROM produk WHERE o.nama_produk LIKE CONCAT(nama_produk, '%') LIMIT 1) AS id_produk_ref
-                        FROM orders o
-                        WHERE o.id_user = ?
-                        ORDER BY o.created_at DESC");
+$stmt = $pdo->prepare("
+    SELECT o.*,
+        -- Subquery 1: cek apakah order ini sudah diberi ulasan (ambil id ulasan jika ada)
+        (SELECT id FROM ulasan WHERE id_order = o.id LIMIT 1) AS sudah_ulasan,
+
+        -- Subquery 2: cari id produk berdasarkan nama produk yang ada di order
+        -- Dipakai untuk tombol 'Beli Ulang' jika QR kadaluarsa
+        (SELECT id FROM produk WHERE o.nama_produk LIKE CONCAT(nama_produk, '%') LIMIT 1) AS id_produk_ref
+
+    FROM orders o
+    WHERE o.id_user = ?
+    ORDER BY o.created_at DESC  -- Urutkan dari yang terbaru
+");
 $stmt->execute([$user_id]);
 $riwayat = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-$pesan_type = $pesan_text = "";
+$pesan_type = $pesan_text = ""; // Default kosong
 if ($pesan) {
+    // Limit 2 → ['success', 'Teks pesan'] (aman jika teks mengandung '|')
     [$pesan_type, $pesan_text] = explode('|', $pesan, 2);
 }
 ?>
@@ -79,17 +91,14 @@ if ($pesan) {
     <title>Riwayat — STARWAVE</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="order.css">
-    <style>
-        .status-badge.status-waiting { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
-        .status-badge.status-qr_expired { background: #fff8e1; color: #b45309; border: 1px solid #fcd34d; }
-    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 
 <body>
 
 <header>
     <nav>
-        <h1>STARWAVE</h1>
+        <h1><a href="index.php">STARWAVE</a></h1>
         <ul>
             <li><a href="index.php">Home</a></li>
             <li><a href="man.php">Man</a></li>
@@ -98,9 +107,14 @@ if ($pesan) {
             <li><a href="order.php" class="active">Order</a></li>
             <li><a href="keranjang.php">Keranjang</a></li>
         </ul>
-        <form action="search.php" method="GET" style="display:inline;">
-            <input type="text" name="q" placeholder="Search produk..." style="padding:5px;">
+        <form action="search.php" method="GET" class="search-form" onsubmit="return validateSearch(this)">
+            <input type="text" name="q" placeholder="Search produk..." class="search-input">
+            <button type="submit" class="search-btn">
+                <i class="fa fa-search"></i>
+            </button>
         </form>
+
+        <!-- 3 kondisi pojok kanan navbar: user / admin / belum login -->
         <?php if (isset($_SESSION['user'])): ?>
             <a href="profile.php" style="margin-left:15px; text-decoration:none; display:flex; align-items:center;" title="Profile">
                 <?php
@@ -127,7 +141,7 @@ if ($pesan) {
                 ADMIN
             </a>
         <?php else: ?>
-            <a href="masuk/login.php" style="margin-left:15px; text-decoration:none; color:#c9dde8; font-size:14px; font-weight:700;">Login</a>
+            <a href="masuk/login.php" class="btn-login">Login</a>
         <?php endif; ?>
     </nav>
 </header>
@@ -144,6 +158,7 @@ if ($pesan) {
 
     <?php if ($pesan_text): ?>
         <div class="alert <?= $pesan_type ?>">
+            <!-- Ternary operator: jika sukses tampilkan ✅, selain itu tampilkan ❌ -->
             <?= $pesan_type == 'success' ? '✅' : '❌' ?>
             <?= htmlspecialchars($pesan_text) ?>
         </div>
@@ -153,6 +168,7 @@ if ($pesan) {
         <p class="ord-no-order">Belum ada pesanan.</p>
 
     <?php else: ?>
+        <!-- Tabel riwayat pesanan -->
         <table class="ord-table">
             <tr>
                 <th>#</th>
@@ -164,57 +180,96 @@ if ($pesan) {
                 <th>Aksi</th>
             </tr>
 
+            <!-- Loop setiap pesanan, $no = nomor urut baris -->
             <?php $no = 1; foreach ($riwayat as $row): ?>
                 <?php
+                // Ambil status pembayaran, pakai '' jika null (operator ??)
                 $status_bayar = $row['status_bayar'] ?? '';
-                $is_waiting   = ($row['status'] == 'pending_payment' && $status_bayar === 'menunggu_konfirmasi');
-                $is_unpaid    = ($row['status'] == 'pending_payment' && $status_bayar !== 'menunggu_konfirmasi');
+
+                // Tentukan kondisi tampilan berdasarkan kombinasi status order + status bayar
+                $is_waiting = ($row['status'] == 'pending_payment' && $status_bayar === 'menunggu_konfirmasi');
+                $is_unpaid  = ($row['status'] == 'pending_payment' && $status_bayar !== 'menunggu_konfirmasi');
                 ?>
                 <tr>
-                    <td><?= $no++ ?></td>
+                    <td><?= $no++ ?></td>  <!-- $no++ → tampilkan dulu, baru tambah 1 -->
                     <td><?= htmlspecialchars($row['nama_produk']) ?></td>
                     <td><?= $row['qty'] ?></td>
                     <td><?= htmlspecialchars($row['nama_penerima']) ?></td>
                     <td><?= $row['tanggal_order'] ?></td>
+
                     <td>
                         <?php if ($is_waiting): ?>
+                            <!-- Sudah bayar, menunggu konfirmasi admin -->
                             <span class="status-badge status-waiting">Menunggu Konfirmasi</span>
+
                         <?php elseif ($is_unpaid): ?>
+                            <!-- Belum bayar sama sekali -->
                             <span class="status-badge status-pending">Belum Bayar</span>
+
                         <?php elseif ($row['status'] == 'qr_expired'): ?>
+                            <!-- QR Code pembayaran sudah kadaluarsa -->
                             <span class="status-badge status-qr_expired">⏰ QR Kadaluarsa</span>
+
                         <?php else: ?>
+                            <!-- Status lain: diproses, dikirim, selesai, batal -->
+                            <!-- ucfirst() → huruf pertama jadi kapital, misal: "diproses" → "Diproses" -->
                             <span class="status-badge status-<?= $row['status'] ?>"><?= ucfirst($row['status']) ?></span>
+
                         <?php endif; ?>
                     </td>
+
                     <td class="ord-td-aksi">
+
                         <?php if ($is_waiting): ?>
+                            <!-- Sudah bayar → bisa lihat bukti pembayaran -->
                             <a href="payment.php?id=<?= $row['id'] ?>" class="ord-btn-edit">Lihat Bukti</a>
 
                         <?php elseif ($is_unpaid): ?>
+                            <!-- Belum bayar → bisa bayar atau batalkan -->
                             <a href="payment.php?id=<?= $row['id'] ?>" class="ord-btn-edit">Belum Bayar</a>
-                            <a href="#" class="ord-btn-batal" onclick="showModal('Yakin batalkan pesanan ini?', 'order.php?batal=<?= $row['id'] ?>'); return false;">Batal</a>
+                            <!-- onclick → panggil showModal() di JS, return false → cegah link langsung diarahkan -->
+                            <a href="#" class="ord-btn-batal"
+                               onclick="showModal('Yakin batalkan pesanan ini?', 'order.php?batal=<?= $row['id'] ?>'); return false;">
+                               Batal
+                            </a>
 
                         <?php elseif ($row['status'] == 'selesai'): ?>
+                            <!-- Selesai → bisa beri ulasan atau hapus riwayat -->
                             <?php if ($row['sudah_ulasan']): ?>
+                                <!-- Sudah pernah memberi ulasan -->
                                 <span class="ord-btn-ulasan-done">✓ Diulas</span>
                             <?php else: ?>
+                                <!-- Belum ulasan → tampilkan tombol ulasan -->
                                 <a href="buat_ulasan.php?id=<?= $row['id'] ?>" class="ord-btn-ulasan">Beri Ulasan</a>
                             <?php endif; ?>
-                            <a href="#" class="ord-btn-hapus" onclick="showModal('Hapus riwayat ini? Tidak bisa dikembalikan!', 'order.php?hapus=<?= $row['id'] ?>'); return false;">Hapus</a>
+                            <a href="#" class="ord-btn-hapus"
+                               onclick="showModal('Hapus riwayat ini? Tidak bisa dikembalikan!', 'order.php?hapus=<?= $row['id'] ?>'); return false;">
+                               Hapus
+                            </a>
 
                         <?php elseif ($row['status'] == 'batal'): ?>
-                            <a href="#" class="ord-btn-hapus" onclick="showModal('Hapus riwayat ini? Tidak bisa dikembalikan!', 'order.php?hapus=<?= $row['id'] ?>'); return false;">Hapus</a>
+                            <!-- Dibatalkan → hanya bisa hapus riwayat -->
+                            <a href="#" class="ord-btn-hapus"
+                               onclick="showModal('Hapus riwayat ini? Tidak bisa dikembalikan!', 'order.php?hapus=<?= $row['id'] ?>'); return false;">
+                               Hapus
+                            </a>
 
                         <?php elseif ($row['status'] == 'qr_expired'): ?>
+                            <!-- QR kadaluarsa → bisa beli ulang produk yang sama, atau hapus -->
                             <?php if (!empty($row['id_produk_ref'])): ?>
+                                <!-- id_produk_ref didapat dari subquery di atas -->
                                 <a href="detail.php?id=<?= $row['id_produk_ref'] ?>" class="ord-btn-edit">Beli Ulang</a>
                             <?php endif; ?>
-                            <a href="#" class="ord-btn-hapus" onclick="showModal('Hapus riwayat ini? Tidak bisa dikembalikan!', 'order.php?hapus=<?= $row['id'] ?>'); return false;">Hapus</a>
+                            <a href="#" class="ord-btn-hapus"
+                               onclick="showModal('Hapus riwayat ini? Tidak bisa dikembalikan!', 'order.php?hapus=<?= $row['id'] ?>'); return false;">
+                               Hapus
+                            </a>
 
                         <?php else: ?>
+                            <!-- Status lain yang tidak punya aksi (misal: sedang diproses) -->
                             <span class="ord-no-aksi">—</span>
                         <?php endif; ?>
+
                     </td>
                 </tr>
             <?php endforeach; ?>
@@ -228,9 +283,7 @@ if ($pesan) {
     <div class="footer-box">
         <div>
             <h3>Store</h3>
-            <p>Man</p>
-            <p>Woman</p>
-            <p>Accessories</p>
+            <p>Man</p><p>Woman</p><p>Accessories</p>
         </div>
         <div>
             <h3>Business</h3>
@@ -247,24 +300,15 @@ if ($pesan) {
 <div id="ord-modal">
     <div id="ord-modal-inner">
         <h3>STARWAVE</h3>
-        <p id="ord-modal-msg"></p>
+        <p id="ord-modal-msg"></p>          
         <div id="ord-modal-buttons">
-            <a id="ord-modal-confirm" href="#">Ya</a>
+            <a id="ord-modal-confirm" href="#">Ya</a>             
             <button id="ord-modal-btn-tidak" onclick="closeModal()">Tidak</button>
         </div>
     </div>
 </div>
 
-<script>
-function showModal(msg, url) {
-    document.getElementById('ord-modal-msg').innerText = msg;
-    document.getElementById('ord-modal-confirm').href = url;
-    document.getElementById('ord-modal').style.display = 'flex';
-}
-function closeModal() {
-    document.getElementById('ord-modal').style.display = 'none';
-}
-</script>
+<script src="order.js"></script>
 
 </body>
 </html>

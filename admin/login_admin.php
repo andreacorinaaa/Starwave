@@ -7,17 +7,24 @@ if (isset($_SESSION['admin'])) {
     exit;
 }
 
+// Tempat nampung pesan error (kosong dulu, isinya nanti
 $error = "";
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+
     $email    = trim($_POST['email']);
     $password = $_POST['password'];
 
-    $stmt  = $pdo->prepare("SELECT * FROM admin WHERE email = ?");
+    // Cari admin di database berdasarkan email yang diketik
+    $stmt = $pdo->prepare("SELECT * FROM admin WHERE email = ?");
     $stmt->execute([$email]);
     $admin = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    if ($admin && password_verify($password, $admin['password'])) {
+    $email_ditemukan = $admin !== false;
+    $password_benar  = $email_ditemukan && password_verify($password, $admin['password']);
+
+    if ($email_ditemukan && $password_benar) {
+        // Lolos dua syarat -> simpan status login, masuk dashboard
         $_SESSION['admin'] = $admin['email'];
         header("Location: dashboard.php");
         exit;
@@ -25,6 +32,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = "Email atau password salah.";
     }
 }
+
+$email_lama = htmlspecialchars($_POST['email'] ?? '');
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -48,16 +57,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="card-title">LOGIN</div>
         <div class="card-sub">Masuk ke panel administrasi</div>
 
+        <!-- Pesan error cuma muncul kalau $error ada isinya -->
         <?php if ($error): ?>
             <div class="error-box">⚠ <?= htmlspecialchars($error) ?></div>
         <?php endif; ?>
 
         <form method="POST" action="login_admin.php">
+
             <div class="form-group">
                 <label class="form-label" for="email">Email</label>
                 <input class="form-input" type="email" id="email" name="email"
                     placeholder="Email admin"
-                    value="<?= htmlspecialchars($_POST['email'] ?? '') ?>"
+                    value="<?= $email_lama ?>"
                     autocomplete="email" required>
             </div>
 
@@ -77,15 +88,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </form>
     </div>
 
-    <a href="../index.php" class="back-link">← Kembali ke toko</a>
+    <a href="../index.php">← Kembali ke toko</a>
 </div>
 
-<script>
-function togglePw() {
-    const input = document.getElementById('password');
-    input.type = input.type === 'password' ? 'text' : 'password';
-}
-</script>
+<script src="admin.js"></script>
 
 </body>
 </html>

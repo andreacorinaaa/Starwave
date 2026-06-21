@@ -5,23 +5,28 @@ $error = "";
 
 if (isset($_POST['register'])) {
 
-    $email         = trim($_POST['email']);
+    $email         = trim($_POST['email']);   
     $raw_password  = $_POST['password'];
     $tanggal_lahir = $_POST['tanggal_lahir'];
 
-    if (strlen($raw_password) < 8) {
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $error = "Format email tidak valid! email@gmail.com";
+
+    } elseif (strlen($raw_password) < 8) {
         $error = "Password minimal 8 karakter!";
+
     } elseif (!preg_match('/[0-9]/', $raw_password)) {
         $error = "Password harus mengandung minimal 1 angka!";
+
     } else {
         $password = password_hash($raw_password, PASSWORD_DEFAULT);
 
-        // Cek email sudah terdaftar
         $stmt = $pdo->prepare("SELECT id_user FROM users WHERE email = ?");
         $stmt->execute([$email]);
 
         if ($stmt->fetch()) {
             $error = "Email sudah digunakan";
+
         } else {
             $stmt = $pdo->prepare("INSERT INTO users (email, password, tanggal_lahir) VALUES (?, ?, ?)");
             $ok   = $stmt->execute([$email, $password, $tanggal_lahir]);
@@ -44,27 +49,22 @@ if (isset($_POST['register'])) {
     <link rel="stylesheet" href="masuk.css">
     <link rel="stylesheet" href="../style.css">
     <link rel="stylesheet" href="../order.css">
-    <style>
-        .pw-wrap { position: relative; }
-        .pw-toggle {
-            position: absolute;
-            right: 10px;
-            top: 50%;
-            transform: translateY(-50%);
-            background: none;
-            border: none;
-            cursor: pointer;
-            font-size: 16px;
-            color: #888;
-        }
-        .pw-hint {
-            font-size: 12px;
-            color: #888;
-            margin-top: 4px;
-        }
-    </style>
 </head>
 <body>
+    <header>
+    <nav>
+        <h1><a href="../index.php">STARWAVE</a></h1>
+        <ul>
+            <li><a href="../index.php">Home</a></li>
+            <li><a href="../man.php">Man</a></li>
+            <li><a href="../woman.php">Woman</a></li>
+            <li><a href="../accessories.php">Accessories</a></li>
+            <li><a href="../order.php">Order</a></li>
+            <li><a href="../keranjang.php">Keranjang</a></li>
+        </ul>
+        <a href="login.php" class="btn-login">Login</a>
+    </nav>
+</header>
 
 <div class="register-page">
     <div class="register-container">
@@ -78,7 +78,7 @@ if (isset($_POST['register'])) {
         <?php endif; ?>
 
         <form method="POST">
-            <input type="email" name="email" placeholder="Email Address" required>
+            <input type="email" name="email" placeholder="email@gmail.com" required>
 
             <div class="pw-wrap">
                 <input type="password" name="password" id="reg-password" placeholder="Password" required>
@@ -113,29 +113,7 @@ if (isset($_POST['register'])) {
     </div>
 </footer>
 
-<script>
-function togglePw(id) {
-    const input = document.getElementById(id);
-    input.type = input.type === 'password' ? 'text' : 'password';
-}
-</script>
+<script src="masuk.js"></script>
 
 </body>
-<header>
-    <nav>
-        <h1>STARWAVE</h1>
-        <ul>
-            <li><a href="../index.php">Home</a></li>
-            <li><a href="../man.php">Man</a></li>
-            <li><a href="../woman.php">Woman</a></li>
-            <li><a href="../accessories.php">Accessories</a></li>
-            <li><a href="../order.php">Order</a></li>
-            <li><a href="../keranjang.php">Keranjang</a></li>
-        </ul>
-        <form action="search.php" method="GET" style="display:inline;">
-            <input type="text" name="q" placeholder="Search produk..." style="padding:5px;">
-        </form>
-        <a href="login.php" style="margin-left:15px; text-decoration:none; color:#c9dde8; font-size:14px; font-weight:700;" class="active">Login</a>
-    </nav>
-</header>
 </html>

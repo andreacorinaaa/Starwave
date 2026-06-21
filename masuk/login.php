@@ -14,38 +14,46 @@ if (isset($_SESSION['admin'])) {
 $error = "";
 
 if (isset($_POST['login'])) {
-    $email    = trim($_POST['email']);
+
+    $email    = trim($_POST['email']);   
     $password = trim($_POST['password']);
 
-    // Cek admin
-    $stmt = $pdo->prepare("SELECT * FROM admin WHERE email = ?");
-    $stmt->execute([$email]);
-    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $error = "Format email tidak valid!";
 
-    if ($row && password_verify($password, $row['password'])) {
-        $_SESSION['admin'] = $email;
-        header("Location: ../admin/dashboard.php");
-        exit;
-    }
+    } else {
 
-    // Cek user
-    $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?");
-    $stmt->execute([$email]);
-    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        // Cek ADMIN
+        $stmt = $pdo->prepare("SELECT * FROM admin WHERE email = ?");
+        $stmt->execute([$email]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    if ($row && password_verify($password, $row['password'])) {
-        $_SESSION['user'] = $email;
-        if (isset($_SESSION['redirect_after_login'])) {
-            $redirect = $_SESSION['redirect_after_login'];
-            unset($_SESSION['redirect_after_login']);
-            header("Location: ../" . $redirect);
-        } else {
-            header("Location: ../index.php");
+        if ($row && password_verify($password, $row['password'])) {
+            $_SESSION['admin'] = $email;
+            header("Location: ../admin/dashboard.php");
+            exit;
         }
-        exit;
-    }
 
-    $error = "Email atau password salah!";
+        // Cek USER biasa
+        $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?");
+        $stmt->execute([$email]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($row && password_verify($password, $row['password'])) {
+            $_SESSION['user'] = $email;
+
+            if (isset($_SESSION['redirect_after_login'])) {
+                $redirect = $_SESSION['redirect_after_login'];
+                unset($_SESSION['redirect_after_login']);
+                header("Location: ../" . $redirect);
+            } else {
+                header("Location: ../index.php");
+            }
+            exit;
+        }
+
+        $error = "Email atau password salah!";
+    }
 }
 ?>
 <!DOCTYPE html>
@@ -60,7 +68,7 @@ if (isset($_POST['login'])) {
 <body>
     <header>
         <nav>
-            <h1>STARWAVE</h1>
+            <h1><a href="../index.php">STARWAVE</a></h1>
             <ul>
                 <li><a href="../index.php">Home</a></li>
                 <li><a href="../man.php">Man</a></li>
@@ -69,55 +77,62 @@ if (isset($_POST['login'])) {
                 <li><a href="../order.php">Order</a></li>
                 <li><a href="../keranjang.php">Keranjang</a></li>
             </ul>
-            <form action="search.php" method="GET" style="display:inline;">
-                <input type="text" name="q" placeholder="Search produk..." style="padding:5px;">
-            </form>
-            <a href="login.php" style="margin-left:15px; text-decoration:none; color:#c9dde8; font-size:14px; font-weight:700;" class="active">Login</a>
+            <a href="login.php" class="btn-login">Login</a>
         </nav>
     </header>
 
-<div class="login-page">
-    <div class="login-container">
-        <h2>Login</h2>
-        <p>Selamat datang kembali</p>
+    <div class="login-page">
+        <div class="login-container">
+            <h2>Login</h2>
+            <p>Selamat datang kembali</p>
 
-        <?php if ($error): ?>
-            <div class="auth-alert error">⚠ <?= htmlspecialchars($error) ?></div>
-        <?php endif; ?>
+            <?php if ($error): ?>
+                <div class="auth-alert error">⚠ <?= htmlspecialchars($error) ?></div>
+            <?php endif; ?>
 
-        <form action="" method="POST">
-            <div class="form-group">
-                <input type="email" name="email" placeholder="Email" required autocomplete="email">
-            </div>
-            <div class="form-group">
-                <div class="pw-wrap">
-                    <input type="password" name="password" id="login-password" placeholder="Password" required>
-                    <button type="button" class="pw-toggle" onclick="togglePw('login-password')">👁</button>
+            <form action="" method="POST">
+                <div class="form-group">
+                    <input type="email" name="email" placeholder="email@gmail.com" required autocomplete="email">
                 </div>
-            </div>
-            <button type="submit" name="login">MASUK</button>
-        </form>
+                <div class="form-group">
+                    <div class="pw-wrap">
+                        <input type="password" name="password" id="login-password" placeholder="Password" required>
+                        <button type="button" class="pw-toggle" onclick="togglePw('login-password')">👁</button>
+                    </div>
+                </div>
+                <div style="text-align:right; margin-bottom:10px;">
+                    <a href="lupa_password.php" style="font-size:13px; color:#000000;">Lupa password?</a>
+                </div>
+                <button type="submit" name="login">MASUK</button>
+            </form>
 
-        <div class="create">
-            Belum punya akun? <a href="register.php">BUAT AKUN</a>
+            <div class="create">
+                Belum punya akun? <a href="register.php">BUAT AKUN</a>
+            </div>
         </div>
     </div>
-</div>
 
 <footer>
     <div class="footer-box">
-        <div><h3>Store</h3><p>Man</p><p>Woman</p><p>Accessories</p></div>
-        <div><h3>Business</h3><p>starwave@gmail.com</p><p>081836737367367</p></div>
-        <div><h3>Social</h3><p>Instagram : starwave.fashion</p></div>
+        <div>
+            <h3>Store</h3>
+            <p>Man</p>
+            <p>Woman</p>
+            <p>Accessories</p>
+        </div>
+        <div>
+            <h3>Business</h3>
+            <p><a href="mailto:starwave@gmail.com">starwave@gmail.com</a></p>
+            <p>081836737367367</p>
+        </div>
+        <div>
+            <h3>Social</h3>
+            <p><a href="https://instagram.com/starwave" target="_blank">Instagram : starwave.fashion</a></p>
+        </div>
     </div>
 </footer>
 
-<script>
-function togglePw(id) {
-    const input = document.getElementById(id);
-    input.type = input.type === 'password' ? 'text' : 'password';
-}
-</script>
+    <script src="masuk.js"></script>
 
 </body>
 </html>

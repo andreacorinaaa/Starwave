@@ -1,134 +1,6 @@
 <?php
-session_start();
-include('config/koneksi.php');
-
-if (!isset($_GET['id'])) {
-    die("ID order tidak ditemukan");
-}
-
-$id_order = (int)$_GET['id'];
-
-$stmt = $pdo->prepare("SELECT * FROM orders WHERE id = ?");
-$stmt->execute([$id_order]);
-$main_order = $stmt->fetch(PDO::FETCH_ASSOC);
-
-if (!$main_order) {
-    die("Pesanan tidak ditemukan");
-}
-
-// Cek expired
-$status_bayar = $main_order['status_bayar'] ?? 'unpaid';
-$is_expired   = false;
-
-if ($main_order['status'] === 'pending_payment' && $status_bayar === 'unpaid') {
-    if (!empty($main_order['qris_expired_at']) && strtotime($main_order['qris_expired_at']) < time()) {
-        $stmt = $pdo->prepare("UPDATE orders SET status = 'qr_expired' WHERE id = ?");
-        $stmt->execute([$id_order]);
-        $main_order['status'] = 'qr_expired';
-        $is_expired = true;
-    }
-}
-
-$id_user       = (int)$main_order['id_user'];
-$tanggal_order = $main_order['tanggal_order'];
-
-$stmt = $pdo->prepare("
-    SELECT o.*, p.gambar, p.id AS id_produk
-    FROM orders o
-    LEFT JOIN produk p ON o.nama_produk LIKE CONCAT(p.nama_produk, '%')
-    WHERE o.id = ?
-");
-$stmt->execute([$id_order]);
-$orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-if (empty($orders)) {
-    die("Pesanan tidak ditemukan");
-}
-
-$total      = array_sum(array_column($orders, 'total_harga'));
-$id_produk  = $orders[0]['id_produk'] ?? null;
-
-// ── UPLOAD BUKTI BAYAR ──
-$upload_success = '';
-$upload_error   = '';
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['bukti_bayar'])) {
-    $file  = $_FILES['bukti_bayar'];
-    $ftype = mime_content_type($file['tmp_name']);
-    $allowed = ['image/jpeg', 'image/png', 'image/webp'];
-
-    if ($file['error'] !== UPLOAD_ERR_OK) {
-        $upload_error = 'Gagal mengupload file.';
-    } elseif (!in_array($ftype, $allowed)) {
-        $upload_error = 'Format tidak didukung. Gunakan JPG, PNG, atau WEBP.';
-    } elseif ($file['size'] > 3 * 1024 * 1024) {
-        $upload_error = 'Ukuran file maksimal 3MB.';
-    } else {
-        $ext        = pathinfo($file['name'], PATHINFO_EXTENSION);
-        $filename   = 'bukti_' . $id_order . '_' . time() . '.' . $ext;
-        $upload_dir = __DIR__ . '/asset/bukti/';
-
-        if (!is_dir($upload_dir)) mkdir($upload_dir, 0755, true);
-
-        if (!move_uploaded_file($file['tmp_name'], $upload_dir . $filename)) {
-            $upload_error = 'Gagal menyimpan file.';
-        } else {
-            $path = 'asset/bukti/' . $filename;
-            $stmt = $pdo->prepare("UPDATE orders SET bukti_bayar = ?, status_bayar = 'menunggu_konfirmasi' WHERE id = ?");
-            $stmt->execute([$path, $id_order]);
-            $upload_success = 'Bukti bayar berhasil dikirim! Pesanan kamu sedang diverifikasi admin.';
-
-            $stmt = $pdo->prepare("SELECT * FROM orders WHERE id = ?");
-            $stmt->execute([$id_order]);
-            $main_order = $stmt->fetch(PDO::FETCH_ASSOC);
-            $status_bayar = $main_order['status_bayar'] ?? 'unpaid';
-        }
-    }
-}
-
-// ── QRIS Config ──
-define('QRIS_NMID',          '936009060600895');
-define('QRIS_MERCHANT_NAME', 'Starwave Fashion');
-define('QRIS_CITY',          'Mataram');
-
-function qrisLen(string $v): string { return str_pad(strlen($v), 2, '0', STR_PAD_LEFT); }
-
-function qrisCrc16(string $payload): string {
-    $crc = 0xFFFF;
-    for ($i = 0; $i < strlen($payload); $i++) {
-        $crc ^= ord($payload[$i]) << 8;
-        for ($j = 0; $j < 8; $j++) {
-            $crc = ($crc & 0x8000) ? (($crc << 1) ^ 0x1021) & 0xFFFF : ($crc << 1) & 0xFFFF;
-        }
-    }
-    return strtoupper(str_pad(dechex($crc), 4, '0', STR_PAD_LEFT));
-}
-
-function generateQrisString(string $nmid, string $merchantName, string $city, int $amount): string {
-    $merchantName = substr($merchantName, 0, 25);
-    $city         = substr($city, 0, 15);
-    $amountStr    = (string) $amount;
-    $guid         = '0016A00000007750415';
-    $sub01        = '01' . qrisLen($nmid) . $nmid;
-    $sub02        = '02' . '15' . str_pad($nmid, 15, '0', STR_PAD_RIGHT);
-    $sub03        = '0303UME';
-    $inner        = $guid . $sub01 . $sub02 . $sub03;
-    $field26      = '26' . qrisLen($inner) . $inner;
-    $field54      = '54' . qrisLen($amountStr) . $amountStr;
-    $add62inner   = '0503***';
-    $field62      = '62' . qrisLen($add62inner) . $add62inner;
-    $payload = implode('', [
-        '000201', '010212', $field26, '52045963', '5303360', $field54,
-        '5802ID', '59' . qrisLen($merchantName) . $merchantName,
-        '60' . qrisLen($city) . $city, $field62, '6304',
-    ]);
-    return $payload . qrisCrc16($payload);
-}
-
-$qris_string  = generateQrisString(QRIS_NMID, QRIS_MERCHANT_NAME, QRIS_CITY, (int)$total);
-$sudah_upload = !empty($main_order['bukti_bayar']);
+require_once 'payment_logic.php';
 ?>
-
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -137,12 +9,14 @@ $sudah_upload = !empty($main_order['bukti_bayar']);
     <title>Pembayaran — Starwave</title>
     <link rel="stylesheet" href="order.css">
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
 </head>
 <body>
 
 <header>
     <nav>
-        <h1>STARWAVE</h1>
+        <h1><a href="index.php">STARWAVE</a></h1>
         <ul>
             <li><a href="index.php">Home</a></li>
             <li><a href="man.php">Man</a></li>
@@ -151,8 +25,11 @@ $sudah_upload = !empty($main_order['bukti_bayar']);
             <li><a href="order.php" class="active">Order</a></li>
             <li><a href="keranjang.php">Keranjang</a></li>
         </ul>
-        <form action="search.php" method="GET" style="display:inline;">
-            <input type="text" name="q" placeholder="Search produk..." style="padding:5px;">
+        <form action="search.php" method="GET" class="search-form" onsubmit="return validateSearch(this)">
+            <input type="text" name="q" placeholder="Search produk..." class="search-input">
+            <button type="submit" class="search-btn">
+                <i class="fa fa-search"></i>
+            </button>
         </form>
         <?php if (isset($_SESSION['user'])): ?>
             <a href="profile.php" style="margin-left:15px; text-decoration:none; display:flex; align-items:center;" title="Profile">
@@ -180,7 +57,7 @@ $sudah_upload = !empty($main_order['bukti_bayar']);
                 ADMIN
             </a>
         <?php else: ?>
-            <a href="masuk/login.php" style="margin-left:15px; text-decoration:none; color:#c9dde8; font-size:14px; font-weight:700;">Login</a>
+            <a href="masuk/login.php" class="btn-login">Login</a>
         <?php endif; ?>
     </nav>
 </header>
@@ -349,58 +226,37 @@ $sudah_upload = !empty($main_order['bukti_bayar']);
 
 <footer>
     <div class="footer-box">
-        <div><h3>Store</h3><p>Man</p><p>Woman</p><p>Accessories</p></div>
-        <div><h3>Business</h3><p><a href="mailto:starwave@gmail.com">starwave@gmail.com</a></p><p>081836737367367</p></div>
-        <div><h3>Social</h3><p><a href="https://instagram.com/starwave" target="_blank">Instagram : starwave.fashion</a></p></div>
+        <div>
+            <h3>Store</h3>
+            <p>Man</p><p>Woman</p><p>Accessories</p>
+        </div>
+        <div>
+            <h3>Business</h3>
+            <p><a href="mailto:starwave@gmail.com">starwave@gmail.com</a></p>
+            <p>081836737367367</p>
+        </div>
+        <div>
+            <h3>Social</h3>
+            <p><a href="https://instagram.com/starwave" target="_blank">Instagram : starwave.fashion</a></p>
+        </div>
     </div>
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+
 <script>
-const QRIS_STRING = <?= json_encode($qris_string); ?>;
-
-<?php if ($main_order['status'] !== 'qr_expired' && $status_bayar !== 'paid'): ?>
-QRCode.toCanvas(document.getElementById('qr-canvas'), QRIS_STRING, {
-    width: 190, margin: 1, color: { dark: '#1a1a1a', light: '#ffffff' }
-});
-
-<?php if (!$sudah_upload): ?>
-const expiredAt = <?= !empty($main_order['qris_expired_at']) 
-    ? strtotime($main_order['qris_expired_at']) * 1000 
-    : (time() + 900) * 1000 ?>;
-
-const timerInterval = setInterval(() => {
-    const remaining = Math.max(0, expiredAt - Date.now());
-    const mins = String(Math.floor(remaining / 60000)).padStart(2, '0');
-    const secs = String(Math.floor((remaining % 60000) / 1000)).padStart(2, '0');
-    document.getElementById('timer-count').textContent = `${mins}:${secs}`;
-    if (remaining <= 0) {
-        clearInterval(timerInterval);
-        location.reload();
-    }
-}, 1000);
-<?php endif; ?>
-
-<?php endif; ?>
-
-function setupPreview(inputId, previewId, placeholderId) {
-    const input = document.getElementById(inputId);
-    if (!input) return;
-    input.addEventListener('change', function () {
-        const file = this.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = e => {
-            const img = document.getElementById(previewId);
-            img.src = e.target.result;
-            img.style.display = 'block';
-            document.getElementById(placeholderId).style.display = 'none';
-        };
-        reader.readAsDataURL(file);
-    });
-}
-
-setupPreview('bukti_input', 'img-preview', 'placeholder1');
+    window.QRIS_DATA = {
+        qrisString: <?= json_encode($qris_string); ?>,
+        isExpired:  <?= json_encode($main_order['status'] === 'qr_expired'); ?>,
+        isPaid:     <?= json_encode($status_bayar === 'paid'); ?>,
+        sudahUpload: <?= json_encode($sudah_upload); ?>,
+        expiredAtMs: <?= !empty($main_order['qris_expired_at'])
+            ? strtotime($main_order['qris_expired_at']) * 1000
+            : (time() + 900) * 1000; ?>
+    };
 </script>
+
+<script src="order.js"></script>
+<script src="pengguna.js"></script>
 </body>
 </html>

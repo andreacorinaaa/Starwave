@@ -1,58 +1,106 @@
 <?php
 require 'auth_check.php';
 
+// 2. Hitung jumlah pesanan yang masih pending
 $stmt = $pdo->query("SELECT COUNT(*) FROM orders WHERE status='pending_payment' OR status='pending'");
 $pending_orders = $stmt->fetchColumn() ?? 0;
 
-$success = '';
-$error   = '';
+// -----------------------------------------------
+// 3. Siapkan variabel-variabel yang dipakai di form
+// -----------------------------------------------
+$success = '';   
+$errors  = [];   
+
+// Nilai default tiap kolom form (supaya kalau ada error, isian user tidak hilang)
+$nama_produk = '';
+$harga       = '';
+$kategori    = '';
+$deskripsi   = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+
+    // 4.1 Ambil data teks dari form, hilangkan spasi di awal/akhir
     $nama_produk = trim($_POST['nama_produk'] ?? '');
-    $harga       = (int)($_POST['harga'] ?? 0);
+    $harga       = trim($_POST['harga'] ?? '');
     $kategori    = trim($_POST['kategori'] ?? '');
     $deskripsi   = trim($_POST['deskripsi'] ?? '');
 
+    // 4.2 Validasi nama produk
     if ($nama_produk === '') {
-        $error = 'Nama produk wajib diisi.';
-    } elseif ($harga <= 0) {
-        $error = 'Harga harus lebih dari 0.';
+        $errors['nama_produk'] = 'Nama produk wajib diisi.';
+    }
+
+    // 4.3 Validasi harga (harus angka, lebih dari 0)
+    if ($harga === '') {
+        $errors['harga'] = 'Harga wajib diisi.';
+    } elseif (!is_numeric($harga) || (int)$harga <= 0) {
+        $errors['harga'] = 'Harga harus berupa angka lebih dari 0.';
+    }
+
+    // 4.4 Validasi kategori
+    if ($kategori === '') {
+        $errors['kategori'] = 'Kategori wajib dipilih.';
+    }
+
+    // 4.5 Validasi deskripsi
+    if ($deskripsi === '') {
+        $errors['deskripsi'] = 'Deskripsi wajib diisi.';
+    }
+
+    // 4.6 Validasi gambar (wajib upload, format & ukuran dibatasi)
+    if (empty($_FILES['gambar']['name'])) {
+        $errors['gambar'] = 'Gambar produk wajib diupload.';
     } else {
-        $gambar_path = '';
-        if (!empty($_FILES['gambar']['name'])) {
-            $allowed = ['image/jpeg', 'image/png', 'image/webp'];
-            $ftype   = mime_content_type($_FILES['gambar']['tmp_name']);
+        $format_diizinkan = ['image/jpeg', 'image/png', 'image/webp'];
+        $format_file      = mime_content_type($_FILES['gambar']['tmp_name']);
 
-            if (!in_array($ftype, $allowed)) {
-                $error = 'Format gambar tidak didukung (gunakan JPG/PNG/WEBP).';
-            } elseif ($_FILES['gambar']['size'] > 3 * 1024 * 1024) {
-                $error = 'Ukuran gambar maksimal 3MB.';
-            } else {
-                $ext        = pathinfo($_FILES['gambar']['name'], PATHINFO_EXTENSION);
-                $filename   = 'produk_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
-                $upload_dir = __DIR__ . '/../asset/';
+        if (!in_array($format_file, $format_diizinkan)) {
+            $errors['gambar'] = 'Format gambar tidak didukung (gunakan JPG/PNG/WEBP).';
+        } elseif ($_FILES['gambar']['size'] > 3 * 1024 * 1024) { // 3MB
+            $errors['gambar'] = 'Ukuran gambar maksimal 3MB.';
+        }
+    }
 
-                if (!is_dir($upload_dir)) mkdir($upload_dir, 0755, true);
+    if (empty($errors)) {
 
-                if (!move_uploaded_file($_FILES['gambar']['tmp_name'], $upload_dir . $filename)) {
-                    $error = 'Gagal mengupload gambar.';
-                } else {
-                    $gambar_path = 'asset/' . $filename;
-                }
-            }
+        $map_ekstensi  = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp'];
+        $ekstensi_file = $map_ekstensi[$format_file];
+        $nama_file     = 'produk_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $ekstensi_file;
+        $folder_upload = __DIR__ . '/../asset/';
+
+        // Buat folder "asset" kalau belum ada
+        if (!is_dir($folder_upload)) {
+            mkdir($folder_upload, 0755, true);
         }
 
-        if (!$error) {
-            $stmt = $pdo->prepare("INSERT INTO produk (nama_produk, harga, gambar, deskripsi, kategori) VALUES (?, ?, ?, ?, ?)");
+        // Pindahkan file dari folder sementara PHP -> folder asset
+        if (!move_uploaded_file($_FILES['gambar']['tmp_name'], $folder_upload . $nama_file)) {
+            $errors['gambar'] = 'Gagal mengupload gambar.';
+        } else {
 
-            if ($stmt->execute([$nama_produk, $harga, $gambar_path, $deskripsi, $kategori])) {
+            $path_gambar = 'asset/' . $nama_file; // path ini yang disimpan ke DB
+
+            // Simpan data produk ke tabel "produk" (pakai prepared statement, aman dari SQL Injection)
+            $stmt = $pdo->prepare(
+                "INSERT INTO produk (nama_produk, harga, gambar, deskripsi, kategori) VALUES (?, ?, ?, ?, ?)"
+            );
+            $berhasil_simpan = $stmt->execute([$nama_produk, (int)$harga, $path_gambar, $deskripsi, $kategori]);
+
+            if ($berhasil_simpan) {
                 $success = 'Produk berhasil ditambahkan!';
+                // Kosongkan kembali isian form karena sudah berhasil
                 $nama_produk = $harga = $kategori = $deskripsi = '';
             } else {
-                $error = 'Gagal menyimpan ke database.';
+                $errors['umum'] = 'Gagal menyimpan ke database.';
+                // Karena gagal simpan ke DB, hapus lagi file yang sudah terupload tadi
+                @unlink($folder_upload . $nama_file);
             }
         }
     }
+}
+
+function has_error($field, $errors) {
+    return isset($errors[$field]);
 }
 ?>
 <!DOCTYPE html>
@@ -66,6 +114,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </head>
 <body>
 
+<!-- ===================== SIDEBAR MENU ===================== -->
 <aside class="sidebar">
     <div class="sidebar-brand">
         <div class="brand-name">STARWAVE</div>
@@ -84,7 +133,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <a class="nav-item" href="pengguna.php"><span class="icon">👥</span> Pengguna</a>
         <a class="nav-item" href="ulasan.php"><span class="icon">⭐</span> Ulasan</a>
         <div class="nav-section">Lainnya</div>
-        <a class="nav-item" href="../index.php" target="_blank"><span class="icon">🌐</span> Lihat Toko</a>
+        <a class="nav-item" href="../index.php"><span class="icon">🌐</span> Lihat Toko</a>
     </nav>
     <div class="sidebar-footer">
         <div class="admin-badge">Login sebagai <span><?= htmlspecialchars($_SESSION['admin']) ?></span></div>
@@ -92,12 +141,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 </aside>
 
+<!-- ===================== KONTEN UTAMA ===================== -->
 <div class="main">
     <div class="topbar">
         <div class="topbar-title">TAMBAH PRODUK</div>
         <div class="topbar-right">
             <span>📅 <?= date('d M Y, H:i') ?> WIB</span>
-            <a href="../index.php" target="_blank">↗ Toko</a>
         </div>
     </div>
 
@@ -109,6 +158,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             <div class="form-card">
 
+                <!-- Notifikasi sukses -->
                 <?php if ($success): ?>
                 <div class="alert alert-success">
                     ✓ <?= htmlspecialchars($success) ?>
@@ -116,51 +166,81 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
                 <?php endif; ?>
 
-                <?php if ($error): ?>
-                <div class="alert alert-error">✗ <?= htmlspecialchars($error) ?></div>
+                <!-- Notifikasi error (daftar semua pesan error) -->
+                <?php if (!empty($errors)): ?>
+                <div class="alert alert-error">
+                    ✗ Mohon lengkapi bagian yang masih kosong:
+                    <ul>
+                        <?php foreach ($errors as $msg): ?>
+                            <li><?= htmlspecialchars($msg) ?></li>
+                        <?php endforeach; ?>
+                    </ul>
+                </div>
                 <?php endif; ?>
 
-                <form method="POST" enctype="multipart/form-data">
+                <!-- ===================== FORM TAMBAH PRODUK ===================== -->
+                <form method="POST" enctype="multipart/form-data" id="form-produk" novalidate>
 
+                    <!-- Nama produk -->
                     <div class="form-group">
                         <label class="form-label" for="inp-nama">Nama Produk<span class="req">*</span></label>
-                        <input class="form-input" id="inp-nama" name="nama_produk"
+                        <input class="form-input <?= has_error('nama_produk', $errors) ? 'input-error' : '' ?>"
+                               id="inp-nama" name="nama_produk"
                                type="text" placeholder="cth. Kaos Oversize STARWAVE"
-                               value="<?= htmlspecialchars($nama_produk ?? '') ?>"
+                               value="<?= htmlspecialchars($nama_produk) ?>"
                                maxlength="255" required>
+                        <?php if (has_error('nama_produk', $errors)): ?>
+                            <span class="field-error-msg"><?= htmlspecialchars($errors['nama_produk']) ?></span>
+                        <?php endif; ?>
                     </div>
 
+                    <!-- Harga -->
                     <div class="form-group">
                         <label class="form-label" for="inp-harga">Harga<span class="req">*</span></label>
                         <div class="input-prefix">
                             <span class="input-prefix-label">Rp</span>
-                            <input class="form-input" id="inp-harga" name="harga"
+                            <input class="form-input <?= has_error('harga', $errors) ? 'input-error' : '' ?>"
+                                   id="inp-harga" name="harga"
                                    type="number" placeholder="150000"
-                                   value="<?= htmlspecialchars($harga ?? '') ?>"
+                                   value="<?= htmlspecialchars($harga) ?>"
                                    min="1" required>
                         </div>
+                        <?php if (has_error('harga', $errors)): ?>
+                            <span class="field-error-msg"><?= htmlspecialchars($errors['harga']) ?></span>
+                        <?php endif; ?>
                     </div>
 
+                    <!-- Kategori -->
                     <div class="form-group">
-                        <label class="form-label" for="inp-kategori">Kategori</label>
-                        <select class="form-select" id="inp-kategori" name="kategori">
-                            <option value="">— Pilih kategori —</option>
+                        <label class="form-label" for="inp-kategori">Kategori<span class="req">*</span></label>
+                        <select class="form-select <?= has_error('kategori', $errors) ? 'input-error' : '' ?>"
+                                id="inp-kategori" name="kategori" required>
+                            <option value="" disabled <?= $kategori === '' ? 'selected' : '' ?>>— Pilih kategori —</option>
                             <?php foreach (['man','woman','Accessories'] as $k): ?>
-                            <option value="<?= $k ?>" <?= ($kategori ?? '') === $k ? 'selected' : '' ?>><?= $k ?></option>
+                            <option value="<?= $k ?>" <?= $kategori === $k ? 'selected' : '' ?>><?= $k ?></option>
                             <?php endforeach; ?>
                         </select>
+                        <?php if (has_error('kategori', $errors)): ?>
+                            <span class="field-error-msg"><?= htmlspecialchars($errors['kategori']) ?></span>
+                        <?php endif; ?>
                     </div>
 
+                    <!-- Deskripsi -->
                     <div class="form-group">
-                        <label class="form-label" for="inp-deskripsi">Deskripsi</label>
-                        <textarea class="form-textarea" id="inp-deskripsi" name="deskripsi"
-                                  placeholder="Deskripsi singkat produk..." rows="3"><?= htmlspecialchars($deskripsi ?? '') ?></textarea>
+                        <label class="form-label" for="inp-deskripsi">Deskripsi<span class="req">*</span></label>
+                        <textarea class="form-textarea <?= has_error('deskripsi', $errors) ? 'input-error' : '' ?>"
+                                  id="inp-deskripsi" name="deskripsi"
+                                  placeholder="Deskripsi singkat produk..." rows="3" required><?= htmlspecialchars($deskripsi) ?></textarea>
+                        <?php if (has_error('deskripsi', $errors)): ?>
+                            <span class="field-error-msg"><?= htmlspecialchars($errors['deskripsi']) ?></span>
+                        <?php endif; ?>
                     </div>
 
+                    <!-- Upload gambar -->
                     <div class="form-group">
-                        <label class="form-label">Gambar Produk</label>
-                        <div class="upload-area" id="upload-area">
-                            <input type="file" id="inp-gambar" name="gambar" accept="image/jpeg,image/png,image/webp">
+                        <label class="form-label">Gambar Produk<span class="req">*</span></label>
+                        <div class="upload-area <?= has_error('gambar', $errors) ? 'input-error' : '' ?>" id="upload-area">
+                            <input type="file" id="inp-gambar" name="gambar" accept="image/jpeg,image/png,image/webp" required>
                             <div id="upload-placeholder">
                                 <div class="upload-icon">🖼️</div>
                                 <div class="upload-text">
@@ -170,6 +250,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </div>
                             <img id="img-preview" class="upload-preview" alt="Preview">
                         </div>
+                        <?php if (has_error('gambar', $errors)): ?>
+                            <span class="field-error-msg"><?= htmlspecialchars($errors['gambar']) ?></span>
+                        <?php endif; ?>
                     </div>
 
                     <div class="form-actions">
@@ -183,37 +266,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 </div>
 
-<script>
-const inpGambar         = document.getElementById('inp-gambar');
-const imgPreview        = document.getElementById('img-preview');
-const uploadPlaceholder = document.getElementById('upload-placeholder');
-const uploadArea        = document.getElementById('upload-area');
-
-inpGambar.addEventListener('change', function () {
-    const file = this.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = e => {
-        imgPreview.src = e.target.result;
-        imgPreview.style.display = 'block';
-        uploadPlaceholder.style.display = 'none';
-    };
-    reader.readAsDataURL(file);
-});
-
-['dragover','dragleave','drop'].forEach(evt => uploadArea.addEventListener(evt, e => e.preventDefault()));
-uploadArea.addEventListener('dragover',  () => uploadArea.classList.add('dragover'));
-uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('dragover'));
-uploadArea.addEventListener('drop', e => {
-    uploadArea.classList.remove('dragover');
-    const file = e.dataTransfer.files[0];
-    if (file) {
-        const dt = new DataTransfer();
-        dt.items.add(file);
-        inpGambar.files = dt.files;
-        inpGambar.dispatchEvent(new Event('change'));
-    }
-});
-</script>
+<script src="tambah_produk.js"></script>
 </body>
 </html>
