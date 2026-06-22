@@ -30,6 +30,9 @@ if (isset($_POST['login'])) {
 
         if ($row && password_verify($password, $row['password'])) {
             $_SESSION['admin'] = $email;
+            // Simpan nama juga, kalau kolom 'nama' kosong/null, fallback ke email
+            // (biar nggak error walau ada admin lama yang belum diisi nama-nya)
+            $_SESSION['nama_admin'] = $row['nama'] ?: $email;
             header("Location: ../admin/dashboard.php");
             exit;
         }

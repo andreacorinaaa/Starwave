@@ -1,32 +1,34 @@
+// buat nyimpen status filter yang lagi aktif
 let currentStatus = 'semua';
 
+// ngubah filter status pesanan berdasarkan tombol yang admin pilih
 function filterStatus(status, btn) {
-    currentStatus = status;
+    currentStatus = status; 
     document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     applyFilter();
 }
 
+// buat nampilin sama nyembunyiin password
 function togglePw() {
     const input = document.getElementById('password');
     input.type = input.type === 'password' ? 'text' : 'password';
 }
 
+// manggil fungsi filter utama
 function filterOrders() { applyFilter(); }
 
+// nyariin status pesanan, pembayaran, pencarian
 function applyFilter() {
     const q = document.getElementById('search-orders').value.toLowerCase();
-    document.querySelectorAll('#orders-table tbody tr').forEach(row => {
-        const rowStatus = row.getAttribute('data-status') || '';
+    document.querySelectorAll('#orders-table tbody tr').forEach(row => { // ngambil seluruh data pesanan baris table
+        const rowStatus = row.getAttribute('data-status') || ''; // ngambil atribut tiap baris
         const rowBayar  = row.getAttribute('data-bayar') || '';
-        const rowSearch = row.getAttribute('data-search') || '';
+        const rowSearch = row.getAttribute('data-search') || ''; // gabungan informasi pencarian
 
         let statusMatch = false;
         if (currentStatus === 'semua') statusMatch = true;
         else if (currentStatus === 'belum_bayar') statusMatch = rowBayar === 'belum_bayar';
-        // FIX: 'pending_payment' itu artinya "Belum Bayar", BUKAN "Pending".
-        // Sebelumnya disamain di sini, makanya item Belum Bayar ikut nyangkut
-        // ke filter Pending. Sekarang cuma status 'pending' murni yang dicek.
         else if (currentStatus === 'pending') statusMatch = rowStatus === 'pending';
         else if (currentStatus === 'qr_expired') statusMatch = rowStatus === 'qr_expired';
         else statusMatch = rowStatus === currentStatus;
@@ -39,7 +41,7 @@ function applyFilter() {
 // Buka modal "lihat bukti bayar"
 function openBukti(imgSrc, orderId, namaProduk, total, isPaid) {
     document.getElementById('bukti-img').src = imgSrc;
-    document.getElementById('bukti-meta').innerHTML = `Order <strong>#${orderId}</strong> — ${namaProduk} — <strong>${total}</strong>`;
+    document.getElementById('bukti-meta').innerHTML = `Order <strong>#${orderId}</strong> — ${namaProduk} — <strong>${total}</strong>`; //inforasi pesanan
 
     const btnKonfirmasi = document.getElementById('btn-konfirmasi-dari-bukti');
     if (isPaid) {
@@ -50,9 +52,10 @@ function openBukti(imgSrc, orderId, namaProduk, total, isPaid) {
     }
     document.getElementById('modal-bukti').classList.add('open');
 }
+
 function closeBukti() { document.getElementById('modal-bukti').classList.remove('open'); }
 
-// Buka modal "konfirmasi pembayaran"
+// Buka modal "konfirmasi pembayaran" qris
 function openModal(orderId, namaProduk, total) {
     document.getElementById('modal-order-id').value = orderId;
     document.getElementById('modal-desc').innerHTML =
@@ -64,6 +67,7 @@ function openModal(orderId, namaProduk, total) {
          Status order akan otomatis berubah ke <strong>Diproses</strong>.`;
     document.getElementById('modal-konfirmasi').classList.add('open');
 }
+
 function closeModal() { document.getElementById('modal-konfirmasi').classList.remove('open'); }
 
 // Buka modal "konfirmasi hapus"
@@ -74,6 +78,7 @@ function openHapusModal(orderId) {
     };
     document.getElementById('modal-hapus').classList.add('open');
 }
+
 function closeHapusModal() { document.getElementById('modal-hapus').classList.remove('open'); }
 
 // Tutup modal kalau area gelap di luar kotak diklik

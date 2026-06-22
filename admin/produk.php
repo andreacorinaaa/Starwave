@@ -143,7 +143,7 @@ $produk_list = $stmt->fetchAll(PDO::FETCH_ASSOC);
         <a class="nav-item" href="../index.php"><span class="icon">🌐</span> Lihat Toko</a>
     </nav>
     <div class="sidebar-footer">
-        <div class="admin-badge">Login sebagai <span><?= htmlspecialchars($_SESSION['admin']) ?></span></div>
+        <div class="admin-badge">Login sebagai <span><?= htmlspecialchars($_SESSION['nama_admin'] ?? $_SESSION['admin']) ?></span></div>
         <a href="../masuk/logout.php" class="btn-logout">Keluar</a>
     </div>
 </aside>

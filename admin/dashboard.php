@@ -27,8 +27,10 @@ $stmt = $pdo->query("
     ORDER BY o.created_at DESC 
     LIMIT 8
 ");
+// ngubah hasil query jadi array
 $daftar_pesanan = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+// ngubah status database jadi class css
 $kamus_class = [
     'selesai'         => 'done',
     'diproses'        => 'process',
@@ -38,6 +40,7 @@ $kamus_class = [
     'batal'           => 'cancel',
 ];
 
+// ngubah status database jadi teks yang lebih oke
 $kamus_label = [
     'pending_payment' => 'Belum Bayar',
     'pending'         => 'Pending',
@@ -74,7 +77,7 @@ function ambilStatusLabel($status, $kamus) {
 </head>
 <body>
 
-<aside class="sidebar">
+<aside class="sidebar"> // nampilin menu navigasi admin 
     <div class="sidebar-brand">
         <div class="brand-name">STARWAVE</div>
         <div class="brand-label">Admin Panel</div>
@@ -89,7 +92,7 @@ function ambilStatusLabel($status, $kamus) {
 
         <a class="nav-item" href="pesanan.php">
             <span class="icon">📦</span> Pesanan
-            <?php if ($ada_pending): ?>
+            <?php if ($ada_pending): ?> informasi buat angka pesanan yang pending di sidebar
                 <span style="margin-left:auto;background:#ef4444;color:#fff;font-size:10px;padding:2px 7px;border-radius:10px;">
                     <?= $pending_orders ?>
                 </span>
@@ -106,7 +109,7 @@ function ambilStatusLabel($status, $kamus) {
 
     <div class="sidebar-footer">
         <div class="admin-badge">
-            Login sebagai <span><?= htmlspecialchars($_SESSION['admin']) ?></span>
+            Login sebagai <span><?= htmlspecialchars($_SESSION['nama_admin'] ?? $_SESSION['admin']) ?></span>
         </div>
         <a href="../masuk/logout.php" class="btn-logout">Keluar</a>
     </div>
