@@ -135,8 +135,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['beli_semua'])) {
         $kode_order    = uniqid('ORD-', true);
         $last_order_id = null;
 
-        $insert_stmt = $pdo->prepare("INSERT INTO orders (id_user, kode_order, nama_produk, id_produk, qty, harga, total_harga, nama_penerima, email, tanggal_order, status)
-                              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), 'pending_payment')");
+        $insert_stmt = $pdo->prepare("INSERT INTO orders  (id_user, kode_order, nama_produk, id_produk, qty, harga, total_harga, nama_penerima, email, tanggal_order, status, qris_expired_at)
+                               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), 'pending_payment', DATE_ADD(NOW(), INTERVAL 15 MINUTE))");
         $delete_stmt = $pdo->prepare("DELETE FROM keranjang WHERE id = ? AND id_user = ?");
 
         foreach ($all_items as $kitem) {
@@ -159,7 +159,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['beli_semua'])) {
             ]);
 
             $last_order_id = $pdo->lastInsertId();
-
             $delete_stmt->execute([$kitem['id'], $id_user]);
         }
 
@@ -209,8 +208,8 @@ if (isset($_GET['beli'])) {
         }
         $total_harga = (float)$kitem['harga'] * (int)$kitem['qty'];
 
-        $stmt = $pdo->prepare("INSERT INTO orders (id_user, kode_order, nama_produk, id_produk, qty, harga, total_harga, nama_penerima, email, tanggal_order, status)
-                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), 'pending_payment')");
+        $stmt = $pdo->prepare("INSERT INTO orders  (id_user, kode_order, nama_produk, id_produk, qty, harga, total_harga, nama_penerima, email, tanggal_order, status, qris_expired_at)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), 'pending_payment', DATE_ADD(NOW(), INTERVAL 15 MINUTE))");
 
         $stmt->execute([
             $id_user,

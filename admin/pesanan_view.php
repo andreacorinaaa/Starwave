@@ -112,7 +112,26 @@
                             // Data yang dipakai berkali-kali di baris ini,
                             // di-escape / diformat sekali aja di sini
                             $nama_produk_aman = htmlspecialchars($o['nama_produk']);
-                            $harga_format     = 'Rp ' . number_format($o['total_harga'], 0, ',', '.');
+
+                            // --- Cek apakah order ini bagian dari "bundle" (checkout
+                            // beberapa item sekaligus dari keranjang) ---
+                            $info_bundle  = $bundle_info[$o['kode_order']] ?? null;
+                            $jumlah_item_bundle = $info_bundle['jumlah_item'] ?? 1;
+                            $is_bundle    = $jumlah_item_bundle > 1;
+
+                            // Kalau bundle, tampilkan TOTAL GABUNGAN semua item;
+                            // kalau cuma 1 item, sama aja kayak sebelumnya (harga baris ini)
+                            $harga_baris_ini = $is_bundle
+                                ? (float)$info_bundle['total_bundle']
+                                : (float)$o['total_harga'];
+                            $harga_format    = 'Rp ' . number_format($harga_baris_ini, 0, ',', '.');
+
+                            // Label produk buat ditampilkan di modal: kalau bundle,
+                            // jelasin jumlah itemnya biar admin nggak bingung kenapa
+                            // totalnya beda dari "nama_produk" di baris itu doang
+                            $label_modal = $is_bundle
+                                ? $nama_produk_aman . " (+" . ($jumlah_item_bundle - 1) . " item lain dalam 1 pesanan)"
+                                : $nama_produk_aman;
 
                             // Class & label buat badge status
                             $class_status = ambilStatusClass($o['status'], $kamus_class);
@@ -124,7 +143,7 @@
                                 "openBukti('../%s', %d, '%s', '%s', %s)",
                                 htmlspecialchars($o['bukti_bayar'], ENT_QUOTES),
                                 $o['id'],
-                                $nama_produk_aman,
+                                $label_modal,
                                 $harga_format,
                                 $is_paid ? 'true' : 'false'
                             ) : '';
@@ -133,7 +152,7 @@
                             $onclick_konfirmasi = sprintf(
                                 "openModal(%d, '%s', '%s')",
                                 $o['id'],
-                                $nama_produk_aman,
+                                $label_modal,
                                 $harga_format
                             );
                             ?>

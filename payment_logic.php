@@ -38,11 +38,15 @@ $id_user       = (int)$main_order['id_user'];
 $tanggal_order = $main_order['tanggal_order'];
 
 function ambilSemuaItemOrder(PDO $pdo, string $kode_order): array {
+    // PENTING: filter status != 'batal' di sini.
+    // Tanpa filter ini, item yang sudah dibatalkan user (lewat order.php?batal=)
+    // tetap ikut tampil di halaman payment & ikut dihitung ke total harga,
+    // walaupun secara logika item itu sudah tidak jadi bagian dari pesanan ini lagi.
     $stmt = $pdo->prepare("
         SELECT o.*, p.gambar, p.id AS id_produk
         FROM orders o
         LEFT JOIN produk p ON o.id_produk = p.id
-        WHERE o.kode_order = ?
+        WHERE o.kode_order = ? AND o.status != 'batal'
     ");
     $stmt->execute([$kode_order]);
     return $stmt->fetchAll(PDO::FETCH_ASSOC);

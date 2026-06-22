@@ -24,7 +24,10 @@ function applyFilter() {
         let statusMatch = false;
         if (currentStatus === 'semua') statusMatch = true;
         else if (currentStatus === 'belum_bayar') statusMatch = rowBayar === 'belum_bayar';
-        else if (currentStatus === 'pending') statusMatch = rowStatus === 'pending' || rowStatus === 'pending_payment';
+        // FIX: 'pending_payment' itu artinya "Belum Bayar", BUKAN "Pending".
+        // Sebelumnya disamain di sini, makanya item Belum Bayar ikut nyangkut
+        // ke filter Pending. Sekarang cuma status 'pending' murni yang dicek.
+        else if (currentStatus === 'pending') statusMatch = rowStatus === 'pending';
         else if (currentStatus === 'qr_expired') statusMatch = rowStatus === 'qr_expired';
         else statusMatch = rowStatus === currentStatus;
 
@@ -56,6 +59,8 @@ function openModal(orderId, namaProduk, total) {
         `Konfirmasi pembayaran QRIS untuk:<br>
          <strong>#${orderId} — ${namaProduk}</strong><br>
          Total: <strong>${total}</strong><br><br>
+         Jika pesanan ini berisi lebih dari 1 produk (checkout sekaligus dari keranjang),
+         SEMUA item dalam 1 pesanan ini akan ikut dikonfirmasi lunas bersamaan.<br><br>
          Status order akan otomatis berubah ke <strong>Diproses</strong>.`;
     document.getElementById('modal-konfirmasi').classList.add('open');
 }
@@ -75,4 +80,3 @@ function closeHapusModal() { document.getElementById('modal-hapus').classList.re
 document.getElementById('modal-konfirmasi').addEventListener('click', function(e) { if (e.target === this) closeModal(); });
 document.getElementById('modal-bukti').addEventListener('click', function(e) { if (e.target === this) closeBukti(); });
 document.getElementById('modal-hapus').addEventListener('click', function(e) { if (e.target === this) closeHapusModal(); });
-
