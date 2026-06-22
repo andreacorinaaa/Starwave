@@ -146,7 +146,7 @@ function has_error($field, $errors) {
     <div class="topbar">
         <div class="topbar-title">TAMBAH PRODUK</div>
         <div class="topbar-right">
-            <span>📅 <?= date('d M Y, H:i') ?> WIB</span>
+            <span>📅 <?= date('d M Y, H:i') ?> WITA</span>
         </div>
     </div>
 

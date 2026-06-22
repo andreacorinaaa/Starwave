@@ -92,7 +92,7 @@ function ambilStatusLabel($status, $kamus) {
 
         <a class="nav-item" href="pesanan.php">
             <span class="icon">📦</span> Pesanan
-            <?php if ($ada_pending): ?> informasi buat angka pesanan yang pending di sidebar
+            <?php if ($ada_pending): ?> <!-- informasi buat angka pesanan yang pending di sidebar -->
                 <span style="margin-left:auto;background:#ef4444;color:#fff;font-size:10px;padding:2px 7px;border-radius:10px;">
                     <?= $pending_orders ?>
                 </span>
@@ -120,7 +120,7 @@ function ambilStatusLabel($status, $kamus) {
     <div class="topbar">
         <div class="topbar-title">DASHBOARD</div>
         <div class="topbar-right">
-            <span>📅 <?= date('d M Y, H:i') ?> WIB</span>
+            <span>📅 <?= date('d M Y, H:i') ?> WITA</span>
         </div>
     </div>
 
@@ -181,7 +181,7 @@ function ambilStatusLabel($status, $kamus) {
                         </tr>
 
                     <?php else: ?>
-                        <?php foreach ($daftar_pesanan as $pesanan): ?>
+                        <?php foreach ($daftar_pesanan as $pesanan): ?> <!-- nampilin pesanan terbaru -->
 
                             <?php
                             // Siapkan dulu nilai-nilai yang dibutuhkan baris ini,

@@ -56,14 +56,21 @@ function validateLogin(form) {
 }
 
 function validateRegister(form) {
+    hideFieldError(form.nama_panggilan);
     hideFieldError(form.email);
     hideFieldError(form.password);
     hideFieldError(form.tanggal_lahir);
     let valid = true;
 
+    const namaPanggilan = form.nama_panggilan.value.trim();
     const email = form.email.value.trim();
     const password = form.password.value.trim();
     const tanggalLahir = form.tanggal_lahir.value.trim();
+
+    if (namaPanggilan === '') {
+        showFieldError(form.nama_panggilan, 'Nama panggilan tidak boleh kosong!');
+        valid = false;
+    }
 
     if (email === '') {
         showFieldError(form.email, 'Email tidak boleh kosong!');

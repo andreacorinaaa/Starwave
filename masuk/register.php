@@ -5,12 +5,16 @@ $error = "";
 
 if (isset($_POST['register'])) {
 
-    $email         = trim($_POST['email']);   
-    $raw_password  = $_POST['password'];
-    $tanggal_lahir = $_POST['tanggal_lahir'];
+    $email          = trim($_POST['email']);
+    $raw_password   = $_POST['password'];
+    $tanggal_lahir  = $_POST['tanggal_lahir'];
+    $nama_panggilan = trim($_POST['nama_panggilan']); // <-- field baru
 
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $error = "Format email tidak valid! email@gmail.com";
+
+    } elseif (empty($nama_panggilan)) {
+        $error = "Nama panggilan wajib diisi!";
 
     } elseif (strlen($raw_password) < 8) {
         $error = "Password minimal 8 karakter!";
@@ -28,8 +32,9 @@ if (isset($_POST['register'])) {
             $error = "Email sudah digunakan";
 
         } else {
-            $stmt = $pdo->prepare("INSERT INTO users (email, password, tanggal_lahir) VALUES (?, ?, ?)");
-            $ok   = $stmt->execute([$email, $password, $tanggal_lahir]);
+
+            $stmt = $pdo->prepare("INSERT INTO users (email, password, tanggal_lahir, nama_panggilan) VALUES (?, ?, ?, ?)");
+            $ok   = $stmt->execute([$email, $password, $tanggal_lahir, $nama_panggilan]);
 
             if ($ok) {
                 header("Location: login.php");
@@ -79,8 +84,15 @@ if (isset($_POST['register'])) {
 
         <form method="POST" novalidate onsubmit="return validateRegister(this)">
             <div class="form-group">
+                <label for="reg-nama">Nama Panggilan</label>
+                <input type="text" name="nama_panggilan" id="reg-nama" placeholder="Nama panggilan kamu"
+                       value="<?= htmlspecialchars($_POST['nama_panggilan'] ?? '') ?>">
+            </div>
+
+            <div class="form-group">
                 <label for="reg-email">Email</label>
-                <input type="email" name="email" id="reg-email" placeholder="email@gmail.com">
+                <input type="email" name="email" id="reg-email" placeholder="email@gmail.com"
+                       value="<?= htmlspecialchars($_POST['email'] ?? '') ?>">
             </div>
 
             <div class="form-group">
@@ -93,7 +105,8 @@ if (isset($_POST['register'])) {
 
             <div class="form-group">
                 <label for="reg-tanggal">Tanggal Lahir</label>
-                <input type="date" name="tanggal_lahir" id="reg-tanggal">
+                <input type="date" name="tanggal_lahir" id="reg-tanggal"
+                       value="<?= htmlspecialchars($_POST['tanggal_lahir'] ?? '') ?>">
             </div>
 
             <button type="submit" name="register">REGISTER ACCOUNT</button>

@@ -104,7 +104,7 @@ function kelas_bintang($jumlah) {
     <div class="topbar">
         <div class="topbar-title">ULASAN & RATING</div>
         <div class="topbar-right">
-            <span>📅 <?= date('d M Y, H:i') ?> WIB</span>
+            <span>📅 <?= date('d M Y, H:i') ?> WITA</span>
         </div>
     </div>
 

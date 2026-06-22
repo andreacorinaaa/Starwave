@@ -153,7 +153,7 @@ $produk_list = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <div class="topbar">
         <div class="topbar-title">DAFTAR PRODUK</div>
         <div class="topbar-right">
-            <span>📅 <?= date('d M Y, H:i') ?> WIB</span>
+            <span>📅 <?= date('d M Y, H:i') ?> WITA</span>
         </div>
     </div>
 
