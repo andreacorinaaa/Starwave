@@ -4,7 +4,7 @@ Sistem Informasi Penjualan Fashion Modern Berbasis Web, Fashion Modern untuk Set
 # Deskripsi
 Starwave adalah platform fashion modern yang menyediakan berbagai pilihan outfit kekinian yang terinspirasi dari gaya para idol yang selalu menjadi pusat perhatian dan trendsetter di kalangan anak muda. Website Starwave dikembangkan oleh Andrea dan Indira sebagai platform olshop fashion modern dengan konsep simple, stylish, dan kekinian. 
 
-Selain itu StarWave menyediakan berbagai fitur yang memudahkan pengguna dalam berbelanja fashion kekinian secara online. Pengguna dapat membuat akun dan login untuk mengakses aplikasi, mencari produk melalui fitur pencarian dan kategori, serta melihat detail produk seperti foto, harga, ukuran, dan deskripsi pakaian. Selain itu, tersedia fitur keranjang belanja. StarWave juga dilengkapi dengan proses checkout yang praktis, pemilihan metode pemesanan berupa delivery dan pick up order dan riwayat pesanan.
+Selain itu StarWave menyediakan berbagai fitur yang memudahkan pengguna dalam berbelanja fashion kekinian secara online. Pengguna dapat membuat akun, login, dan mengatur ulang password jika lupa untuk mengakses aplikasi, mencari produk melalui fitur pencarian dan kategori (Man, Woman, Accessories), serta melihat detail produk seperti foto, harga, ukuran, stok, dan deskripsi pakaian. Selain itu, tersedia fitur keranjang belanja yang memungkinkan pengguna mengatur barang dan memilih beberapa produk untuk di beli nanti. StarWave juga dilengkapi dengan proses checkout yang praktis, pembayaran via QRIS dengan upload bukti transfer, pengiriman gratis ongkir (delivery), riwayat pesanan, serta fitur ulasan dan rating untuk produk yang sudah selesai dipesan. Pengguna juga dapat mengelola profil pribadi termasuk foto profil, nomor telepon, wilayah, dan alamat pengiriman.
 
 # Technologi Stack
   - Frontend: HTML, css, JavaScript
@@ -14,76 +14,150 @@ Selain itu StarWave menyediakan berbagai fitur yang memudahkan pengguna dalam be
   - Version control: Git/Github
   
 # Alamat Website
-http://localhost/
+http://localhost/starwave
 
 # Menu Utama
 USER
   - GUEST (belum login)
     - Sign Up / Registrasi
     - Login
-    - Melihat Daftar Baju
-    - Melihat Kategori Baju
+    - Lupa Password
+    - Melihat Daftar Produk
+    - Melihat Kategori Produk (Man, Woman, Accessories)
+    - Mencari Produk (Search)
+    - Melihat Detail Produk
+
   - MEMBER (sudah login)
-    - Melihat Daftar Baju
-    - Melihat Kategori Baju
-    - Membuat Pesanan
+    - Melihat Daftar Produk
+    - Melihat Kategori Produk (Man, Woman, Accessories)
+    - Mencari Produk (Search)
+    - Melihat Detail Produk
+    - Memilih Ukuran & Jumlah Produk
+    - Menambahkan Produk ke Keranjang
+    - Mengelola Keranjang (ubah jumlah, hapus item, pilih item checkout)
+    - Membuat Pesanan (Checkout)
+    - Melakukan Pembayaran (QRIS + Upload Bukti Transfer)
     - Melihat Riwayat Pesanan
     - Membatalkan Pesanan
-    - Mengedit My account
+    - Beli Ulang Pesanan (jika QR Kadaluarsa)
+    - Memberi Ulasan & Rating Produk
+    - Mengedit My Account (foto profil, nama, no. telepon, wilayah, alamat, tanggal lahir)
     - Logout
-  
+
 ADMIN
-- Menambah Produk
-- Melihat Semua Produk
-- Mengedit Produk
-- Menghapus Produk
-- Melihat Semua Pesanan
-- Mengubah Status Pesanan
-- Logout
+  - Login Admin
+  - Melihat Dashboard (ringkasan produk, pesanan, user)
+  - Menambah Produk
+  - Melihat Semua Produk
+  - Mengedit Produk
+  - Menghapus Produk
+  - Melihat Semua Pesanan
+  - Melihat Bukti Pembayaran
+  - Mengubah Status Pesanan
+  - Melihat Daftar Pengguna
+  - Melihat Semua Ulasan & Rating Produk
+  - Logout
 
 # Sitemap
 
 ```
 STARWAVE
-├── Home
+│
+├── Home (index.php)
 │   ├── Banner
 │   ├── New Arrivals
-│   └── Trend Collection
+│   └── Trend Collection (produk terlaris)
 │
-├── Man / Woman / Accessories
-│   ├── Harga Product
-│   └── Product
-│       ├── Deskripsi Barang
-│       ├── Ukuran
-│       ├── Jumlah Barang
-│       ├── Total Harga
-│       └── Order
-│           ├── Pembayaran
-│           ├── Total
-│           ├── Bank
-│           └── Detail Pesanan
+├── Search
+│   └── Hasil Pencarian Produk
+│
+├── Man / Woman / Accessories (man.php, woman.php, accessories.php)
+│   ├── Banner Kategori
+│   └── Daftar Produk
+│       ├── Gambar Produk
+│       ├── Nama Produk
+│       └── Harga Produk
+│
+├── Detail Produk (detail.php)
+│   ├── Deskripsi Barang
+│   ├── Pilih Ukuran (S/M/L/XL/XXL) — khusus Man & Woman
+│   ├── Info Stok per Ukuran / Stok Accessories
+│   ├── Jumlah Barang (Qty)
+│   ├── Total Harga
+│   ├── Aksi
+│   │   ├── Masukkan ke Keranjang
+│   │   └── Beli Langsung
+│   └── Ulasan Produk
+│       ├── Rata-rata Rating (dari semua ulasan)
+│       ├── Distribusi Bintang (1–5)
+│       └── Daftar Komentar User
+│
+├── Keranjang (keranjang.php)
+│   ├── Daftar Item
+│   │   ├── Gambar & Nama Produk
+│   │   ├── Ukuran
+│   │   ├── Qty (bisa diubah)
+│   │   ├── Subtotal
+│   │   └── Hapus Item
+│   ├── Pilih Item (checkbox) untuk Checkout
+│   └── Total Belanja
+│       └── Checkout (Beli Semua)
 │
 ├── Order
-│   └── Riwayat Pesanan
+│   ├── Pembayaran (payment.php)
+│   │   ├── Detail Pesanan
+│   │   ├── QR Code QRIS
+│   │   ├── Total Pembayaran
+│   │   ├── Status (Belum Bayar / Menunggu Konfirmasi / Lunas / QR Kadaluarsa)
+│   │   └── Upload Bukti Transfer
+│   │
+│   └── Riwayat Pesanan (order.php)
 │       ├── Nama Produk
 │       ├── Jumlah
 │       ├── Penerima
 │       ├── Tanggal Beli
 │       ├── Status
 │       └── Aksi
-│           ├── Sudah Bayar
-│           ├── Belum Bayar
-│           ├── Sedang Dikirim
-│           └── Membatalkan Pesanan
+│           ├── Lanjut Bayar
+│           ├── Membatalkan Pesanan
+│           ├── Beli Ulang (jika QR Kadaluarsa)
+│           ├── Beri Ulasan (jika Selesai)
+│           └── Hapus Riwayat
 │
-└── User
-    ├── Banner
-    ├── Email
-    ├── Nama
-    ├── Nomor Telepon
-    ├── Alamat
-    ├── Tanggal Lahir
-    └── Log Out
+├── Akun
+│   ├── Login (masuk/login.php)
+│   ├── Register (masuk/register.php)
+│   ├── Lupa Password (masuk/lupa_password.php → masuk/reset.php)
+│   └── Logout (masuk/logout.php)
+│
+├── User / Profile (profile.php)
+│   ├── Foto Profil (upload/ubah)
+│   ├── Email
+│   ├── Nama Panggilan
+│   ├── Nomor Telepon
+│   ├── Wilayah
+│   ├── Alamat
+│   ├── Tanggal Lahir
+│   └── Log Out
+│
+└── Admin Panel (admin/)
+    ├── Login Admin (login_admin.php)
+    ├── Dashboard (dashboard.php)
+    │   └── Ringkasan: Total Produk, Pesanan Pending, Total User
+    ├── Kelola Produk (produk.php, tambah_produk.php)
+    │   ├── Tambah Produk
+    │   ├── Edit Produk
+    │   └── Hapus Produk
+    ├── Kelola Pesanan (pesanan.php, pesanan_view.php)
+    │   ├── Lihat Detail Pesanan & Bukti Bayar
+    │   └── Ubah Status Pesanan
+    ├── Kelola Pengguna (pengguna.php)
+    │   └── Lihat Daftar User
+    ├── Kelola Ulasan (ulasan.php)
+    │   ├── Rata-rata Rating Keseluruhan
+    │   └── Distribusi Bintang
+    └── Logout
+
 ``` 
 
 
