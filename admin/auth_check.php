@@ -3,7 +3,7 @@
 session_start();
 
 if (!isset($_SESSION['admin'])) {
-    header("Location: login_admin.php");
+    header("Location: ../masuk/login.php");
     exit;
 }
 
