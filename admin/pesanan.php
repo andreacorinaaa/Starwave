@@ -26,19 +26,12 @@ if (isset($_POST['update_status'])) {
 if (isset($_POST['konfirmasi_bayar'])) {
     $id_order = (int)$_POST['id_order'];
 
-    // Ambil kode_order dari baris yang diklik dulu, supaya kalau order ini
-    // adalah bagian dari "bundle" (checkout beberapa item sekaligus dari
-    // keranjang), SEMUA item dengan kode_order yang sama ikut dikonfirmasi.
-    // Ini bikin behavior-nya konsisten sama upload bukti bayar di payment_logic.php
-    // yang juga update berdasarkan kode_order, bukan id satu baris doang.
     $cek = $pdo->prepare("SELECT kode_order FROM orders WHERE id = ?");
     $cek->execute([$id_order]);
     $kode_order = $cek->fetchColumn();
 
     if ($kode_order) {
-        // Tambah "AND status != 'batal'" agar item yang sudah dibatalkan user
-        // tidak ikut "dihidupkan lagi" jadi diproses saat item lain dalam
-        // bundle yang sama dikonfirmasi pembayarannya.
+
         $stmt = $pdo->prepare("
             UPDATE orders 
             SET status_bayar = 'paid', status = 'diproses' 
@@ -72,7 +65,8 @@ if (isset($_GET['hapus_order'])) {
 }
 
 $stmt = $pdo->query("
-    SELECT o.*, u.nama_panggilan AS nama, u.no_telepon
+    SELECT o.*, u.nama_panggilan AS nama, u.no_telepon,
+           u.alamat, u.wilayah
     FROM orders o
     LEFT JOIN users u ON o.id_user = u.id_user
     ORDER BY o.created_at DESC 
@@ -80,9 +74,6 @@ $stmt = $pdo->query("
 ");
 $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// --- Hitung total harga & jumlah item per "bundle" (kode_order) ---
-// Dipakai biar modal konfirmasi & modal bukti bayar bisa nampilin TOTAL
-// gabungan semua item dalam 1 checkout, bukan cuma harga 1 baris produk.
 $bundle_info = [];
 $semua_kode_order = array_unique(array_filter(array_column($orders, 'kode_order')));
 

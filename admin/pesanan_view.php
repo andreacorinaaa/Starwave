@@ -47,7 +47,6 @@
 
     <div class="content">
 
-        <!-- Pesan sukses (muncul cuma kalau ada isinya) -->
         <?php if ($pesan): ?>
             <div class="alert">✓ <?= htmlspecialchars($pesan) ?></div>
         <?php endif; ?>
@@ -100,45 +99,30 @@
                         <?php foreach ($orders as $o): ?>
 
                             <?php
-
-                            // Status pembayaran
                             $is_paid    = ($o['status_bayar'] ?? '') === 'paid';
                             $is_waiting = ($o['status_bayar'] ?? '') === 'menunggu_konfirmasi';
                             $is_expired = $o['status'] === 'qr_expired';
 
-                            // Bukti transfer ada atau nggak
                             $ada_bukti = !empty($o['bukti_bayar']);
 
-                            // Data yang dipakai berkali-kali di baris ini,
-                            // di-escape / diformat sekali aja di sini
                             $nama_produk_aman = htmlspecialchars($o['nama_produk']);
 
-                            // --- Cek apakah order ini bagian dari "bundle" (checkout
-                            // beberapa item sekaligus dari keranjang) ---
-                            $info_bundle  = $bundle_info[$o['kode_order']] ?? null;
+                            $info_bundle        = $bundle_info[$o['kode_order']] ?? null;
                             $jumlah_item_bundle = $info_bundle['jumlah_item'] ?? 1;
-                            $is_bundle    = $jumlah_item_bundle > 1;
+                            $is_bundle          = $jumlah_item_bundle > 1;
 
-                            // Kalau bundle, tampilkan TOTAL GABUNGAN semua item;
-                            // kalau cuma 1 item, sama aja kayak sebelumnya (harga baris ini)
                             $harga_baris_ini = $is_bundle
                                 ? (float)$info_bundle['total_bundle']
                                 : (float)$o['total_harga'];
                             $harga_format    = 'Rp ' . number_format($harga_baris_ini, 0, ',', '.');
 
-                            // Label produk buat ditampilkan di modal: kalau bundle,
-                            // jelasin jumlah itemnya biar admin nggak bingung kenapa
-                            // totalnya beda dari "nama_produk" di baris itu doang
                             $label_modal = $is_bundle
                                 ? $nama_produk_aman . " (+" . ($jumlah_item_bundle - 1) . " item lain dalam 1 pesanan)"
                                 : $nama_produk_aman;
 
-                            // Class & label buat badge status
                             $class_status = ambilStatusClass($o['status'], $kamus_class);
                             $label_status = ambilStatusLabel($o['status'], $kamus_label);
 
-                            // Teks buat dipanggil tombol "lihat bukti bayar".
-                            
                             $onclick_bukti = $ada_bukti ? sprintf(
                                 "openBukti('../%s', %d, '%s', '%s', %s)",
                                 htmlspecialchars($o['bukti_bayar'], ENT_QUOTES),
@@ -148,13 +132,19 @@
                                 $is_paid ? 'true' : 'false'
                             ) : '';
 
-                            // Teks buat tombol "Konfirmasi Bayar"
                             $onclick_konfirmasi = sprintf(
                                 "openModal(%d, '%s', '%s')",
                                 $o['id'],
                                 $label_modal,
                                 $harga_format
                             );
+
+                            // Alamat: gabung alamat + wilayah, potong kalau terlalu panjang
+                            $alamat_parts = array_filter([
+                                $o['alamat']  ?? '',
+                                $o['wilayah'] ?? '',
+                            ]);
+                            $alamat_full = implode(', ', $alamat_parts);
                             ?>
 
                             <tr data-status="<?= $o['status'] ?>"
@@ -164,12 +154,20 @@
                                 <td class="order-id">#<?= $o['id'] ?></td>
                                 <td><?= $nama_produk_aman ?></td>
                                 <td><?= $o['qty'] ?></td>
-                                <td style="color:var(--muted);">
-                                    <?= htmlspecialchars($o['nama'] ?? '-') ?>
+
+                                <!-- Kolom Pemesan: nama + telepon + alamat -->
+                                <td style="color:var(--muted); max-width:180px; white-space:normal; word-break:break-word;">
+                                    <span style="font-weight:500; color:var(--text);"><?= htmlspecialchars($o['nama'] ?? '-') ?></span>
                                     <?php if (!empty($o['no_telepon'])): ?>
                                         <br><span style="font-size:11px;"><?= htmlspecialchars($o['no_telepon']) ?></span>
                                     <?php endif; ?>
+                                    <?php if (!empty($alamat_full)): ?>
+                                        <br><span style="font-size:11px; display:block; margin-top:2px;">
+                                            📍 <?= htmlspecialchars($alamat_full) ?>
+                                        </span>
+                                    <?php endif; ?>
                                 </td>
+
                                 <td style="color:var(--muted);font-size:12px;white-space:nowrap;">
                                     <?= htmlspecialchars($o['tanggal_order']) ?>
                                 </td>
@@ -189,7 +187,7 @@
                                     <?php endif; ?>
                                 </td>
 
-                                <!-- Pembayaran: cuma SATU dari 4 keadaan ini yang muncul -->
+                                <!-- Pembayaran -->
                                 <td>
                                     <?php if ($is_expired): ?>
                                         <span style="color:#b45309;font-weight:600;">⏰ Expired</span>
@@ -207,7 +205,7 @@
                                     <?php endif; ?>
                                 </td>
 
-                                <!-- Ubah status: order yang expired nggak bisa diubah manual -->
+                                <!-- Ubah status -->
                                 <td>
                                     <?php if ($is_expired): ?>
                                         <span style="color:#b45309;font-size:12px;font-weight:600;">— Expired —</span>
