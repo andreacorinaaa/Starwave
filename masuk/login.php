@@ -83,20 +83,22 @@ if (isset($_POST['login'])) {
 
     <div class="login-page">
         <div class="login-container">
-            <h2>Login</h2>
+            <h2>LOGIN</h2>
             <p>Selamat datang kembali</p>
 
             <?php if ($error): ?>
                 <div class="auth-alert error">⚠ <?= htmlspecialchars($error) ?></div>
             <?php endif; ?>
 
-            <form action="" method="POST">
+            <form action="" method="POST" novalidate onsubmit="return validateLogin(this)">
                 <div class="form-group">
-                    <input type="email" name="email" placeholder="email@gmail.com" required autocomplete="email">
+                    <label for="login-email">Email</label>
+                    <input type="email" name="email" id="login-email" placeholder="email@gmail.com" autocomplete="email">
                 </div>
                 <div class="form-group">
+                    <label for="login-password">Password</label>
                     <div class="pw-wrap">
-                        <input type="password" name="password" id="login-password" placeholder="Password" required>
+                        <input type="password" name="password" id="login-password" placeholder="Password">
                         <button type="button" class="pw-toggle" onclick="togglePw('login-password')">👁</button>
                     </div>
                 </div>
@@ -111,6 +113,7 @@ if (isset($_POST['login'])) {
             </div>
         </div>
     </div>
+
 
 <footer>
     <div class="footer-box">

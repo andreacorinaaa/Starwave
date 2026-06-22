@@ -77,16 +77,25 @@ if (isset($_POST['register'])) {
             </div>
         <?php endif; ?>
 
-        <form method="POST">
-            <input type="email" name="email" placeholder="email@gmail.com" required>
-
-            <div class="pw-wrap">
-                <input type="password" name="password" id="reg-password" placeholder="Password" required>
-                <button type="button" class="pw-toggle" onclick="togglePw('reg-password')">👁</button>
+        <form method="POST" novalidate onsubmit="return validateRegister(this)">
+            <div class="form-group">
+                <label for="reg-email">Email</label>
+                <input type="email" name="email" id="reg-email" placeholder="email@gmail.com">
             </div>
-            <p class="pw-hint">Minimal 8 karakter dan harus mengandung angka</p>
 
-            <input type="date" name="tanggal_lahir" required>
+            <div class="form-group">
+                <label for="reg-password">Password</label>
+                <div class="pw-wrap">
+                    <input type="password" name="password" id="reg-password" placeholder="Password">
+                    <button type="button" class="pw-toggle" onclick="togglePw('reg-password')">👁</button>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="reg-tanggal">Tanggal Lahir</label>
+                <input type="date" name="tanggal_lahir" id="reg-tanggal">
+            </div>
+
             <button type="submit" name="register">REGISTER ACCOUNT</button>
         </form>
 

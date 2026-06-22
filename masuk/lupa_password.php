@@ -65,7 +65,7 @@ if (isset($_POST['kirim'])) {
     <!-- ===================== FORM LUPA PASSWORD ===================== -->
     <div class="login-page">
         <div class="login-container">
-            <h2>Lupa Password</h2>
+            <h2>LUPA PASSWORD</h2>
             <p>Masukkan email kamu, kamu akan diarahkan ke halaman reset password</p>
 
             <!-- Pesan error cuma muncul kalau $error ada isinya -->
@@ -74,9 +74,10 @@ if (isset($_POST['kirim'])) {
             <?php endif; ?>
 
             <!-- action="" artinya form submit ke dirinya sendiri (lupa_password.php) -->
-            <form action="" method="POST">
+            <form action="" method="POST" novalidate onsubmit="return validateLupaPassword(this)">
                 <div class="form-group">
-                    <input type="email" name="email" placeholder="Email" required autocomplete="email">
+                    <label for="lupa-email">Email</label>
+                    <input type="email" name="email" id="lupa-email" placeholder="Email" autocomplete="email">
                 </div>
                 <!-- name="kirim" inilah yang dicek di PHP: isset($_POST['kirim']) -->
                 <button type="submit" name="kirim">KIRIM LINK RESET</button>
@@ -96,5 +97,7 @@ if (isset($_POST['kirim'])) {
             <div><h3>Social</h3><p>Instagram : starwave.fashion</p></div>
         </div>
     </footer>
+
+    <script src="masuk.js"></script>
 </body>
 </html>
