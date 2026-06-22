@@ -147,9 +147,6 @@ $all_users = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                                     <span style="color:var(--muted);font-style:italic;">—</span>
                                                 <?php endif; ?>
                                             </div>
-                                            <div style="font-size:11px;color:var(--muted);">
-                                                <?= htmlspecialchars($u['email']) ?>
-                                            </div>
                                         </div>
 
                                     </div>
