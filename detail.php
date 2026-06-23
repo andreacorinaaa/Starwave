@@ -2,14 +2,13 @@
 session_start();
 include 'config/koneksi.php';
 
-// --- Ambil ID produk dari URL --------------------------------
 if (!isset($_GET['id'])) {
     header("Location: index.php");
     exit;
 }
 $id = (int)$_GET['id'];
 
-// --- Ambil data produk dari database --------------------------
+// --- Ambil data produk dari database -----
 $stmt = $pdo->prepare("SELECT * FROM produk WHERE id = ?");
 $stmt->execute([$id]);
 $item = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -18,7 +17,6 @@ if (!$item) {
     die("Produk tidak ditemukan");
 }
 
-// --- Tentuin link breadcrumb sesuai kategori produk -----------
 $kategori = strtolower($item['kategori'] ?? '');
 
 $kategori_link = match ($kategori) {
@@ -65,6 +63,7 @@ if ($kategori === 'accessories') {
             <li><a href="order.php">Order</a></li>
             <li><a href="keranjang.php">Keranjang</a></li>
         </ul>
+        <!-- mengirim keyword pencarian -->
         <form action="search.php" method="GET" class="search-form" onsubmit="return validateSearch(this)">
             <input type="text" name="q" placeholder="Search produk..." class="search-input">
             <button type="submit" class="search-btn">
@@ -116,7 +115,6 @@ if ($kategori === 'accessories') {
 <section class="dtl-section">
     <div class="dtl-grid">
 
-        <!-- Galeri gambar produk -->
         <div class="dtl-gallery">
             <div class="dtl-gallery-main">
                 <img id="mainImg"
@@ -130,24 +128,51 @@ if ($kategori === 'accessories') {
 
             <h1 class="dtl-product-title"><?= htmlspecialchars($item['nama_produk']) ?></h1>
 
-            <div class="dtl-rating-row">
-                <div class="dtl-stars">
-                    <span class="dtl-star">★</span>
-                    <span class="dtl-star">★</span>
-                    <span class="dtl-star">★</span>
-                    <span class="dtl-star">★</span>
-                    <span class="dtl-star" style="color:#ddd; position:relative;">
-                        <span style="position:absolute;left:0;overflow:hidden;width:80%;color:#f0b96b;">★</span>★
-                    </span>
-                </div>
-                <span class="dtl-rating-num">4.8</span>
-                <span class="dtl-rating-count">(245 Ulasan)</span>
-            </div>
+            <?php
+            $stmtRating = $pdo->prepare("SELECT COUNT(*) as total, AVG(bintang) as avg_bintang FROM ulasan WHERE id_produk = ?");
+            $stmtRating->execute([$id]);
+            $ratingData  = $stmtRating->fetch(PDO::FETCH_ASSOC);
+            $totalReal   = (int)$ratingData['total'];
+            $avgReal     = $totalReal > 0 ? round((float)$ratingData['avg_bintang'], 1) : 0;
+            $avgPct      = $totalReal > 0 ? ($avgReal / 5) * 100 : 0;
+            ?>
 
+            <div class="dtl-rating-row">
+                <?php if ($totalReal > 0): ?>
+                    <div class="dtl-stars">
+                        <?php for ($i = 1; $i <= 5; $i++): ?>
+                            <?php if ($i <= floor($avgReal)): ?>
+                                <!-- Bintang penuh -->
+                                <span class="dtl-star" style="color:#f0b96b;">★</span>
+                            <?php elseif ($i == ceil($avgReal) && $avgReal != floor($avgReal)): ?>
+                                <!-- Bintang sebagian (misal 4.8 → 80% terisi) -->
+                                <?php $sisa = ($avgReal - floor($avgReal)) * 100; ?>
+                                <span class="dtl-star" style="color:#ddd; position:relative;">
+                                    <span style="position:absolute;left:0;overflow:hidden;width:<?= $sisa ?>%;color:#f0b96b;">★</span>★
+                                </span>
+                            <?php else: ?>
+                                <!-- Bintang kosong -->
+                                <span class="dtl-star" style="color:#ddd;">★</span>
+                            <?php endif; ?>
+                        <?php endfor; ?>
+                    </div>
+                    <span class="dtl-rating-num"><?= $avgReal ?></span>
+                    <span class="dtl-rating-count">(<?= $totalReal ?> Ulasan)</span>
+                <?php else: ?>
+                    <div class="dtl-stars">
+                        <?php for ($i = 1; $i <= 5; $i++): ?>
+                            <span class="dtl-star" style="color:#ddd;">★</span>
+                        <?php endfor; ?>
+                    </div>
+                    <span class="dtl-rating-num" style="color:#aaa;">-</span>
+                    <span class="dtl-rating-count">(Belum ada ulasan)</span>
+                <?php endif; ?>
+            </div>
+            <!-- nampilkan Harga -->
             <div class="dtl-price-row">
                 <span class="dtl-price-now">Rp <?= number_format($item['harga'], 0, ',', '.') ?></span>
             </div>
-
+            <!-- nampilin deskripsi -->
             <p class="dtl-product-desc"><?= $item['deskripsi'] ?></p>
 
             <?php if (isset($_SESSION['error_stok'])): ?>
@@ -246,7 +271,6 @@ if ($kategori === 'accessories') {
 
         $avgRating = 0;
         $dist = [5 => 0, 4 => 0, 3 => 0, 2 => 0, 1 => 0];
-
         if ($totalUlasan > 0) {
             foreach ($allUlasan as $u) {
                 $dist[(int)$u['bintang']]++;
@@ -257,8 +281,7 @@ if ($kategori === 'accessories') {
 
         <div class="dtl-review-overview">
             <div class="dtl-rating-big">
-                <div class="num"><?= $totalUlasan > 0 ? $avgRating : '-' ?></div>
-                <div class="out">dari 5</div>
+                <div class="num"><?= $totalUlasan > 0 ? $avgRating : '-' ?> / 5</div>
                 <div class="stars-big">★★★★★</div>
                 <div class="total-reviews">(<?= $totalUlasan ?> Ulasan)</div>
             </div>
@@ -282,6 +305,7 @@ if ($kategori === 'accessories') {
                 Belum ada ulasan untuk produk ini.
             </p>
         <?php else: ?>
+            <!-- nampilkan Semua Review -->
             <?php foreach ($allUlasan as $u):
                 $nama    = htmlspecialchars($u['nama_panggilan'] ?? 'User');
                 $initial = strtoupper(substr($nama, 0, 1));
@@ -292,6 +316,7 @@ if ($kategori === 'accessories') {
                 <div class="dtl-review-card-header">
                     <div class="dtl-reviewer">
                         <div class="dtl-reviewer-avatar" style="overflow:hidden;">
+                            <!-- nampilkan Avatar User -->
                             <?php if (!empty($u['foto_profil']) && file_exists($u['foto_profil'])): ?>
                                 <img src="<?= htmlspecialchars($u['foto_profil']) ?>"
                                      style="width:100%; height:100%; object-fit:cover; border-radius:50%;">
@@ -307,6 +332,7 @@ if ($kategori === 'accessories') {
                     <div class="dtl-review-date"><?= $tgl ?></div>
                 </div>
                 <div class="dtl-review-stars">
+                    <!-- nampilkan Bintang Review -->
                     <?= str_repeat('★', $bintang) ?>
                     <?= str_repeat('<span style="color:#ddd">★</span>', 5 - $bintang) ?>
                     <span style="font-size:13px; color:#555; font-weight:700;">
@@ -314,6 +340,7 @@ if ($kategori === 'accessories') {
                     </span>
                 </div>
                 <div class="dtl-review-body" style="margin-top:8px;">
+                    <!-- Menampilkan Komentar -->
                     <?= htmlspecialchars($u['komentar']) ?>
                 </div>
             </div>

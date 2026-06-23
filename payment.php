@@ -48,14 +48,6 @@ require_once 'payment_logic.php';
                     </svg>
                 <?php endif; ?>
             </a>
-        <?php elseif (isset($_SESSION['admin'])): ?>
-            <a href="admin/dashboard.php" style="margin-left:15px; text-decoration:none; color:#4f6ef7; display:flex; align-items:center; gap:5px; font-size:12px; font-weight:700; letter-spacing:1px;" title="Admin Panel">
-                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="8" r="4"/>
-                    <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
-                </svg>
-                ADMIN
-            </a>
         <?php else: ?>
             <a href="masuk/login.php" class="btn-login">Login</a>
         <?php endif; ?>

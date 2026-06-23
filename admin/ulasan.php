@@ -14,8 +14,7 @@ if (isset($_GET['hapus'])) {
 $filter_bintang = isset($_GET['bintang']) ? (int)$_GET['bintang'] : 0;
 $filter_produk  = isset($_GET['produk'])  ? (int)$_GET['produk']  : 0;
 
-// Bangun kondisi WHERE secara dinamis sesuai filter yang aktif
-$kondisi_where = "WHERE 1=1"; // "WHERE 1=1" supaya gampang nambah AND di belakang
+$kondisi_where = "WHERE 1=1"; 
 $parameter     = [];
 
 if ($filter_bintang) {
@@ -40,7 +39,6 @@ $ulasan_list = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 $total_ulasan = $pdo->query("SELECT COUNT(*) FROM ulasan")->fetchColumn() ?? 0;
 $avg_bintang  = $pdo->query("SELECT ROUND(AVG(bintang),1) FROM ulasan")->fetchColumn() ?? 0;
-
 $produk_list = $pdo->query("SELECT id, nama_produk FROM produk ORDER BY nama_produk")->fetchAll(PDO::FETCH_ASSOC);
 
 $jumlah_per_bintang = [];
@@ -137,7 +135,7 @@ function kelas_bintang($jumlah) {
                 <div class="section-badge"><?= count($ulasan_list) ?> ulasan</div>
             </div>
 
-            <!-- ===================== GRAFIK BATANG RATING (bintang 5 ke 1) ===================== -->
+            <!-- ===================== GRAFIK BATANG RATING (bintang 5 ke 1) dan Membuat grafik batang ===================== -->
             <div class="rating-bar-wrap">
                 <?php for ($i = 5; $i >= 1; $i--): ?>
                 <div class="rating-bar-row">
@@ -146,7 +144,6 @@ function kelas_bintang($jumlah) {
                     </div>
                     <div class="rating-bar-bg">
                         <?php
-                            // Hitung persentase panjang bar = jumlah ulasan bintang ini / total ulasan
                             $persen = $total_ulasan ? round($jumlah_per_bintang[$i] / $total_ulasan * 100) : 0;
                         ?>
                         <div class="rating-bar-fill" style="width:<?= $persen ?>%"></div>
@@ -159,6 +156,7 @@ function kelas_bintang($jumlah) {
             <!-- ===================== FORM FILTER ===================== -->
             <div class="actions-bar">
                 <form method="GET" class="filter-form">
+                    <!-- filter rating -->
                     <select name="bintang" class="filter-select">
                         <option value="">Semua Bintang</option>
                         <?php for ($i = 5; $i >= 1; $i--): ?>
@@ -167,7 +165,7 @@ function kelas_bintang($jumlah) {
                         </option>
                         <?php endfor; ?>
                     </select>
-
+                    <!-- filter produk -->
                     <select name="produk" class="filter-select">
                         <option value="">Semua Produk</option>
                         <?php foreach ($produk_list as $p): ?>
@@ -192,7 +190,6 @@ function kelas_bintang($jumlah) {
                 </div>
 
             <?php else: ?>
-
                 <?php foreach ($ulasan_list as $u): ?>
                 <div class="review-card">
 
@@ -223,6 +220,7 @@ function kelas_bintang($jumlah) {
                     </div>
 
                     <!-- Tombol hapus, sambil tetap bawa filter yang sedang aktif -->
+                    <!-- Saat diklik: ❌ tidak langsung menghapus tetapi membuka modal konfirmasi terlebih dahulu -->
                     <?php
                         $link_hapus = '?hapus=' . $u['id'];
                         if ($filter_bintang) $link_hapus .= '&bintang=' . $filter_bintang;

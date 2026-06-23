@@ -1,17 +1,15 @@
 <?php
 require 'auth_check.php';
 
-// Hitung pesanan yang masih pending (buat badge di sidebar)
 $pending_orders = $pdo->query("
     SELECT COUNT(*) FROM orders 
     WHERE status = 'pending_payment' OR status = 'pending'
 ")->fetchColumn();
+
 $ada_pending = $pending_orders > 0;
 
-// Hitung total pengguna (buat badge di judul tabel)
 $total_users = $pdo->query("SELECT COUNT(*) FROM users")->fetchColumn();
 
-// Ambil semua user, sekalian hitung berapa kali tiap user pesan
 $stmt = $pdo->query("
     SELECT u.*, COUNT(o.id) as total_order
     FROM users u
@@ -55,6 +53,7 @@ $all_users = $stmt->fetchAll(PDO::FETCH_ASSOC);
         <a class="nav-item" href="../index.php"><span class="icon">🌐</span> Lihat Toko</a>
     </nav>
     <div class="sidebar-footer">
+            // ternyata tanda tanya berati kalau yg kiri kosong pake yang kanan aja
             <div class="admin-badge">Login sebagai <span><?= htmlspecialchars($_SESSION['nama_admin'] ?? $_SESSION['admin']) ?></span></div>
         <a href="../masuk/logout.php" class="btn-logout">Keluar</a>
     </div>
@@ -95,18 +94,19 @@ $all_users = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         </tr>
 
                     <?php else: ?>
+                        <!-- nampilin user satu satu -->
                         <?php foreach ($all_users as $u): ?>
 
                             <?php
 
-                            // Nama: kalau kosong, anggap "belum punya nama"
-                            $nama       = $u['nama_panggilan'] ?? '';
-                            $punya_nama = $nama !== '';
+                            // ambil namanya
+                            $nama       = $u['nama_panggilan'];
+                            $punya_nama = $nama;
 
                             // Inisial buat avatar kalau nggak ada foto
-                            // (ambil huruf pertama dari nama, huruf besar)
+                            // (ambil huruf pertama dari nama pakai mb_substr, dijadiin huruf besar pake mb_strtoupper)
                             $inisial = $punya_nama ? mb_strtoupper(mb_substr($nama, 0, 1)) : '?';
-
+                             
                             // Cek apakah user punya foto profil DAN filenya
                             // benar-benar ada di server
                             $punya_foto = !empty($u['foto_profil']) 

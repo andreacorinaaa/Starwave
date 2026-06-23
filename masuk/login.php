@@ -3,7 +3,7 @@ session_start();
 include('../config/koneksi.php');
 
 if (isset($_SESSION['user'])) {
-    header("Location: ../profile.php");
+    header("Location: ../index.php");
     exit;
 }
 if (isset($_SESSION['admin'])) {
@@ -12,49 +12,38 @@ if (isset($_SESSION['admin'])) {
 }
 
 $error = "";
-
 if (isset($_POST['login'])) {
-
     $email    = trim($_POST['email']);   
     $password = trim($_POST['password']);
-
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $error = "Format email tidak valid!";
-
     } else {
-
-        // Cek ADMIN
+        
         $stmt = $pdo->prepare("SELECT * FROM admin WHERE email = ?");
         $stmt->execute([$email]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
-
         if ($row && password_verify($password, $row['password'])) {
             $_SESSION['admin'] = $email;
-            // Simpan nama juga, kalau kolom 'nama' kosong/null, fallback ke email
-            // (biar nggak error walau ada admin lama yang belum diisi nama-nya)
-            $_SESSION['nama_admin'] = $row['nama'] ?: $email;
-            header("Location: ../admin/dashboard.php");
+            $_SESSION['nama_admin'] = $row['nama'] ?: $email; 
+            header("Location: ../admin/dashboard.php"); 
             exit;
         }
-
-        // Cek USER biasa
+        
         $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?");
         $stmt->execute([$email]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if ($row && password_verify($password, $row['password'])) {
             $_SESSION['user'] = $email;
-
             if (isset($_SESSION['redirect_after_login'])) {
                 $redirect = $_SESSION['redirect_after_login'];
                 unset($_SESSION['redirect_after_login']);
-                header("Location: ../" . $redirect);
+                header("Location: ../" . $redirect); 
             } else {
-                header("Location: ../index.php");
+                header("Location: ../index.php"); 
             }
             exit;
         }
-
         $error = "Email atau password salah!";
     }
 }

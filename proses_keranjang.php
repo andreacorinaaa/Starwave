@@ -2,7 +2,6 @@
 session_start();
 include 'config/koneksi.php';
 
-// --- Wajib login dulu ------------------------------------------
 if (!isset($_SESSION['user'])) {
     $_SESSION['redirect_after_login'] = 'keranjang.php';
     header("Location: masuk/login.php");
@@ -72,7 +71,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_qty'])) {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['beli_semua'])) {
 
-    // update qty dulu (divalidasi ke stok) kalau ada perubahan terakhir
     if (!empty($_POST['qty']) && is_array($_POST['qty'])) {
         $get_item = $pdo->prepare("SELECT * FROM keranjang WHERE id = ? AND id_user = ?");
         $update   = $pdo->prepare("UPDATE keranjang SET qty = ? WHERE id = ? AND id_user = ?");
@@ -89,7 +87,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['beli_semua'])) {
         }
     }
 
-    // ambil id item yang dicentang user di halaman keranjang
     $checked_ids = array_map('intval', $_POST['checked'] ?? []);
 
     if (empty($checked_ids)) {
@@ -103,7 +100,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['beli_semua'])) {
     $stmt->execute(array_merge([$id_user], $checked_ids));
     $all_items = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // --- Validasi stok ulang sebelum checkout (anti race-condition) ---
     $stok_kurang = [];
     foreach ($all_items as $kitem) {
         $stok_max = getStokMax($pdo, (int)$kitem['id_produk'], $kitem['ukuran']);
@@ -118,7 +114,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['beli_semua'])) {
         exit;
     }
 
-    // pastikan data no HP, wilayah & alamat sudah lengkap sebelum checkout
     $no_telp = trim($user['no_telepon'] ?? '');
     $wilayah = trim($user['wilayah'] ?? '');
     $alamat  = trim($user['alamat'] ?? '');
@@ -181,7 +176,6 @@ if (isset($_GET['beli'])) {
 
     if ($kitem) {
 
-        // --- Validasi stok ulang sebelum checkout ---
         $stok_max = getStokMax($pdo, (int)$kitem['id_produk'], $kitem['ukuran']);
         if ((int)$kitem['qty'] > $stok_max) {
             $_SESSION['error_keranjang'] = "Stok tidak mencukupi untuk " . $kitem['nama_produk'] . ". Silakan sesuaikan qty-nya dulu.";

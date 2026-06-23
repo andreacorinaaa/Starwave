@@ -8,7 +8,6 @@ if (!isset($_GET['id'])) {
 
 $id_order = (int)$_GET['id'];
 
-// Ambil 1 baris order utama berdasarkan id
 $stmt = $pdo->prepare("SELECT * FROM orders WHERE id = ?");
 $stmt->execute([$id_order]);
 $main_order = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -24,9 +23,6 @@ $is_expired   = false;
 
 if ($main_order['status'] === 'pending_payment' && $status_bayar === 'unpaid') {
     if (!empty($main_order['qris_expired_at']) && strtotime($main_order['qris_expired_at']) < time()) {
-        // Waktu pembayaran habis -> update status jadi expired
-        // Pakai kode_order (bukan id) supaya SEMUA item dalam 1 transaksi
-        // ikut berubah status, bukan cuma 1 baris doang.
         $stmt = $pdo->prepare("UPDATE orders SET status = 'qr_expired' WHERE kode_order = ?");
         $stmt->execute([$kode_order]);
         $main_order['status'] = 'qr_expired';
@@ -38,10 +34,6 @@ $id_user       = (int)$main_order['id_user'];
 $tanggal_order = $main_order['tanggal_order'];
 
 function ambilSemuaItemOrder(PDO $pdo, string $kode_order): array {
-    // PENTING: filter status != 'batal' di sini.
-    // Tanpa filter ini, item yang sudah dibatalkan user (lewat order.php?batal=)
-    // tetap ikut tampil di halaman payment & ikut dihitung ke total harga,
-    // walaupun secara logika item itu sudah tidak jadi bagian dari pesanan ini lagi.
     $stmt = $pdo->prepare("
         SELECT o.*, p.gambar, p.id AS id_produk
         FROM orders o
@@ -102,7 +94,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['bukti_bayar'])) {
             $stmt->execute([$path, $kode_order]);
             $upload_success = 'Bukti bayar berhasil dikirim! Pesanan kamu sedang diverifikasi admin.';
 
-            // Refresh data biar tampilan langsung update tanpa reload manual
             $stmt = $pdo->prepare("SELECT * FROM orders WHERE id = ?");
             $stmt->execute([$id_order]);
             $main_order   = $stmt->fetch(PDO::FETCH_ASSOC);

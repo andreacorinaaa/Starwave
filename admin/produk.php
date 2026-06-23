@@ -8,13 +8,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // -- AKSI: HAPUS PRODUK --
     if ($action === 'hapus') {
         $id = (int)($_POST['id'] ?? 0);
-
         if ($id <= 0) {
             echo json_encode(['success' => false, 'message' => 'ID tidak valid.']);
             exit;
         }
 
-        // Ambil dulu nama file gambar produk (supaya bisa dihapus dari folder)
         $stmt = $pdo->prepare("SELECT gambar FROM produk WHERE id = ?");
         $stmt->execute([$id]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -24,12 +22,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
 
-        // Hapus baris produk dari database
         $stmt = $pdo->prepare("DELETE FROM produk WHERE id = ?");
         $berhasil = $stmt->execute([$id]);
 
         if ($berhasil) {
-            // Kalau ada file gambar, hapus juga file fisiknya dari server
             if (!empty($row['gambar'])) {
                 $path_file = __DIR__ . '/../' . $row['gambar'];
                 if (file_exists($path_file)) {
@@ -56,7 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             echo json_encode(['success' => false, 'message' => 'Harga harus lebih dari 0.']);
             exit;
         }
-
+        
         $stmt = $pdo->prepare("UPDATE produk SET harga = ? WHERE id = ?");
         $berhasil = $stmt->execute([$harga, $id]);
 
@@ -81,7 +77,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
 
-        // Nama kolom di database.
         $nama_kolom = ($ukuran === 'accessories') ? 'stok' : "stok_$ukuran";
 
         $stmt = $pdo->prepare("UPDATE produk SET $nama_kolom = ? WHERE id = ?");
@@ -96,15 +91,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
 }
 
-// Hitung jumlah pesanan yang masih pending (buat badge merah di sidebar)
 $pending_orders = $pdo->query(
     "SELECT COUNT(*) FROM orders WHERE status='pending_payment' OR status='pending'"
 )->fetchColumn();
 
-// Hitung total produk yang ada
 $total_produk = $pdo->query("SELECT COUNT(*) FROM produk")->fetchColumn();
 
-// Ambil semua data produk, urutkan dari yang terbaru
 $stmt        = $pdo->query("SELECT * FROM produk ORDER BY created_at DESC");
 $produk_list = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
@@ -159,6 +151,11 @@ $produk_list = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     <div class="content">
         <div class="section">
+            <?php if (isset($_GET['success'])): ?>
+                <div class="alert alert-success">
+                    ✓ Produk berhasil ditambahkan!
+                </div>
+            <?php endif; ?>
 
             <div class="section-header">
                 <div style="display:flex;align-items:center;gap:12px;">
@@ -179,11 +176,13 @@ $produk_list = $stmt->fetchAll(PDO::FETCH_ASSOC);
             <?php else: ?>
 
                 <div class="produk-grid">
+                    <!-- nampilin semua produk satu persatu -->
                     <?php foreach ($produk_list as $p): ?>
 
                         <!-- ====== SATU KARTU PRODUK ====== -->
                         <div class="produk-card" id="card-<?= $p['id'] ?>">
 
+                            <!-- kalau gambar gaada atau ga ditemuin ntar pakai default posterutama -->
                             <img src="../<?= htmlspecialchars($p['gambar'] ?? 'asset/posterutama.png') ?>"
                                  alt="<?= htmlspecialchars($p['nama_produk'] ?? $p['nama'] ?? '') ?>"
                                  onerror="this.src='../asset/posterutama.png'">
@@ -207,10 +206,12 @@ $produk_list = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                 <?php if (!empty($p['harga'])): ?>
                                     <div class="produk-harga" id="harga-<?= $p['id'] ?>"
                                          style="font-size:13px;color:var(--accent);margin-top:6px;font-weight:600;">
+                                         <!-- hargaa pake format rupiah -->
                                         Rp <?= number_format($p['harga'], 0, ',', '.') ?>
                                     </div>
                                 <?php endif; ?>
 
+                                <!-- kalau kategori accessories, dibedain karena accessories ga punya ukuran -->
                                 <?php if (strtolower($p['kategori']) === 'accessories'): ?>
 
                                     <!-- ====== KATEGORI ACCESSORIES: STOK 1 ANGKA TOTAL, TANPA UKURAN ====== -->
@@ -222,6 +223,7 @@ $produk_list = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                         <div class="stok-row">
                                             <span class="stok-label <?= $status ?>">Stok</span>
 
+                                            <!-- -1 buat ngurangi stok -->
                                             <div class="stok-input-group">
                                                 <button type="button" class="stok-dec"
                                                     onclick="ubahStok(<?= $p['id'] ?>, 'accessories', this, -1)">−</button>
@@ -236,7 +238,7 @@ $produk_list = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                             </div>
 
                                             <span class="stok-badge <?= $status ?>"
-                                                  id="badge-<?= $p['id'] ?>-accessories">
+                                                id="badge-<?= $p['id'] ?>-accessories">
                                                 <?= $jumlah > 0 ? $jumlah . ' pcs' : 'Habis' ?>
                                             </span>
                                         </div>
@@ -244,8 +246,9 @@ $produk_list = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
                                 <?php else: ?>
 
-                                    <!-- ====== KATEGORI LAIN: STOK PER UKURAN S/M/L/XL/XXL ====== -->
+                                    <!-- ====== KATEGORI LAIN: baju maksunya ini dengan STOK PER UKURAN S/M/L/XL/XXL ====== -->
                                     <div class="stok-sizes" style="margin-top:10px;">
+                                        <!-- nampilin stok perukuran -->
                                         <?php foreach (['S', 'M', 'L', 'XL', 'XXL'] as $sz):
                                             $kolom  = 'stok_' . strtolower($sz);
                                             $jumlah = (int)($p[$kolom] ?? 0);
@@ -268,7 +271,7 @@ $produk_list = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                                 </div>
 
                                                 <span class="stok-badge <?= $status ?>"
-                                                      id="badge-<?= $p['id'] ?>-<?= strtolower($sz) ?>">
+                                                    id="badge-<?= $p['id'] ?>-<?= strtolower($sz) ?>">
                                                     <?= $jumlah > 0 ? $jumlah . ' pcs' : 'Habis' ?>
                                                 </span>
                                             </div>

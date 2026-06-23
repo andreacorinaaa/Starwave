@@ -1,25 +1,19 @@
 <?php
 require 'auth_check.php';
 
-// Hitung total produk
-$total_produk = $pdo->query("SELECT COUNT(*) FROM produk")->fetchColumn();
+$total_produk = $pdo->query("SELECT COUNT(*) FROM produk")->fetchColumn(); 
 
-// Hitung total pengguna
 $total_users = $pdo->query("SELECT COUNT(*) FROM users")->fetchColumn();
 
-// Hitung total pesanan
 $total_orders = $pdo->query("SELECT COUNT(*) FROM orders")->fetchColumn();
 
-// Hitung pesanan yang belum dibayar / masih pending
 $pending_orders = $pdo->query("
     SELECT COUNT(*) FROM orders 
     WHERE status = 'pending_payment' OR status = 'pending'
 ")->fetchColumn();
 
-// Cek: ada pesanan pending atau tidak?
 $ada_pending = $pending_orders > 0;
 
-// Ambil 8 pesanan terbaru, sekalian nama pemesannya
 $stmt = $pdo->query("
     SELECT o.*, u.nama_panggilan AS nama 
     FROM orders o
@@ -27,10 +21,9 @@ $stmt = $pdo->query("
     ORDER BY o.created_at DESC 
     LIMIT 8
 ");
-// ngubah hasil query jadi array
+
 $daftar_pesanan = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// ngubah status database jadi class css
 $kamus_class = [
     'selesai'         => 'done',
     'diproses'        => 'process',
@@ -40,7 +33,6 @@ $kamus_class = [
     'batal'           => 'cancel',
 ];
 
-// ngubah status database jadi teks yang lebih oke
 $kamus_label = [
     'pending_payment' => 'Belum Bayar',
     'pending'         => 'Pending',
@@ -50,7 +42,6 @@ $kamus_label = [
     'batal'           => 'Dibatalkan',
 ];
 
-// Fungsi: cari class CSS untuk status tertentu.
 function ambilStatusClass($status, $kamus) {
     if (isset($kamus[$status])) {
         return $kamus[$status];
@@ -58,7 +49,6 @@ function ambilStatusClass($status, $kamus) {
     return 'pending';
 }
 
-// Fungsi: cari label (tulisan) untuk status tertentu.
 function ambilStatusLabel($status, $kamus) {
     if (isset($kamus[$status])) {
         return $kamus[$status];
@@ -77,7 +67,7 @@ function ambilStatusLabel($status, $kamus) {
 </head>
 <body>
 
-<aside class="sidebar"> // nampilin menu navigasi admin 
+<aside class="sidebar"> 
     <div class="sidebar-brand">
         <div class="brand-name">STARWAVE</div>
         <div class="brand-label">Admin Panel</div>
@@ -198,7 +188,7 @@ function ambilStatusLabel($status, $kamus) {
                                     <?= htmlspecialchars($pesanan['tanggal_order']) ?>
                                 </td>
                                 <td>
-                                    <span class="badge <?= $class_status ?>"><?= $label_status ?></span>
+                                    <span class="badge <?= $class_status ?>"><?= $label_status ?></span> <!-- nentuin class status nya -->
                                 </td>
                             </tr>
 

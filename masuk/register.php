@@ -4,12 +4,10 @@ include('../config/koneksi.php');
 $error = "";
 
 if (isset($_POST['register'])) {
-
     $email          = trim($_POST['email']);
     $raw_password   = $_POST['password'];
     $tanggal_lahir  = $_POST['tanggal_lahir'];
-    $nama_panggilan = trim($_POST['nama_panggilan']); // <-- field baru
-
+    $nama_panggilan = trim($_POST['nama_panggilan']); 
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $error = "Format email tidak valid! email@gmail.com";
 
@@ -24,7 +22,6 @@ if (isset($_POST['register'])) {
 
     } else {
         $password = password_hash($raw_password, PASSWORD_DEFAULT);
-
         $stmt = $pdo->prepare("SELECT id_user FROM users WHERE email = ?");
         $stmt->execute([$email]);
 

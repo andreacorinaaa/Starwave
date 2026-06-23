@@ -1,7 +1,5 @@
-// buat nyimpen status filter yang lagi aktif
 let currentStatus = 'semua';
 
-// ngubah filter status pesanan berdasarkan tombol yang admin pilih
 function filterStatus(status, btn) {
     currentStatus = status; 
     document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
@@ -9,16 +7,13 @@ function filterStatus(status, btn) {
     applyFilter();
 }
 
-// buat nampilin sama nyembunyiin password
 function togglePw() {
     const input = document.getElementById('password');
     input.type = input.type === 'password' ? 'text' : 'password';
 }
 
-// manggil fungsi filter utama
 function filterOrders() { applyFilter(); }
 
-// nyariin status pesanan, pembayaran, pencarian
 function applyFilter() {
     const q = document.getElementById('search-orders').value.toLowerCase();
     document.querySelectorAll('#orders-table tbody tr').forEach(row => { // ngambil seluruh data pesanan baris table
@@ -38,7 +33,6 @@ function applyFilter() {
     });
 }
 
-// Buka modal "lihat bukti bayar"
 function openBukti(imgSrc, orderId, namaProduk, total, isPaid) {
     document.getElementById('bukti-img').src = imgSrc;
     document.getElementById('bukti-meta').innerHTML = `Order <strong>#${orderId}</strong> — ${namaProduk} — <strong>${total}</strong>`; //inforasi pesanan
@@ -55,7 +49,6 @@ function openBukti(imgSrc, orderId, namaProduk, total, isPaid) {
 
 function closeBukti() { document.getElementById('modal-bukti').classList.remove('open'); }
 
-// Buka modal "konfirmasi pembayaran" qris
 function openModal(orderId, namaProduk, total) {
     document.getElementById('modal-order-id').value = orderId;
     document.getElementById('modal-desc').innerHTML =
@@ -70,7 +63,6 @@ function openModal(orderId, namaProduk, total) {
 
 function closeModal() { document.getElementById('modal-konfirmasi').classList.remove('open'); }
 
-// Buka modal "konfirmasi hapus"
 function openHapusModal(orderId) {
     document.getElementById('hapus-desc').textContent = `Hapus pesanan #${orderId}? Tidak bisa dikembalikan!`;
     document.getElementById('btn-hapus-ya').onclick = () => {
@@ -81,7 +73,6 @@ function openHapusModal(orderId) {
 
 function closeHapusModal() { document.getElementById('modal-hapus').classList.remove('open'); }
 
-// Tutup modal kalau area gelap di luar kotak diklik
 document.getElementById('modal-konfirmasi').addEventListener('click', function(e) { if (e.target === this) closeModal(); });
 document.getElementById('modal-bukti').addEventListener('click', function(e) { if (e.target === this) closeBukti(); });
 document.getElementById('modal-hapus').addEventListener('click', function(e) { if (e.target === this) closeHapusModal(); });

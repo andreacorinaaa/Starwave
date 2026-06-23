@@ -1,62 +1,44 @@
 <?php
-
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
-
 session_start();
 include('config/koneksi.php');
-
 if (!isset($_SESSION['user'])) {
-    // Simpan tujuan asli, biar nanti setelah login bisa balik ke sini
     $_SESSION['redirect_after_login'] = 'buat_ulasan.php';
     header("Location: masuk/login.php?msg=login_dulu");
     exit;
 }
-
 $user_email = $_SESSION['user'];
 
 $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?");
 $stmt->execute([$user_email]);
 $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-// Kalau email di session tidak ketemu di database -> paksa logout
 if (!$user) {
     session_destroy();
     header("Location: masuk/login.php");
     exit;
 }
-
 $user_id = $user['id_user'];
-
 if (!isset($_GET['id'])) {
-    // Tidak ada id order dikirim -> tolak, lempar ke halaman order
     header("Location: order.php");
     exit;
 }
 
-// (int) di sini buat mastiin nilainya angka, bukan teks aneh-aneh
 $id_order = (int)$_GET['id'];
 
-// Hanya order yang sudah "selesai" yang boleh diberi ulasan
 $stmt = $pdo->prepare("SELECT * FROM orders WHERE id = ? AND id_user = ? AND status = 'selesai'");
 $stmt->execute([$id_order, $user_id]);
 $order = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$order) {
-    // Order tidak ditemukan / bukan milik user ini / belum selesai -> tolak
     header("Location: order.php");
     exit;
 }
-
 $stmt = $pdo->prepare("SELECT * FROM ulasan WHERE id_order = ?");
 $stmt->execute([$id_order]);
 $cek_ulasan = $stmt->fetch(PDO::FETCH_ASSOC);
-// Kalau $cek_ulasan ADA isinya -> berarti sudah pernah diulas
 
 $pesan = "";
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-
     $bintang  = (int)$_POST['bintang'];
     $komentar = trim($_POST['komentar']);
 
@@ -76,29 +58,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         $nama_produk_order = $order['nama_produk'];
 
-        // Coba cari id produk asli di tabel produk berdasarkan nama produk dari order
-        // (pakai LIKE karena nama produk di order kadang ada tambahan teks, misal varian/ukuran)
         $stmt = $pdo->prepare("SELECT id FROM produk WHERE ? LIKE CONCAT(nama_produk, '%') LIMIT 1");
         $stmt->execute([$nama_produk_order]);
         $cari_produk = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        // Kalau produk ketemu, pakai id-nya. Kalau tidak ketemu, pakai 0 (default)
         $id_produk_order = $cari_produk ? (int)$cari_produk['id'] : 0;
 
-        // Simpan ulasan baru ke database
         $stmt = $pdo->prepare("INSERT INTO ulasan (id_order, id_user, id_produk, nama_produk, bintang, komentar, created_at)
                                VALUES (?, ?, ?, ?, ?, ?, NOW())");
         $stmt->execute([$id_order, $user_id, $id_produk_order, $nama_produk_order, $bintang, $komentar]);
 
         $pesan = "success|Terima kasih! Ulasan kamu berhasil disimpan.";
 
-        // Ambil ulang data ulasan yang baru disimpan, biar langsung tampil di halaman
         $stmt = $pdo->prepare("SELECT * FROM ulasan WHERE id_order = ?");
         $stmt->execute([$id_order]);
         $cek_ulasan = $stmt->fetch(PDO::FETCH_ASSOC);
     }
 }
-
 $pesan_type = $pesan_text = "";
 if ($pesan) {
     [$pesan_type, $pesan_text] = explode('|', $pesan, 2);
@@ -154,15 +130,6 @@ if ($pesan) {
                     </svg>
                 <?php endif; ?>
             </a>
-        <?php elseif (isset($_SESSION['admin'])): ?>
-            <!-- Admin login -> tampilkan tombol ke dashboard admin -->
-            <a href="admin/dashboard.php" style="margin-left:15px; text-decoration:none; color:#4f6ef7; display:flex; align-items:center; gap:5px; font-size:12px; font-weight:700; letter-spacing:1px;" title="Admin Panel">
-                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="8" r="4"/>
-                    <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
-                </svg>
-                ADMIN
-            </a>
         <?php else: ?>
             <!-- Belum login -> tombol Login -->
             <a href="masuk/login.php" class="btn-login">Login</a>
@@ -175,9 +142,9 @@ if ($pesan) {
     <h1>Ulasan Produk</h1>
     <div class="breadcrumb">
         <a href="index.php">Home</a>
-        <span>›</span>
+        <span>/</span>
         <a href="order.php">Order</a>
-        <span>›</span>
+        <span>/</span>
         Ulasan
     </div>
 </div>

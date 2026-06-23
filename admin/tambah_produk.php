@@ -1,17 +1,12 @@
 <?php
 require 'auth_check.php';
 
-// 2. Hitung jumlah pesanan yang masih pending
 $stmt = $pdo->query("SELECT COUNT(*) FROM orders WHERE status='pending_payment' OR status='pending'");
 $pending_orders = $stmt->fetchColumn() ?? 0;
 
-// -----------------------------------------------
-// 3. Siapkan variabel-variabel yang dipakai di form
-// -----------------------------------------------
 $success = '';   
 $errors  = [];   
 
-// Nilai default tiap kolom form (supaya kalau ada error, isian user tidak hilang)
 $nama_produk = '';
 $harga       = '';
 $kategori    = '';
@@ -19,35 +14,29 @@ $deskripsi   = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
-    // 4.1 Ambil data teks dari form, hilangkan spasi di awal/akhir
     $nama_produk = trim($_POST['nama_produk'] ?? '');
     $harga       = trim($_POST['harga'] ?? '');
     $kategori    = trim($_POST['kategori'] ?? '');
     $deskripsi   = trim($_POST['deskripsi'] ?? '');
 
-    // 4.2 Validasi nama produk
     if ($nama_produk === '') {
         $errors['nama_produk'] = 'Nama produk wajib diisi.';
     }
 
-    // 4.3 Validasi harga (harus angka, lebih dari 0)
     if ($harga === '') {
         $errors['harga'] = 'Harga wajib diisi.';
     } elseif (!is_numeric($harga) || (int)$harga <= 0) {
         $errors['harga'] = 'Harga harus berupa angka lebih dari 0.';
     }
 
-    // 4.4 Validasi kategori
     if ($kategori === '') {
         $errors['kategori'] = 'Kategori wajib dipilih.';
     }
 
-    // 4.5 Validasi deskripsi
     if ($deskripsi === '') {
         $errors['deskripsi'] = 'Deskripsi wajib diisi.';
     }
 
-    // 4.6 Validasi gambar (wajib upload, format & ukuran dibatasi)
     if (empty($_FILES['gambar']['name'])) {
         $errors['gambar'] = 'Gambar produk wajib diupload.';
     } else {
@@ -62,37 +51,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if (empty($errors)) {
-
         $map_ekstensi  = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp'];
         $ekstensi_file = $map_ekstensi[$format_file];
         $nama_file     = 'produk_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $ekstensi_file;
         $folder_upload = __DIR__ . '/../asset/';
 
-        // Buat folder "asset" kalau belum ada
         if (!is_dir($folder_upload)) {
             mkdir($folder_upload, 0755, true);
         }
 
-        // Pindahkan file dari folder sementara PHP -> folder asset
         if (!move_uploaded_file($_FILES['gambar']['tmp_name'], $folder_upload . $nama_file)) {
             $errors['gambar'] = 'Gagal mengupload gambar.';
         } else {
 
-            $path_gambar = 'asset/' . $nama_file; // path ini yang disimpan ke DB
-
-            // Simpan data produk ke tabel "produk" (pakai prepared statement, aman dari SQL Injection)
+            $path_gambar = 'asset/' . $nama_file; 
             $stmt = $pdo->prepare(
                 "INSERT INTO produk (nama_produk, harga, gambar, deskripsi, kategori) VALUES (?, ?, ?, ?, ?)"
             );
             $berhasil_simpan = $stmt->execute([$nama_produk, (int)$harga, $path_gambar, $deskripsi, $kategori]);
 
             if ($berhasil_simpan) {
-                $success = 'Produk berhasil ditambahkan!';
-                // Kosongkan kembali isian form karena sudah berhasil
-                $nama_produk = $harga = $kategori = $deskripsi = '';
+                header("Location: produk.php?success=1");
+                exit;
             } else {
                 $errors['umum'] = 'Gagal menyimpan ke database.';
-                // Karena gagal simpan ke DB, hapus lagi file yang sudah terupload tadi
                 @unlink($folder_upload . $nama_file);
             }
         }
@@ -186,7 +168,7 @@ function has_error($field, $errors) {
                         <label class="form-label" for="inp-nama">Nama Produk<span class="req">*</span></label>
                         <input class="form-input <?= has_error('nama_produk', $errors) ? 'input-error' : '' ?>"
                                id="inp-nama" name="nama_produk"
-                               type="text" placeholder="cth. Kaos Oversize STARWAVE"
+                               type="text" placeholder="cth. Kaos Oversize"
                                value="<?= htmlspecialchars($nama_produk) ?>"
                                maxlength="255" required>
                         <?php if (has_error('nama_produk', $errors)): ?>

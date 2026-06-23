@@ -8,7 +8,6 @@ function isEmailValid(email) {
     return regex.test(email);
 }
 
-// Munculin teks error kecil di bawah field tertentu
 function showFieldError(input, message) {
     const target = input.closest('.pw-wrap') || input;
     let err = target.nextElementSibling;
@@ -21,7 +20,6 @@ function showFieldError(input, message) {
     err.style.display = 'block';
     input.style.borderColor = '#c0392b';
 }
-
 function hideFieldError(input) {
     const target = input.closest('.pw-wrap') || input;
     const err = target.nextElementSibling;
@@ -30,7 +28,6 @@ function hideFieldError(input) {
     }
     input.style.borderColor = '';
 }
-
 function validateLogin(form) {
     hideFieldError(form.email);
     hideFieldError(form.password);
@@ -54,7 +51,6 @@ function validateLogin(form) {
 
     return valid;
 }
-
 function validateRegister(form) {
     hideFieldError(form.nama_panggilan);
     hideFieldError(form.email);
@@ -95,7 +91,6 @@ function validateRegister(form) {
 
     return valid;
 }
-
 function validateResetPassword(form) {
     hideFieldError(form.password);
     hideFieldError(form.confirm);
@@ -122,7 +117,6 @@ function validateResetPassword(form) {
 
     return valid;
 }
-
 function validateLupaPassword(form) {
     hideFieldError(form.email);
     let valid = true;

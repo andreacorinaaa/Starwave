@@ -12,19 +12,16 @@ $success       = "";
 $error_profile = "";
 $email         = $_SESSION['user'];
 
-// Ambil data user yang lagi login
 $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?");
 $stmt->execute([$email]);
 $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-// Jaga-jaga: kalau user di session ternyata sudah tidak ada di DB
 if (!$user) {
     session_destroy();
     header("Location: masuk/login.php");
     exit;
 }
 
-// Daftar wilayah yang bisa dipilih (dipakai di <select> bawah)
 $daftar_wilayah = ['Lombok Barat', 'Lombok Tengah', 'Lombok Timur', 'Lombok Utara', 'Mataram'];
 
 if (isset($_POST['update_photo']) && isset($_FILES['foto_profil']) && $_FILES['foto_profil']['error'] === 0) {
@@ -43,7 +40,6 @@ if (isset($_POST['update_photo']) && isset($_FILES['foto_profil']) && $_FILES['f
         }
 
         if (move_uploaded_file($_FILES['foto_profil']['tmp_name'], $dir . $filename)) {
-            // Hapus foto lama biar tidak numpuk sampah file
             if (!empty($user['foto_profil']) && file_exists($user['foto_profil'])) {
                 unlink($user['foto_profil']);
             }
@@ -53,7 +49,6 @@ if (isset($_POST['update_photo']) && isset($_FILES['foto_profil']) && $_FILES['f
             $stmt->execute([$foto_path, $email]);
             $success = "Foto profil berhasil diperbarui!";
 
-            // Refresh data user biar foto baru langsung kepakai di tampilan
             $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?");
             $stmt->execute([$email]);
             $user = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -70,7 +65,6 @@ if (isset($_POST['update_profile'])) {
     $alamat         = trim($_POST['alamat']);
     $tanggal_lahir  = $_POST['tanggal_lahir'];
 
-    // --- Validasi no HP: wajib angka semua & panjang 10-13 digit ---
     if (!preg_match('/^\d{10,13}$/', $no_telepon)) {
         $error_profile = "Nomor HP harus berupa angka, panjang 10–13 digit.";
     } else {
@@ -83,7 +77,6 @@ if (isset($_POST['update_profile'])) {
 
         $success = "Profil berhasil diperbarui!";
 
-        // Refresh data user biar form langsung nampilin data terbaru
         $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?");
         $stmt->execute([$email]);
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -136,14 +129,6 @@ if (isset($_POST['update_profile'])) {
                     </svg>
                 <?php endif; ?>
             </a>
-        <?php elseif (isset($_SESSION['admin'])): ?>
-            <a href="admin/dashboard.php" style="margin-left:15px; text-decoration:none; color:#4f6ef7; display:flex; align-items:center; gap:5px; font-size:12px; font-weight:700; letter-spacing:1px;" title="Admin Panel">
-                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="8" r="4"/>
-                    <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
-                </svg>
-                ADMIN
-            </a>
         <?php else: ?>
             <a href="masuk/login.php" class="btn-login">Login</a>
         <?php endif; ?>
@@ -171,7 +156,6 @@ if (isset($_POST['update_profile'])) {
 <div class="profile-page">
     <div class="profile-wrapper">
 
-        <!-- ── LEFT: Avatar Panel ── -->
         <div class="avatar-panel">
 
             <div class="avatar-ring">
@@ -209,7 +193,6 @@ if (isset($_POST['update_profile'])) {
             <a href="masuk/logout.php" class="logout-link">Logout</a>
         </div>
 
-        <!-- ── RIGHT: Form Card ── -->
         <div class="profile-card">
             <h2>My Account</h2>
 
@@ -224,7 +207,6 @@ if (isset($_POST['update_profile'])) {
 
             <form action="" method="POST">
 
-                <!-- Baris 1: Email & Nama Panggilan -->
                 <div class="form-row">
                     <div class="form-group">
                         <label>Email</label>
@@ -236,7 +218,6 @@ if (isset($_POST['update_profile'])) {
                     </div>
                 </div>
 
-                <!-- Baris 2: Nomor Telepon & Tanggal Lahir -->
                 <div class="form-row">
                     <div class="form-group">
                         <label>Nomor Telepon</label>
@@ -253,7 +234,6 @@ if (isset($_POST['update_profile'])) {
                     </div>
                 </div>
 
-                <!-- Baris 3: Wilayah -->
                 <div class="form-group">
                     <label>Wilayah</label>
                     <select name="wilayah">
@@ -266,7 +246,6 @@ if (isset($_POST['update_profile'])) {
                     </select>
                 </div>
 
-                <!-- Baris 4: Alamat full width -->
                 <div class="form-group">
                     <label>Alamat</label>
                     <textarea name="alamat" placeholder="Isi alamat secara lengkap. Contoh: Jl. Pejanggik No. 12, RT 03 RW 05, Kel. Cilinaya, Kec. Mataram"><?= htmlspecialchars($user['alamat'] ?? '') ?></textarea>

@@ -1,12 +1,10 @@
 <?php
-
 session_start();
 include('../config/koneksi.php');
 
 $error = "";
 $success = "";
 
-// Ambil token dari URL (GET) atau dari form (POST)
 $token = $_GET['token'] ?? ($_POST['token'] ?? "");
 $validToken = false;
 
@@ -14,7 +12,6 @@ if ($token) {
     $stmt = $pdo->prepare("SELECT * FROM users WHERE reset_token = ? AND reset_expiry > NOW()");
     $stmt->execute([$token]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
-
     if ($row) {
         $validToken = true;
     } else {
@@ -23,12 +20,9 @@ if ($token) {
 } else {
     $error = "Token tidak ditemukan.";
 }
-
 if ($validToken && isset($_POST['reset'])) {
-
     $password = trim($_POST['password']);
     $confirm  = trim($_POST['confirm']);
-
     if ($password !== $confirm) {
         $error = "Konfirmasi password tidak sama.";
         $validToken = true;
@@ -36,14 +30,13 @@ if ($validToken && isset($_POST['reset'])) {
     } elseif (strlen($password) < 8) {
         $error = "Password minimal 8 karakter.";
         $validToken = true;
-
+    
     } elseif (!preg_match('/[0-9]/', $password)) {
         $error = "Password harus mengandung minimal 1 angka.";
         $validToken = true;
 
     } else {
         $hashed = password_hash($password, PASSWORD_DEFAULT);
-
         $update = $pdo->prepare("UPDATE users SET password = ?, reset_token = NULL, reset_expiry = NULL WHERE reset_token = ?");
         $update->execute([$hashed, $token]);
 
@@ -93,6 +86,7 @@ if ($validToken && isset($_POST['reset'])) {
 
             <?php elseif ($validToken): ?>
                 <form action="" method="POST" novalidate onsubmit="return validateResetPassword(this)">
+                    <!-- Menyimpan token secara tersembunyi saat form dikirim. User tidak melihatnya -->
                     <input type="hidden" name="token" value="<?= htmlspecialchars($token) ?>">
 
                     <div class="form-group">

@@ -23,10 +23,8 @@ $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 <header>
     <nav>
-        <!-- Logo / nama brand → klik kembali ke halaman utama -->
         <h1><a href="index.php">STARWAVE</a></h1>
 
-        <!-- Menu navigasi utama -->
         <ul>
             <li><a href="index.php">Home</a></li>
             <li><a href="man.php" class="active">Man</a></li>  
@@ -36,7 +34,6 @@ $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
             <li><a href="keranjang.php">Keranjang</a></li>
         </ul>
 
-        <!-- Form pencarian produk → dikirim ke search.php pakai method GET (?q=...) -->
         <form action="search.php" method="GET" class="search-form" onsubmit="return validateSearch(this)">
             <input type="text" name="q" placeholder="Search produk..." class="search-input">
             <button type="submit" class="search-btn">
@@ -49,19 +46,16 @@ $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
             <a href="profile.php" style="margin-left:15px; text-decoration:none; display:flex; align-items:center;" title="Profile">
 
                 <?php
-                    // Ambil foto profil user dari database berdasarkan email yang tersimpan di session
                     $stmt2 = $pdo->prepare("SELECT foto_profil FROM users WHERE email = ?");
                     $stmt2->execute([$_SESSION['user']]);
                     $navUser = $stmt2->fetch(PDO::FETCH_ASSOC);
                 ?>
 
                 <?php if (!empty($navUser['foto_profil']) && file_exists($navUser['foto_profil'])): ?>
-                    <!-- Jika foto profil ada di database DAN file-nya benar-benar ada di server → tampilkan fotonya -->
                     <img src="<?= htmlspecialchars($navUser['foto_profil']) ?>"
                          style="width:34px; height:34px; border-radius:50%; object-fit:cover; border:2px solid #2a7fa8;">
 
                 <?php else: ?>
-                    <!-- Jika foto profil tidak ada → tampilkan ikon SVG default -->
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
                          fill="none" stroke="#c9dde8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="12" cy="8" r="4"/>           <!-- kepala -->
@@ -70,23 +64,7 @@ $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 <?php endif; ?>
 
             </a>
-
-        <?php elseif (isset($_SESSION['admin'])): ?>
-            <!-- KONDISI 2: Admin yang login → tampilkan link ke dashboard admin -->
-            <a href="admin/dashboard.php"
-               style="margin-left:15px; text-decoration:none; color:#4f6ef7; display:flex; align-items:center; gap:5px; font-size:12px; font-weight:700; letter-spacing:1px;"
-               title="Admin Panel">
-                <!-- Ikon SVG untuk admin (sama bentuknya, beda warna) -->
-                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24"
-                     fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="8" r="4"/>
-                    <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
-                </svg>
-                ADMIN
-            </a>
-
         <?php else: ?>
-            <!-- KONDISI 3: Belum login sama sekali → tampilkan tombol Login -->
             <a href="masuk/login.php" class="btn-login">Login</a>
 
         <?php endif; ?>
@@ -96,14 +74,12 @@ $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 <section class="banner banner-category">
 
-    <!-- Teks di sisi kiri banner -->
     <div class="banner-text">
         <p>STARWAVE</p>
         <h2>Choose Everything You Like</h2>
         <p>Various kinds of interesting clothes</p>
     </div>
 
-    <!-- Gambar di sisi kanan banner -->
     <div class="banner-img">
         <img src="asset/posterPria.jpg">
     </div>
@@ -116,22 +92,17 @@ $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     <div class="product-box">
 
-        <!-- Loop: tampilkan setiap produk dari array $products -->
         <?php foreach ($products as $row): ?>
 
             <div class="product">
 
-                <!-- Klik gambar → pergi ke halaman detail produk -->
                 <a href="detail.php?id=<?= $row['id']; ?>">
 
-                    <!-- htmlspecialchars() → keamanan: ubah karakter berbahaya (<, >, ", &) jadi aman ditampilkan di HTML -->
                     <img src="<?= htmlspecialchars($row['gambar']); ?>">
                 </a>
 
-                <!-- Nama produk -->
                 <p><?= htmlspecialchars($row['nama_produk']); ?></p>
 
-                <!-- Harga produk -->
                 <p>Rp. <?= number_format($row['harga']); ?></p>
 
             </div>
@@ -158,7 +129,6 @@ $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
             <p>081836737367367</p>
         </div>
 
-        <!-- Kolom 3: Media sosial -->
         <div>
             <h3>Social</h3>
             <p><a href="https://instagram.com/starwave" target="_blank">Instagram : starwave.fashion</a></p>

@@ -61,8 +61,9 @@
             </div>
 
             <div class="actions-bar">
-                <input type="text" class="search-input" id="search-orders" placeholder="Cari produk / pemesan..." oninput="filterOrders()">
+                <input type="text" class="search-input" id="search-orders" placeholder="Cari produk / pemesan..." oninput="filterOrders()"> <!-- nyarik pesanan bisa pake nama pemesan atau produk -->
                 <button class="filter-btn active" onclick="filterStatus('semua', this)">Semua</button>
+                <!-- dari onclick itu buat filter pesanan berdasarkan status -->
                 <button class="filter-btn" onclick="filterStatus('belum_bayar', this)">Belum Bayar</button>
                 <button class="filter-btn" onclick="filterStatus('pending', this)">Pending</button>
                 <button class="filter-btn" onclick="filterStatus('diproses', this)">Diproses</button>
@@ -104,9 +105,7 @@
                             $is_expired = $o['status'] === 'qr_expired';
 
                             $ada_bukti = !empty($o['bukti_bayar']);
-
                             $nama_produk_aman = htmlspecialchars($o['nama_produk']);
-
                             $info_bundle        = $bundle_info[$o['kode_order']] ?? null;
                             $jumlah_item_bundle = $info_bundle['jumlah_item'] ?? 1;
                             $is_bundle          = $jumlah_item_bundle > 1;
@@ -115,14 +114,13 @@
                                 ? (float)$info_bundle['total_bundle']
                                 : (float)$o['total_harga'];
                             $harga_format    = 'Rp ' . number_format($harga_baris_ini, 0, ',', '.');
-
                             $label_modal = $is_bundle
                                 ? $nama_produk_aman . " (+" . ($jumlah_item_bundle - 1) . " item lain dalam 1 pesanan)"
                                 : $nama_produk_aman;
 
                             $class_status = ambilStatusClass($o['status'], $kamus_class);
                             $label_status = ambilStatusLabel($o['status'], $kamus_label);
-
+                            
                             $onclick_bukti = $ada_bukti ? sprintf(
                                 "openBukti('../%s', %d, '%s', '%s', %s)",
                                 htmlspecialchars($o['bukti_bayar'], ENT_QUOTES),
@@ -139,12 +137,11 @@
                                 $harga_format
                             );
 
-                            // Alamat: gabung alamat + wilayah, potong kalau terlalu panjang
                             $alamat_parts = array_filter([
                                 $o['alamat']  ?? '',
                                 $o['wilayah'] ?? '',
                             ]);
-                            $alamat_full = implode(', ', $alamat_parts);
+                            $alamat_full = implode(', ', $alamat_parts); 
                             ?>
 
                             <tr data-status="<?= $o['status'] ?>"
@@ -175,19 +172,19 @@
                                     <span class="badge <?= $class_status ?>"><?= $label_status ?></span>
                                 </td>
 
-                                <!-- Bukti bayar -->
+                                <!-- Lihat Bukti bayar luarannya -->
                                 <td>
                                     <?php if ($ada_bukti): ?>
                                         <img src="../<?= htmlspecialchars($o['bukti_bayar']) ?>"
-                                             class="bukti-thumb"
-                                             onclick="<?= $onclick_bukti ?>"
-                                             title="Lihat bukti bayar">
+                                            class="bukti-thumb"
+                                            onclick="<?= $onclick_bukti ?>"
+                                            title="Lihat bukti bayar">
                                     <?php else: ?>
                                         <span class="no-bukti">Belum upload</span>
                                     <?php endif; ?>
                                 </td>
 
-                                <!-- Pembayaran -->
+                                <!-- tampilan luarannya pembayaran -->
                                 <td>
                                     <?php if ($is_expired): ?>
                                         <span style="color:#b45309;font-weight:600;">⏰ Expired</span>
@@ -225,6 +222,7 @@
                                 </td>
 
                                 <td>
+                                    <!-- buka modal untuk hapus pesanan -->
                                     <button type="button" class="btn-hapus-order" onclick="openHapusModal(<?= $o['id'] ?>)">
                                         Hapus
                                     </button>
@@ -240,7 +238,7 @@
     </div>
 </div>
 
-<!-- Modal lihat bukti bayar -->
+<!-- Modal untuk nutup bukti bayar dan lakuin konfirmasi di kolom bukti bayar -->
 <div class="modal-bukti-backdrop" id="modal-bukti">
     <div class="modal-bukti-box">
         <h3>Bukti Pembayaran</h3>
@@ -253,7 +251,7 @@
     </div>
 </div>
 
-<!-- Modal konfirmasi pembayaran -->
+<!-- Modal konfirmasi pembayaran di kolom pembayaran -->
 <div class="modal-backdrop" id="modal-konfirmasi">
     <div class="modal-box">
         <h3>Konfirmasi Pembayaran</h3>

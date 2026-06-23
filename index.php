@@ -6,7 +6,7 @@ include 'config/koneksi.php';
 // --- 1. NEW ARRIVALS ---
 $stmt = $pdo->query("SELECT * FROM produk ORDER BY created_at DESC LIMIT 3");
 $new_arrivals = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
+// trends collection dan left join buat gabungin tabel produk dan orders
 $stmt = $pdo->query("
     SELECT p.*, COUNT(o.id) AS total_terjual
     FROM produk p

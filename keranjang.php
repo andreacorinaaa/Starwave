@@ -11,7 +11,6 @@ if (!isset($_SESSION['user'])) {
 }
 
 $user_email = $_SESSION['user'];
-
 $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?");
 $stmt->execute([$user_email]);
 $user = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -21,10 +20,8 @@ if (!$user) {
     header("Location: masuk/login.php");
     exit;
 }
-
 $id_user = (int)$user['id_user'];
 
-// --- Ambil semua item di keranjang milik user ini + data stok produk ----
 $stmt = $pdo->prepare("
     SELECT k.*,
            p.stok, p.stok_s, p.stok_m, p.stok_l, p.stok_xl, p.stok_xxl, p.kategori AS kategori_produk
@@ -35,22 +32,19 @@ $stmt = $pdo->prepare("
 ");
 $stmt->execute([$id_user]);
 $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
 $total_semua = 0;
 foreach ($items as &$it) {
     $kategori = strtolower($it['kategori_produk'] ?? '');
-
+    
     if ($kategori === 'accessories') {
         $it['stok_max'] = isset($it['stok']) ? (int)$it['stok'] : 0;
     } else {
         $kolom = 'stok_' . strtolower($it['ukuran'] ?? '');
         $it['stok_max'] = isset($it[$kolom]) ? (int)$it[$kolom] : 0;
     }
-
     if ($it['qty'] > $it['stok_max']) {
         $it['qty'] = max(1, $it['stok_max']);
     }
-
     if ($it['stok_max'] > 0) {
         $total_semua += $it['harga'] * $it['qty'];
     }
@@ -104,14 +98,6 @@ unset($it);
                     </svg>
                 <?php endif; ?>
             </a>
-        <?php elseif (isset($_SESSION['admin'])): ?>
-            <a href="admin/dashboard.php" style="margin-left:15px; text-decoration:none; color:#4f6ef7; display:flex; align-items:center; gap:5px; font-size:12px; font-weight:700; letter-spacing:1px;" title="Admin Panel">
-                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="8" r="4"/>
-                    <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
-                </svg>
-                ADMIN
-            </a>
         <?php else: ?>
             <a href="masuk/login.php" class="btn-login">Login</a>
         <?php endif; ?>
@@ -127,7 +113,7 @@ unset($it);
 </div>
 
 <section class="ord-detail-section">
-
+<!-- nampilkan Error Keranjang -->
 <?php if (isset($_SESSION['error_keranjang'])): ?>
     <div style="background:#fdecea;border-left:4px solid #e05555;padding:14px 18px;font-size:14px;color:#c0392b;font-weight:600;margin:0 auto 16px;max-width:900px;">
         ⚠️ <?= htmlspecialchars($_SESSION['error_keranjang']) ?>
@@ -146,13 +132,14 @@ unset($it);
     </div>
 
 <?php else: ?>
-
+    <!-- Mengirim data checkout -->
     <form method="POST" action="proses_keranjang.php">
         <div style="display:flex; flex-direction:column; align-items:center;">
             <table class="ord-keranjang-table">
                 <thead>
                     <tr>
                         <th style="width:36px;">
+                            <!-- Memilih seluruh produk -->
                             <input type="checkbox" id="checkAllItems" checked onclick="toggleAllItems(this)" title="Pilih semua">
                         </th>
                         <th style="width:50px;"></th>
@@ -163,6 +150,7 @@ unset($it);
                     </tr>
                 </thead>
                 <tbody>
+                <!-- nampilkan setiap produk -->
                 <?php foreach ($items as $it):
                     $subtotal = $it['harga'] * $it['qty'];
                     $stok_max = (int)$it['stok_max'];

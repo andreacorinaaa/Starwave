@@ -2,7 +2,6 @@
 session_start();
 include 'config/koneksi.php';
 
-// --- 1. Ambil ID produk dari form ----
 $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
 
 if (!$id) {
@@ -10,15 +9,12 @@ if (!$id) {
     exit;
 }
 
-// --- 2. Wajib login dulu sebelum bisa pesan/keranjang -------
 if (!isset($_SESSION['user'])) {
-    // simpan tujuan redirect, biar setelah login balik ke produk ini
     $_SESSION['redirect_after_login'] = "detail.php?id=" . $id;
     header("Location: masuk/login.php");
     exit;
 }
 
-// --- 3. Ambil data produk ----------
 $stmt = $pdo->prepare("SELECT * FROM produk WHERE id = ?");
 $stmt->execute([$id]);
 $item = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -27,7 +23,6 @@ if (!$item) {
     die("Produk tidak ditemukan");
 }
 
-// --- 4. Ambil data user yang sedang login ---
 $user_email = $_SESSION['user'];
 
 $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?");
@@ -35,7 +30,6 @@ $stmt->execute([$user_email]);
 $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$user) {
-    // kalau ternyata akunnya udah gak ada/invalid -> logout paksa
     session_destroy();
     header("Location: masuk/login.php");
     exit;
@@ -46,21 +40,18 @@ $qty     = (int)($_POST['qty'] ?? 0);
 $ukuran  = $_POST['ukuran'] ?? '-';
 $aksi    = $_POST['aksi'] ?? 'beli'; 
 
-// --- 5. VALIDASI STOK ---------
 if (strtolower($item['kategori']) !== 'accessories') {
 
     $kolom_stok    = 'stok_' . strtolower($ukuran); 
     $stok_tersedia = (int)($item[$kolom_stok] ?? 0);
 
     if ($qty < 1 || $qty > $stok_tersedia) {
-        // qty kosong/0 atau lebih dari stok -> tolak, balik ke detail
         $_SESSION['error_stok'] = "Maaf, stok untuk ukuran " . strtoupper($ukuran) . " hanya tersisa {$stok_tersedia} pcs.";
         header("Location: detail.php?id=" . $id);
         exit;
     }
 }
 
-// --- 6. Hitung total & nama produk yang ditampilkan ----------
 $harga       = $item['harga'];
 $total_harga = $harga * $qty;
 
@@ -88,7 +79,6 @@ if ($aksi === 'keranjang') {
 }
 
 
-// sebelum order, pastikan data no.HP, wilayah & alamat user sudah lengkap
 $no_telp = trim($user['no_telepon'] ?? '');
 $wilayah = trim($user['wilayah'] ?? '');
 $alamat  = trim($user['alamat'] ?? '');

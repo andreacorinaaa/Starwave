@@ -3,17 +3,14 @@ session_start();
 include('../config/koneksi.php');
 
 if (isset($_SESSION['user'])) {
-    header("Location: ../profile.php");
-    exit; // exit WAJIB biar kode di bawah ga ikut jalan
-}
+    header("Location: ../index.php");
+    exit; 
 
-// Variabel buat nampung pesan error (kalau email ga ketemu)
 $error = "";
 
 if (isset($_POST['kirim'])) {
     $email = trim($_POST['email']);
 
-    // Cari user berdasarkan email yang diketik
     $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?");
     $stmt->execute([$email]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -21,14 +18,10 @@ if (isset($_POST['kirim'])) {
     if ($row) {
         $token = bin2hex(random_bytes(32));
 
-        // Token ini cuma berlaku 1 jam dari sekarang.
-        // Setelah lewat 1 jam, token dianggap basi/tidak valid lagi.
         $expiry = date('Y-m-d H:i:s', strtotime('+1 hour'));
 
-        // Simpan token + waktu kadaluarsanya ke baris user yang bersangkutan
         $update = $pdo->prepare("UPDATE users SET reset_token = ?, reset_expiry = ? WHERE email = ?");
         $update->execute([$token, $expiry, $email]);
-
         header("Location: reset.php?token=" . $token);
         exit;
     } else {
@@ -66,7 +59,7 @@ if (isset($_POST['kirim'])) {
     <div class="login-page">
         <div class="login-container">
             <h2>LUPA PASSWORD</h2>
-            <p>Masukkan email kamu, kamu akan diarahkan ke halaman reset password</p>
+            <p>Masukkan email anda, lalu anda akan diarahkan ke halaman reset password</p>
 
             <!-- Pesan error cuma muncul kalau $error ada isinya -->
             <?php if ($error): ?>
@@ -84,7 +77,7 @@ if (isset($_POST['kirim'])) {
             </form>
 
             <div class="create">
-                <a href="login.php">← Kembali ke Login</a>
+                <a href="login.php">Kembali ke Login</a>
             </div>
         </div>
     </div>
@@ -92,9 +85,21 @@ if (isset($_POST['kirim'])) {
     <!-- ===================== FOOTER ===================== -->
     <footer>
         <div class="footer-box">
-            <div><h3>Store</h3><p>Man</p><p>Woman</p><p>Accessories</p></div>
-            <div><h3>Business</h3><p>starwave@gmail.com</p><p>081836737367367</p></div>
-            <div><h3>Social</h3><p>Instagram : starwave.fashion</p></div>
+            <div>
+                <h3>Store</h3>
+                <p>Man</p>
+                <p>Woman</p>
+                <p>Accessories</p>
+            </div>
+            <div>
+                <h3>Business</h3>
+                <p>starwave@gmail.com</p>
+                <p>081836737367367</p>
+            </div>
+            <div>
+                <h3>Social</h3>
+                <p>Instagram : starwave.fashion</p>
+            </div>
         </div>
     </footer>
 

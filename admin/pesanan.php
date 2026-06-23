@@ -15,14 +15,14 @@ $pesan = "";
 if (isset($_POST['update_status'])) {
     $id_order   = (int)$_POST['id_order'];
     $new_status = $_POST['status'];
-
+    // update database atau ngubah status pesanan
     $pdo->prepare("UPDATE orders SET status = ? WHERE id = ?")
         ->execute([$new_status, $id_order]);
 
     $pesan = "Status pesanan #$id_order berhasil diperbarui.";
 }
 
-// --- Aksi 2B: Admin konfirmasi pembayaran (dari modal "Konfirmasi Bayar") ---
+// --- Aksi 2B: Admin konfirmasi pembayaran ---
 if (isset($_POST['konfirmasi_bayar'])) {
     $id_order = (int)$_POST['id_order'];
 
@@ -31,6 +31,12 @@ if (isset($_POST['konfirmasi_bayar'])) {
     $kode_order = $cek->fetchColumn();
 
     if ($kode_order) {
+        $ambil_ids = $pdo->prepare("
+            SELECT id FROM orders 
+            WHERE kode_order = ? AND status != 'batal'
+        ");
+        $ambil_ids->execute([$kode_order]);
+        $semua_id = $ambil_ids->fetchAll(PDO::FETCH_COLUMN);
 
         $stmt = $pdo->prepare("
             UPDATE orders 
@@ -39,7 +45,7 @@ if (isset($_POST['konfirmasi_bayar'])) {
         ");
         $stmt->execute([$kode_order]);
     } else {
-        // fallback (seharusnya tidak terjadi, tapi jaga-jaga kalau kode_order kosong)
+        $semua_id = [$id_order];
         $stmt = $pdo->prepare("
             UPDATE orders 
             SET status_bayar = 'paid', status = 'diproses' 
@@ -49,9 +55,11 @@ if (isset($_POST['konfirmasi_bayar'])) {
     }
 
     if ($stmt->rowCount() > 0) {
-        $jumlah_item = $stmt->rowCount();
+        $jumlah_item = count($semua_id);
+        $daftar_id   = implode(', #', $semua_id); // "12, #13, #14"
+
         $pesan = $jumlah_item > 1
-            ? "Pembayaran untuk $jumlah_item item dalam pesanan #$id_order berhasil dikonfirmasi sekaligus. Status diubah ke Diproses."
+            ? "Pembayaran untuk $jumlah_item item (#{$daftar_id}) berhasil dikonfirmasi sekaligus. Status diubah ke Diproses."
             : "Pembayaran order #$id_order berhasil dikonfirmasi. Status diubah ke Diproses.";
     }
 }
@@ -66,7 +74,7 @@ if (isset($_GET['hapus_order'])) {
 
 $stmt = $pdo->query("
     SELECT o.*, u.nama_panggilan AS nama, u.no_telepon,
-           u.alamat, u.wilayah
+        u.alamat, u.wilayah
     FROM orders o
     LEFT JOIN users u ON o.id_user = u.id_user
     ORDER BY o.created_at DESC 
@@ -119,7 +127,6 @@ function ambilStatusLabel($status, $kamus) {
     return $kamus[$status] ?? ucfirst($status);
 }
 
-// Pilihan status buat dropdown "Ubah Status".
 $opsi_status = [
     'pending_payment' => 'Belum Bayar',
     'pending'          => 'Pending',

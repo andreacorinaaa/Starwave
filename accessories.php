@@ -1,6 +1,6 @@
 <?php
 session_start();
-include('config/koneksi.php'); // pastikan $pdo sudah didefinisikan di sini
+include('config/koneksi.php'); 
 
 $stmt = $pdo->prepare("SELECT * FROM produk WHERE kategori = ?");
 $stmt->execute(['accessories']);
@@ -38,10 +38,10 @@ $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 <i class="fa fa-search"></i>
             </button>
         </form>
-
+        <!-- kalau user sudah login -->
         <?php if (isset($_SESSION['user'])): ?>
             <!-- ===== Kondisi 1: User biasa sudah login -> tampilkan foto profil ===== -->
-            <a href="profile.php" style="margin-left:15px; text-decoration:none; display:flex; align-items:center;" title="Profile">
+            <a href="profile.php" style="margin-left:15px; text-decoration:none; display:flex; align-items:center;">
                 <?php
                     // Ambil foto profil user yang sedang login
                     $stmt2 = $pdo->prepare("SELECT foto_profil FROM users WHERE email = ?");
@@ -63,7 +63,7 @@ $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         <?php elseif (isset($_SESSION['admin'])): ?>
             <!-- ===== Kondisi 2: Yang login adalah admin -> tampilkan tombol ke dashboard admin ===== -->
-            <a href="admin/dashboard.php" style="margin-left:15px; text-decoration:none; color:#4f6ef7; display:flex; align-items:center; gap:5px; font-size:12px; font-weight:700; letter-spacing:1px;" title="Admin Panel">
+            <a href="admin/dashboard.php" style="margin-left:15px; text-decoration:none; color:#4f6ef7; display:flex; align-items:center; gap:5px; font-size:12px; font-weight:700; letter-spacing:1px;">
                 <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="12" cy="8" r="4"/>
                     <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
