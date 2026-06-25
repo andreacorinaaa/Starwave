@@ -168,6 +168,11 @@ STARWAVE
 | 1 | Indira Ramdhani Sabrina | Backend / Database Side | Mengembangkan fitur menggunakan PHP, mengelola struktur database, menangani proses pengolahan data, dan mengintegrasikan fungsi backend ke dalam sistem. |
 | 2 | Andrea Corina Rahmadi | Frontend Side | Mengembangkan antarmuka website menggunakan HTML, CSS, dan JavaScript, membuat tampilan yang responsif, serta meningkatkan interaktivitas dan desain website. |
 
+# Screenshot Tampilan Web
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/73bb44e1-504d-4305-8d92-aa7a8d55abaa" />
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/7c9e96aa-7bbf-488a-a87d-1b213875a0ad" />
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/b74fbfbe-725f-4573-bbe1-55d70b413555" />
+
 # NIM Members Groups
   - Andrea Corina Rahmadi: F1D02410104
   - Indira Ramadhani Sabrina: F1D02410057
